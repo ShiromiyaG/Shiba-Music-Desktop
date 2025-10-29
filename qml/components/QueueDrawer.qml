@@ -55,7 +55,8 @@ Drawer {
                     width: queueList.width
                     height: 72
                     radius: 10
-                    color: modelData.id === root.currentTrackId ? "#273140" : "#1B2028"
+                    property bool hovered: hoverHandler.hovered
+                    color: modelData.id === root.currentTrackId ? "#273140" : (hovered ? "#242B38" : "#1B2028")
                     border.color: modelData.id === root.currentTrackId ? "#3D4A5F" : "#252C36"
                     Behavior on color { ColorAnimation { duration: 160 } }
 
@@ -100,12 +101,14 @@ Drawer {
                         }
                     }
 
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onClicked: root.requestPlay(index)
-                        onEntered: parent.color = "#242B38"
-                        onExited: parent.color = modelData.id === root.currentTrackId ? "#273140" : "#1B2028"
+                    HoverHandler {
+                        id: hoverHandler
+                        acceptedDevices: PointerDevice.Mouse
+                    }
+                    TapHandler {
+                        acceptedButtons: Qt.LeftButton
+                        gesturePolicy: TapHandler.DragThreshold
+                        onTapped: root.requestPlay(index)
                     }
                 }
                 ScrollBar.vertical: ScrollBar { }

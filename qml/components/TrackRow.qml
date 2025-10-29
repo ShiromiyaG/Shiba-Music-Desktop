@@ -26,8 +26,8 @@ Item {
         id: card
         anchors.fill: parent
         radius: 12
-        color: hoverArea.containsMouse ? "#242c3a" : "#1b2029"
-        border.color: hoverArea.containsMouse ? "#3b465a" : "#252c36"
+        color: cardHovered ? "#242c3a" : "#1b2029"
+        border.color: cardHovered ? "#3b465a" : "#252c36"
         Behavior on color { ColorAnimation { duration: 120 } }
 
         RowLayout {
@@ -100,11 +100,16 @@ Item {
             }
         }
 
-        MouseArea {
-            id: hoverArea
-            anchors.fill: parent
-            hoverEnabled: true
-            onClicked: root.playClicked()
+        HoverHandler {
+            id: hoverHandler
+            acceptedDevices: PointerDevice.Mouse
+        }
+        TapHandler {
+            acceptedButtons: Qt.LeftButton
+            gesturePolicy: TapHandler.DragThreshold
+            onTapped: root.playClicked()
         }
     }
+
+    readonly property bool cardHovered: hoverHandler.hovered
 }

@@ -154,7 +154,10 @@ ApplicationWindow {
         parent: win.contentItem
         queueModel: player.queue
         currentTrackId: (player.currentTrack && player.currentTrack.id) ? player.currentTrack.id : ""
-        onRequestPlay: player.playFromQueue(index)
+        onRequestPlay: {
+            player.playFromQueue(index)
+            queueDrawer.close()
+        }
         onRequestRemove: player.removeFromQueue(index)
         onRequestClear: player.clearQueue()
     }

@@ -10,6 +10,7 @@ Rectangle {
     border.color: "#1f2532"
 
     signal queueRequested()
+    readonly property bool hasQueue: !!player.queue && player.queue.length > 0
 
     RowLayout {
         anchors.fill: parent
@@ -88,7 +89,7 @@ Rectangle {
             ToolButton {
                 text: "⏮"
                 onClicked: player.previous()
-                enabled: player.queue.length > 0
+                enabled: bar.hasQueue
                 ToolTip.visible: hovered
                 ToolTip.text: "Anterior"
             }
@@ -101,7 +102,7 @@ Rectangle {
             ToolButton {
                 text: "⏭"
                 onClicked: player.next()
-                enabled: player.queue.length > 0
+                enabled: bar.hasQueue
                 ToolTip.visible: hovered
                 ToolTip.text: "Próxima"
             }
