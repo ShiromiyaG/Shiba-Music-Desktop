@@ -36,7 +36,8 @@ Page {
                     cover: api.coverArtUrl(modelData.coverArt, 300)
                     onClicked: {
                         api.fetchArtist(modelData.id)
-                        StackView.view.push("qrc:/qml/pages/ArtistPage.qml")
+                        if (homePage.StackView.view)
+                            homePage.StackView.view.push(Qt.resolvedUrl("qrc:/qml/pages/ArtistPage.qml"))
                     }
                 }
             }

@@ -2,6 +2,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include "core/SubsonicClient.h"
+#include "core/SubsonicNetworkAccessManagerFactory.h"
 #include "playback/PlayerController.h"
 
 int main(int argc, char *argv[]) {
@@ -13,6 +14,7 @@ int main(int argc, char *argv[]) {
     PlayerController player(&api);
 
     QQmlApplicationEngine engine;
+    engine.setNetworkAccessManagerFactory(new SubsonicNetworkAccessManagerFactory);
     engine.rootContext()->setContextProperty("api", &api);
     engine.rootContext()->setContextProperty("player", &player);
     engine.load(QUrl("qrc:/qml/main.qml"));

@@ -17,6 +17,8 @@ qt_add_executable(shibamusic
     src/main.cpp
     src/core/SubsonicClient.h src/core/SubsonicClient.cpp
     src/playback/PlayerController.h src/playback/PlayerController.cpp
+    src/core/SubsonicNetworkAccessManagerFactory.h
+    src/core/SubsonicNetworkAccessManagerFactory.cpp
 )
 
 qt_add_resources(shibamusic "qml"

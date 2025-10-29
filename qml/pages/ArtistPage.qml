@@ -34,7 +34,8 @@ Page {
                     cover: api.coverArtUrl(modelData.coverArt, 300)
                     onClicked: {
                         api.fetchAlbum(modelData.id)
-                        StackView.view.push("qrc:/qml/pages/AlbumPage.qml")
+                        if (artistPage.StackView.view)
+                            artistPage.StackView.view.push(Qt.resolvedUrl("qrc:/qml/pages/AlbumPage.qml"))
                     }
                 }
             }

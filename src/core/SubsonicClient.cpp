@@ -219,6 +219,7 @@ QUrl SubsonicClient::coverArtUrl(const QString& artId, int size) const {
     QUrlQuery ex;
     ex.addQueryItem("id", artId);
     ex.addQueryItem("size", QString::number(size));
+    ex.addQueryItem("format", "jpg");
     return buildUrl("getCoverArt", ex);
 }
 
