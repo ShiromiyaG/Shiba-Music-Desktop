@@ -31,16 +31,16 @@ void PlayerController::playTrack(const QVariantMap& track, int maxBitrateKbps) {
     m_queue.push_back(track);
     emit queueChanged();
     m_index = 0;
-    playFromQueue(m_index);
+    playInternal(m_index);
 }
 
 void PlayerController::addToQueue(const QVariantMap& track) {
     m_queue.push_back(track);
     emit queueChanged();
-    if (m_index < 0) { m_index = 0; playFromQueue(m_index); }
+    if (m_index < 0) { m_index = 0; playInternal(m_index); }
 }
 
-void PlayerController::playFromQueue(int index) {
+void PlayerController::playInternal(int index) {
     if (index < 0 || index >= m_queue.size()) return;
     m_index = index;
     m_current = m_queue[m_index].toMap();
@@ -82,7 +82,7 @@ void PlayerController::next() {
     if (m_index+1 < m_queue.size()) {
         const auto id = m_current.value("id").toString();
         if (!id.isEmpty()) m_api->scrobble(id, /*submission*/true, m_active->position());
-        playFromQueue(m_index+1);
+        playInternal(m_index+1);
     } else {
         m_active->stop();
         emit playingChanged();
@@ -94,7 +94,7 @@ void PlayerController::previous() {
         m_active->setPosition(0);
         return;
     }
-    if (m_index-1 >= 0) playFromQueue(m_index-1);
+    if (m_index-1 >= 0) playInternal(m_index-1);
 }
 
 void PlayerController::toggle() {
@@ -105,4 +105,49 @@ void PlayerController::toggle() {
 
 void PlayerController::seek(qint64 ms) {
     m_active->setPosition(ms);
+}
+
+void PlayerController::playFromQueue(int index) {
+    playInternal(index);
+}
+
+void PlayerController::removeFromQueue(int index) {
+    if (index < 0 || index >= m_queue.size()) return;
+
+    const bool wasCurrent = (index == m_index);
+    const bool beforeCurrent = (index < m_index);
+    m_queue.removeAt(index);
+    emit queueChanged();
+
+    if (m_queue.isEmpty()) {
+        m_index = -1;
+        m_current.clear();
+        m_active->stop();
+        emit currentTrackChanged();
+        emit playingChanged();
+        return;
+    }
+
+    if (beforeCurrent) {
+        --m_index;
+    } else if (wasCurrent) {
+        if (m_index >= m_queue.size())
+            m_index = m_queue.size() - 1;
+        playInternal(m_index);
+        return;
+    }
+
+    m_current = m_queue[m_index].toMap();
+    emit currentTrackChanged();
+}
+
+void PlayerController::clearQueue() {
+    if (m_queue.isEmpty()) return;
+    m_queue.clear();
+    m_index = -1;
+    m_current.clear();
+    m_active->stop();
+    emit queueChanged();
+    emit currentTrackChanged();
+    emit playingChanged();
 }

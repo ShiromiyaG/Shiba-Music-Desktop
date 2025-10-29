@@ -1,11 +1,13 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QtQuickControls2/QQuickStyle>
 #include "core/SubsonicClient.h"
 #include "core/SubsonicNetworkAccessManagerFactory.h"
 #include "playback/PlayerController.h"
 
 int main(int argc, char *argv[]) {
+    QQuickStyle::setStyle("Material");
     QGuiApplication app(argc, argv);
     app.setOrganizationName("YourOrg");
     app.setApplicationName("Shiba Music");

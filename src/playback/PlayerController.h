@@ -31,6 +31,9 @@ public:
     Q_INVOKABLE void previous();
     Q_INVOKABLE void toggle();
     Q_INVOKABLE void seek(qint64 ms);
+    Q_INVOKABLE void playFromQueue(int index);
+    Q_INVOKABLE void removeFromQueue(int index);
+    Q_INVOKABLE void clearQueue();
 
 signals:
     void currentTrackChanged();
@@ -41,7 +44,7 @@ signals:
     void crossfadeChanged();
 
 private:
-    void playFromQueue(int index);
+    void playInternal(int index);
     void setupPlayerConnections(QMediaPlayer *p);
     void applySource(QMediaPlayer *p, const QUrl& url);
 

@@ -4,45 +4,107 @@ import QtQuick.Layouts
 
 Item {
     id: root
-    width: parent ? parent.width : 600
-    height: 64
+    width: parent ? parent.width : 640
+    height: 72
 
     property string title
     property string subtitle
     property int duration: 0
     property url cover
+    property int index: -1
 
     signal playClicked()
     signal queueClicked()
 
+    function durationToText(sec) {
+        var minutes = Math.floor(sec / 60)
+        var seconds = sec % 60
+        return minutes + ":" + (seconds < 10 ? "0" + seconds : seconds)
+    }
+
     Rectangle {
-        anchors.fill: parent; color: "transparent"; border.color: "#252834"; radius: 8
+        id: card
+        anchors.fill: parent
+        radius: 12
+        color: hoverArea.containsMouse ? "#242c3a" : "#1b2029"
+        border.color: hoverArea.containsMouse ? "#3b465a" : "#252c36"
+        Behavior on color { ColorAnimation { duration: 120 } }
+
         RowLayout {
-            anchors.fill: parent; anchors.margins: 8; spacing: 12
+            anchors.fill: parent
+            anchors.margins: 12
+            spacing: 12
+
+            Label {
+                text: root.index >= 0 ? root.index + 1 : ""
+                visible: root.index >= 0
+                width: visible ? 24 : 0
+                color: "#5f6a7c"
+                horizontalAlignment: Text.AlignHCenter
+            }
+
             Rectangle {
                 width: 48; height: 48; radius: 8; color: "#111"; clip: true
-                Image { anchors.fill: parent; source: root.cover; fillMode: Image.PreserveAspectCrop; asynchronous: true }
+                Image {
+                    anchors.fill: parent
+                    source: root.cover
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    visible: status !== Image.Error && root.cover.toString().length > 0
+                }
+                Label {
+                    anchors.centerIn: parent
+                    visible: root.cover.toString().length === 0
+                    text: "♪"
+                    color: "#7482a0"
+                }
             }
+
             ColumnLayout {
                 Layout.fillWidth: true
-                Label { text: root.title; elide: Label.ElideRight }
-                Label { text: root.subtitle; color: "#9aa4af"; elide: Label.ElideRight }
-            }
-            Label {
-                text: {
-                    function fmt(sec) {
-                        var m = Math.floor(sec/60); var s = sec%60;
-                        return m + ":" + (s<10 ? "0"+s : s);
-                    }
-                    return fmt(root.duration || 0);
+                spacing: 2
+                Label {
+                    text: root.title
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    elide: Label.ElideRight
                 }
-                color: "#9aa4af"
+                Label {
+                    text: root.subtitle
+                    elide: Label.ElideRight
+                    color: "#8b96a8"
+                    font.pixelSize: 12
+                }
             }
+
+            Label {
+                text: durationToText(root.duration || 0)
+                color: "#8b96a8"
+                font.pixelSize: 12
+            }
+
             Row {
-                spacing: 8
-                ToolButton { text: "▶"; onClicked: root.playClicked() }
-                ToolButton { text: "+"; onClicked: root.queueClicked() }
+                spacing: 6
+                ToolButton {
+                    text: "▶"
+                    onClicked: root.playClicked()
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Reproduzir agora"
+                }
+                ToolButton {
+                    text: "＋"
+                    onClicked: root.queueClicked()
+                    ToolTip.visible: hovered
+                    ToolTip.text: "Adicionar à fila"
+                }
             }
+        }
+
+        MouseArea {
+            id: hoverArea
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: root.playClicked()
         }
     }
 }

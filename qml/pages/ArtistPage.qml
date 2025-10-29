@@ -5,40 +5,163 @@ import "qrc:/qml/components" as Components
 
 Page {
     id: artistPage
-    padding: 16
+    property string artistId: ""
+    property string artistName: ""
+    property string coverArtId: ""
 
-    contentItem: Flickable {
+    background: Rectangle { color: "transparent" }
+
+    Component.onCompleted: {
+        if (artistId.length > 0)
+            api.fetchArtist(artistId)
+    }
+
+    Flickable {
+        id: scrollArea
+        anchors.fill: parent
         clip: true
-        contentWidth: width
-        contentHeight: column.implicitHeight
+        contentWidth: contentCol.width
+        contentHeight: contentCol.height
+        boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: ScrollBar { }
 
         Column {
-            id: column
-            width: parent.width
-            spacing: 8
+            id: contentCol
+            width: Math.min(scrollArea.width, 960)
+            x: (scrollArea.width - width) / 2
+            spacing: 24
+            padding: 24
 
-            Label {
-                text: "Álbuns"
-                font.pixelSize: 18
+            Rectangle {
+                width: parent.width
+                height: 240
+                radius: 18
+                color: "#1b2028"
+                border.color: "#2b3140"
+
+                Image {
+                    anchors.fill: parent
+                    source: api.coverArtUrl(coverArtId, 600)
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    opacity: 0.35
+                    visible: !!coverArtId && status !== Image.Error
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: 18
+                    color: "#14171f"
+                    opacity: 0.35
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 24
+                    spacing: 24
+
+                    Rectangle {
+                        width: 180; height: 180; radius: 16
+                        color: "#111"
+                        border.color: "#2b3140"
+                        Image {
+                            anchors.fill: parent
+                            source: api.coverArtUrl(coverArtId, 512)
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            visible: !!coverArtId && status !== Image.Error
+                        }
+                        Label {
+                            anchors.centerIn: parent
+                            visible: !coverArtId
+                            text: "🎤"
+                            font.pixelSize: 48
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 6
+                        Label {
+                            text: artistName.length > 0 ? artistName : "Artista"
+                            font.pixelSize: 30
+                            font.weight: Font.DemiBold
+                        }
+                        Label {
+                            text: api.albums.length + " álbuns disponíveis"
+                            color: "#8b96a8"
+                            font.pixelSize: 14
+                        }
+                        Row {
+                            spacing: 12
+                            ToolButton {
+                                text: "▶ Aleatório"
+                                enabled: api.tracks.length > 0
+                                onClicked: {
+                                    if (api.tracks.length > 0)
+                                        player.playTrack(api.tracks[Math.floor(Math.random() * api.tracks.length)])
+                                }
+                            }
+                            ToolButton {
+                                text: "↺ Atualizar"
+                                onClicked: api.fetchArtist(artistId)
+                            }
+                        }
+                    }
+                }
             }
-            GridView {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                cellWidth: 180
-                cellHeight: 240
-                height: 480
+
+            Components.SectionHeader {
+                title: "Álbuns"
+                subtitle: api.albums.length > 0 ? (api.albums.length + " encontrados") : ""
+            }
+
+            Loader {
+                width: contentCol.width
+                sourceComponent: api.albums.length === 0 ? emptyAlbums : albumFlow
+            }
+        }
+    }
+
+    Component {
+        id: albumFlow
+        Flow {
+            width: contentCol.width
+            spacing: 16
+            Repeater {
                 model: api.albums
                 delegate: Components.AlbumCard {
+                    width: 190
+                    height: 240
                     title: modelData.name
                     subtitle: modelData.year > 0 ? modelData.year : ""
                     cover: api.coverArtUrl(modelData.coverArt, 300)
                     onClicked: {
                         api.fetchAlbum(modelData.id)
-                        if (artistPage.StackView.view)
-                            artistPage.StackView.view.push(Qt.resolvedUrl("qrc:/qml/pages/AlbumPage.qml"))
+                        if (StackView.view) {
+                            StackView.view.push({
+                                item: Qt.resolvedUrl("qrc:/qml/pages/AlbumPage.qml"),
+                                properties: {
+                                    albumId: modelData.id,
+                                    albumTitle: modelData.name,
+                                    artistName: modelData.artist || artistPage.artistName,
+                                    coverArtId: modelData.coverArt
+                                }
+                            })
+                        }
                     }
                 }
             }
+        }
+    }
+
+    Component {
+        id: emptyAlbums
+        Components.EmptyState {
+            width: contentCol.width
+            emoji: "📀"
+            title: "Nenhum álbum encontrado"
+            description: "Talvez este artista ainda esteja sincronizando. Tente atualizar."
         }
     }
 }

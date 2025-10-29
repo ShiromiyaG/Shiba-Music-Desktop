@@ -8,7 +8,7 @@ if(MSVC)
     add_compile_options(/Zc:__cplusplus /permissive-)
 endif()
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Quick Network Multimedia)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 Network Multimedia)
 
 qt_standard_project_setup()
 set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
@@ -29,10 +29,13 @@ qt_add_resources(shibamusic "qml"
         qml/components/ArtistCard.qml
         qml/components/AlbumCard.qml
         qml/components/TrackRow.qml
+        qml/components/SectionHeader.qml
+        qml/components/EmptyState.qml
+        qml/components/QueueDrawer.qml
         qml/pages/LoginPage.qml
         qml/pages/HomePage.qml
         qml/pages/ArtistPage.qml
         qml/pages/AlbumPage.qml
 )
 
-target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::Network Qt6::Multimedia)
+target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Multimedia)
