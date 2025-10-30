@@ -356,6 +356,59 @@ void SubsonicClient::fetchRandomSongs() {
     });
 }
 
+void SubsonicClient::fetchFavorites() {
+    if (!m_authenticated) return;
+
+    if (m_favoritesReply) {
+        m_favoritesReply->abort();
+    }
+
+    m_favorites.clear();
+    emit favoritesChanged();
+
+    QNetworkRequest req(buildUrl("getStarred", {}, true));
+    auto *reply = m_nam.get(req);
+    m_favoritesReply = reply;
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+        if (reply != m_favoritesReply) {
+            reply->deleteLater();
+            return;
+        }
+        m_favoritesReply = nullptr;
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() != QNetworkReply::OperationCanceledError) {
+                emit errorOccurred(reply->errorString());
+            }
+            reply->deleteLater();
+            return;
+        }
+
+        const auto doc = QJsonDocument::fromJson(reply->readAll());
+        reply->deleteLater();
+        QString err;
+        if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
+
+        auto root = doc.object().value("subsonic-response").toObject();
+        auto starred = root.value("starred").toObject();
+        auto songs = starred.value("song").toArray();
+        for (const auto &sv : songs) {
+            auto s = sv.toObject();
+            m_favorites.push_back(QVariantMap{
+                {"id", s.value("id").toString()},
+                {"title", s.value("title").toString()},
+                {"artist", s.value("artist").toString()},
+                {"album", s.value("album").toString()},
+                {"albumId", s.value("albumId").toString()},
+                {"duration", s.value("duration").toInt()},
+                {"coverArt", s.value("coverArt").toString()}
+            });
+        }
+        emit favoritesChanged();
+    });
+}
+
 void SubsonicClient::search(const QString& term) {
     if (!m_authenticated) return;
     QUrlQuery ex; ex.addQueryItem("query", term);

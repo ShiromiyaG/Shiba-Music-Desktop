@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "qrc:/qml/js/utils.js" as Utils
 
 Item {
     id: root
@@ -15,12 +16,6 @@ Item {
 
     signal playClicked()
     signal queueClicked()
-
-    function durationToText(sec) {
-        var minutes = Math.floor(sec / 60)
-        var seconds = sec % 60
-        return minutes + ":" + (seconds < 10 ? "0" + seconds : seconds)
-    }
 
     Rectangle {
         id: card
@@ -46,15 +41,15 @@ Item {
             Rectangle {
                 width: 48; height: 48; radius: 8; color: "#111"; clip: true
                 Image {
+                    id: coverImage
                     anchors.fill: parent
                     source: root.cover
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
-                    visible: status !== Image.Error && root.cover.toString().length > 0
                 }
                 Label {
                     anchors.centerIn: parent
-                    visible: root.cover.toString().length === 0
+                    visible: coverImage.status !== Image.Ready
                     text: "♪"
                     color: "#7482a0"
                 }
@@ -78,7 +73,7 @@ Item {
             }
 
             Label {
-                text: durationToText(root.duration || 0)
+                text: Utils.durationToText(root.duration || 0)
                 color: "#8b96a8"
                 font.pixelSize: 12
             }

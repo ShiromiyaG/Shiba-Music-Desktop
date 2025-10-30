@@ -1,9 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "qrc:/qml/components" as Components
 
 Page {
     background: Rectangle { color: "transparent" }
+
+    Component.onCompleted: {
+        api.fetchFavorites();
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -24,29 +29,14 @@ Page {
             clip: true
             spacing: 10
             model: api.favorites
-            delegate: Rectangle {
+            delegate: Components.TrackRow {
                 width: listView.width
-                height: 60
-                radius: 14
-                color: index % 2 === 0 ? "#1b2336" : "#182030"
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 14
-
-                    Label {
-                        text: modelData.title || "Faixa Desconhecida"
-                        font.pixelSize: 14
-                        font.weight: Font.Medium
-                        elide: Label.ElideRight
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: player.playTrack(modelData)
-                }
+                title: modelData.title
+                subtitle: modelData.artist
+                duration: modelData.duration
+                cover: api.coverArtUrl(modelData.coverArt, 128)
+                onPlayClicked: player.playTrack(modelData)
+                onQueueClicked: player.addToQueue(modelData)
             }
         }
     }

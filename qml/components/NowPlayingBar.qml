@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "qrc:/qml/js/utils.js" as Utils
 
 Rectangle {
     id: bar
@@ -21,15 +22,15 @@ Rectangle {
             width: 64; height: 64; radius: 12; color: "#0f1117"; clip: true
             border.color: "#222938"
             Image {
+                id: coverImage
                 anchors.fill: parent
                 source: api.coverArtUrl(player.currentTrack.coverArt, 128)
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
-                visible: !!player.currentTrack.coverArt && status !== Image.Error
             }
             Label {
                 anchors.centerIn: parent
-                visible: !player.currentTrack || !player.currentTrack.coverArt
+                visible: coverImage.status !== Image.Ready
                 text: "♪"
                 color: "#7d8aa0"
             }
@@ -47,11 +48,6 @@ Rectangle {
                     font.weight: Font.Medium
                     Layout.fillWidth: true
                 }
-                Label {
-                    text: durationToText(player.duration)
-                    color: "#5f6a7c"
-                    visible: player.duration > 0
-                }
             }
             Label {
                 text: player.currentTrack.artist || "Escolha algo para reproduzir"
@@ -63,7 +59,7 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 10
                 Label {
-                    text: durationToText(player.position)
+                    text: Utils.durationToText(player.position)
                     color: "#5f6a7c"
                     font.pixelSize: 11
                 }
@@ -77,7 +73,7 @@ Rectangle {
                     onMoved: player.seek(value)
                 }
                 Label {
-                    text: durationToText(player.duration)
+                    text: Utils.durationToText(player.duration)
                     color: "#5f6a7c"
                     font.pixelSize: 11
                 }
@@ -121,12 +117,5 @@ Rectangle {
                 ToolTip.text: "Abrir fila"
             }
         }
-    }
-
-    function durationToText(ms) {
-        var sec = Math.floor(ms / 1000)
-        var minutes = Math.floor(sec / 60)
-        var seconds = sec % 60
-        return minutes + ":" + (seconds < 10 ? "0" + seconds : seconds)
     }
 }

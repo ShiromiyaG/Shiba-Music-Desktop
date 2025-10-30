@@ -37,17 +37,15 @@ Item {
                     source: root.cover
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
-                    visible: status !== Image.Error && root.cover.toString().length > 0
-                    onStatusChanged: fallback.visible = (status === Image.Error || status === Image.Null)
                 }
                 Rectangle {
                     id: fallback
                     anchors.fill: parent
                     color: "#1f2530"
-                    visible: root.cover.toString().length === 0
+                    visible: coverImage.status !== Image.Ready
                     Label {
                         anchors.centerIn: parent
-                        text: root.title && root.title.length ? root.title.charAt(0) : "📀"
+                        text: "📀"
                         font.pixelSize: 42
                         color: "#8b96a8"
                     }

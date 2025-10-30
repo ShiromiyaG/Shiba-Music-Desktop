@@ -15,6 +15,7 @@ class SubsonicClient : public QObject {
     Q_PROPERTY(QVariantList tracks READ tracks NOTIFY tracksChanged)
     Q_PROPERTY(QVariantList recentlyPlayedAlbums READ recentlyPlayedAlbums NOTIFY recentlyPlayedAlbumsChanged)
     Q_PROPERTY(QVariantList randomSongs READ randomSongs NOTIFY randomSongsChanged)
+    Q_PROPERTY(QVariantList favorites READ favorites NOTIFY favoritesChanged)
 public:
     explicit SubsonicClient(QObject *parent=nullptr);
 
@@ -34,6 +35,7 @@ public:
     Q_INVOKABLE void fetchAlbum(const QString& albumId);
     Q_INVOKABLE void fetchAlbumList(const QString& type = "random");
     Q_INVOKABLE void fetchRandomSongs();
+    Q_INVOKABLE void fetchFavorites();
     Q_INVOKABLE void search(const QString& term);
 
     Q_INVOKABLE void saveCredentials(const QString& url, const QString& user, const QString& password);
@@ -48,6 +50,7 @@ public:
     Q_INVOKABLE QVariantList tracks()  const { return m_tracks; }
     Q_INVOKABLE QVariantList recentlyPlayedAlbums() const { return m_recentlyPlayedAlbums; }
     Q_INVOKABLE QVariantList randomSongs() const { return m_randomSongs; }
+    Q_INVOKABLE QVariantList favorites() const { return m_favorites; }
     Q_INVOKABLE void clearTracks() { if (!m_tracks.isEmpty()) { m_tracks.clear(); emit tracksChanged(); } }
 
 signals:
@@ -61,6 +64,7 @@ signals:
     void tracksChanged();
     void recentlyPlayedAlbumsChanged();
     void randomSongsChanged();
+    void favoritesChanged();
 
 private:
     QUrl buildUrl(const QString& method, const QUrlQuery& extra = {}, bool isJson = true) const;
@@ -80,6 +84,7 @@ private:
     QNetworkReply* m_albumListReply = nullptr;
     QNetworkReply* m_albumReply = nullptr;
     QNetworkReply* m_randomSongsReply = nullptr;
+    QNetworkReply* m_favoritesReply = nullptr;
 
-    QVariantList m_artists, m_albums, m_albumList, m_tracks, m_recentlyPlayedAlbums, m_randomSongs;
+    QVariantList m_artists, m_albums, m_albumList, m_tracks, m_recentlyPlayedAlbums, m_randomSongs, m_favorites;
 };

@@ -70,15 +70,15 @@ Rectangle {
                     radius: 14
                     color: "#0e111c"
                     Image {
+                        id: coverImageNowPlaying
                         anchors.fill: parent
                         source: panel.hasTrack ? api.coverArtUrl(panel.currentTrack.coverArt, 256) : ""
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
-                        visible: panel.hasTrack && player.currentTrack.coverArt
                     }
                     Label {
                         anchors.centerIn: parent
-                        visible: !panel.hasTrack || !panel.currentTrack.coverArt
+                        visible: coverImageNowPlaying.status !== Image.Ready
                         text: "🎶"
                         font.pixelSize: 40
                         color: "#5f6a82"
@@ -160,15 +160,15 @@ Rectangle {
                             radius: 10
                             color: "#10131d"
                             Image {
+                                id: coverImageQueue
                                 anchors.fill: parent
                                 source: api.coverArtUrl(modelData.coverArt, 128)
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
-                                visible: modelData.coverArt && status !== Image.Error
                             }
                             Label {
                                 anchors.centerIn: parent
-                                visible: !modelData.coverArt
+                                visible: coverImageQueue.status !== Image.Ready
                                 text: "♪"
                                 color: "#555f79"
                             }

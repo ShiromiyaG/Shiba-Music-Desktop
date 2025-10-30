@@ -187,9 +187,20 @@ ApplicationWindow {
                     Button {
                         text: "Atualizar"
                         onClicked: {
-                            api.fetchArtists()
-                            if (player.queue && player.queue.length === 0 && api.tracks.length > 0)
-                                player.playTrack(api.tracks[0])
+                            switch (win.currentSection) {
+                                case "home":
+                                    api.fetchRandomSongs();
+                                    break;
+                                case "artists":
+                                    api.fetchArtists();
+                                    break;
+                                case "albums":
+                                    api.fetchAlbumList();
+                                    break;
+                                case "favorites":
+                                    api.fetchFavorites();
+                                    break;
+                            }
                         }
                     }
                 }
@@ -378,27 +389,30 @@ ApplicationWindow {
         if (!api.authenticated)
             return
         win.currentSection = target
+
+        stack.clear()
+
         switch (target) {
         case "home":
-            pushContent(win.homePageUrl)
-            if (stack.currentItem && stack.currentItem.albumClicked)
-                stack.currentItem.albumClicked.connect(showAlbumPage)
+            var page = stack.push(win.homePageUrl)
+            if (page && page.albumClicked)
+                page.albumClicked.connect(showAlbumPage)
             break
         case "favorites":
-            pushContent(win.favoritesPageUrl)
+            stack.push(win.favoritesPageUrl)
             break
         case "albums":
-            pushContent(win.albumsPageUrl)
-            if (stack.currentItem && stack.currentItem.albumClicked)
-                stack.currentItem.albumClicked.connect(showAlbumPage)
+            var page = stack.push(win.albumsPageUrl)
+            if (page && page.albumClicked)
+                page.albumClicked.connect(showAlbumPage)
             break
         case "artists":
-            pushContent(win.artistsPageUrl)
-            if (stack.currentItem && stack.currentItem.artistClicked)
-                stack.currentItem.artistClicked.connect(showArtistPage)
+            var page = stack.push(win.artistsPageUrl)
+            if (page && page.artistClicked)
+                page.artistClicked.connect(showArtistPage)
             break
         case "queue":
-            pushContent(queueComponent)
+            stack.push(queueComponent)
             break
         default:
             break

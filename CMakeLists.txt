@@ -25,6 +25,7 @@ qt_add_resources(shibamusic "qml"
     PREFIX "/"
     FILES
         qml/main.qml
+        qml/js/utils.js
         qml/components/NowPlayingBar.qml
         qml/components/ArtistCard.qml
         qml/components/AlbumCard.qml
