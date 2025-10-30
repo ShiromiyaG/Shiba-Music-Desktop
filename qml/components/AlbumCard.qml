@@ -19,14 +19,14 @@ Item {
         border.color: hoverArea.containsMouse ? "#3b465f" : "#2a303c"
         Behavior on color { ColorAnimation { duration: 120 } }
 
-        ColumnLayout {
+                ColumnLayout {
             anchors.fill: parent
             anchors.margins: 12
             spacing: 10
 
             Rectangle {
-                width: parent.width
-                height: 150
+                Layout.fillWidth: true
+                Layout.preferredHeight: 150
                 radius: 12
                 color: "#111"
                 border.color: "#2a313f"
@@ -37,6 +37,8 @@ Item {
                     source: root.cover
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
+                    cache: true
+                    visible: status === Image.Ready
                 }
                 Rectangle {
                     id: fallback
@@ -53,16 +55,31 @@ Item {
             }
 
             Label {
+                Layout.fillWidth: true
+                Layout.maximumWidth: parent.width - 24
                 text: root.title
                 font.pixelSize: 14
                 font.weight: Font.Medium
+                color: "#f5f7ff"
+                elide: Text.ElideRight
+                maximumLineCount: 2
                 wrapMode: Text.WordWrap
+                clip: true
             }
             Label {
+                Layout.fillWidth: true
+                Layout.maximumWidth: parent.width - 24
                 text: root.subtitle
                 font.pixelSize: 12
                 color: "#8b96a8"
+                elide: Text.ElideRight
+                maximumLineCount: 1
                 visible: text.length > 0
+                clip: true
+            }
+
+            Item {
+                Layout.fillHeight: true
             }
         }
 

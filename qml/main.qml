@@ -218,9 +218,11 @@ ApplicationWindow {
                         NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 180 }
                         NumberAnimation { property: "x"; from: 0; to: width * 0.08; duration: 180; easing.type: Easing.InCubic }
                     }
-                   Component.onCompleted: {
+                                      Component.onCompleted: {
                         if (api.authenticated && depth === 0) {
-                            push(win.homePageUrl)
+                            var page = push(win.homePageUrl)
+                            if (page && page.albumClicked)
+                                page.albumClicked.connect(win.showAlbumPage)
                             win.currentSection = "home"
                         }
                     }
@@ -419,12 +421,19 @@ ApplicationWindow {
         }
     }
 
-    function pushContent(target) {
+        function pushContent(target) {
+        var page
         if (stack.depth === 0) {
-            return stack.push(target)
+            page = stack.push(target)
         } else {
-            return stack.replace(target)
+            page = stack.replace(target)
         }
+        // Conectar sinais após o push/replace
+        if (page && page.albumClicked)
+            page.albumClicked.connect(win.showAlbumPage)
+        if (page && page.artistClicked)
+            page.artistClicked.connect(win.showArtistPage)
+        return page
     }
 
     function showPlaceholder(title, description) {

@@ -69,6 +69,7 @@ Rectangle {
                     Layout.preferredHeight: 140
                     radius: 14
                     color: "#0e111c"
+                    clip: true
                     Image {
                         id: coverImageNowPlaying
                         anchors.fill: parent
@@ -87,13 +88,15 @@ Rectangle {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 2
-                    Label {
+                                        Label {
+                        Layout.fillWidth: true
                         text: panel.hasTrack ? panel.currentTrack.title : "Nada tocando"
                         font.pixelSize: 15
                         font.weight: Font.Medium
                         elide: Label.ElideRight
                     }
                     Label {
+                        Layout.fillWidth: true
                         text: panel.hasTrack ? panel.currentTrack.artist : "Escolha uma faixa"
                         color: "#8b96ad"
                         font.pixelSize: 12
@@ -159,6 +162,7 @@ Rectangle {
                             height: 44
                             radius: 10
                             color: "#10131d"
+                            clip: true
                             Image {
                                 id: coverImageQueue
                                 anchors.fill: parent
@@ -173,15 +177,17 @@ Rectangle {
                                 color: "#555f79"
                             }
                         }
-                        ColumnLayout {
+                                                ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
                             Label {
+                                Layout.fillWidth: true
                                 text: modelData.title
                                 font.pixelSize: 13
                                 elide: Label.ElideRight
                             }
                             Label {
+                                Layout.fillWidth: true
                                 text: modelData.artist
                                 color: "#7e88a2"
                                 font.pixelSize: 11

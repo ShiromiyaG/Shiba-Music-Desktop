@@ -39,10 +39,11 @@ Page {
             spacing: 24
             padding: 24
 
-            Rectangle {
-                width: parent.width
+                        Rectangle {
+                width: contentCol.width - contentCol.padding * 2
                 height: 240
                 radius: 24
+                clip: true
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "#243047" }
                     GradientStop { position: 1.0; color: "#1b2233" }
@@ -70,10 +71,13 @@ Page {
                     anchors.margins: 24
                     spacing: 24
 
-                    Rectangle {
-                        width: 180; height: 180; radius: 18
+                                        Rectangle {
+                        Layout.preferredWidth: 180
+                        Layout.preferredHeight: 180
+                        radius: 18
                         color: "#101321"
                         border.color: "#2b3246"
+                        clip: true
                         Image {
                             anchors.fill: parent
                             source: api.coverArtUrl(coverArtId, 512)
@@ -121,22 +125,23 @@ Page {
                 }
             }
 
-            Components.SectionHeader {
+                        Components.SectionHeader {
+                width: contentCol.width - contentCol.padding * 2
                 title: "Álbuns"
                 subtitle: api.albums.length > 0 ? (api.albums.length + " encontrados") : ""
             }
 
-            Loader {
-                width: contentCol.width
+                        Loader {
+                width: contentCol.width - contentCol.padding * 2
                 sourceComponent: api.albums.length === 0 ? emptyAlbums : albumFlow
             }
         }
     }
 
-    Component {
+        Component {
         id: albumFlow
         Flow {
-            width: contentCol.width
+            width: parent.width
             spacing: 16
             Repeater {
                 model: api.albums
@@ -152,10 +157,10 @@ Page {
         }
     }
 
-    Component {
+        Component {
         id: emptyAlbums
         Components.EmptyState {
-            width: contentCol.width
+            width: parent.width
             emoji: "📀"
             title: "Nenhum álbum encontrado"
             description: "Talvez este artista ainda esteja sincronizando. Tente atualizar."

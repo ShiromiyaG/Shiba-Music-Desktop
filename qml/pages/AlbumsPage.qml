@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components" as Components
 
 Page {
     id: albumsPage
@@ -24,36 +25,19 @@ Page {
             color: "#f5f7ff"
         }
 
-        ListView {
-            id: listView
+        GridView {
+            id: gridView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            spacing: 10
+            cellWidth: 210
+            cellHeight: 260
             model: api.albumList
-            delegate: Rectangle {
-                width: listView.width
-                height: 60
-                radius: 14
-                color: index % 2 === 0 ? "#1b2336" : "#182030"
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 14
-
-                    Label {
-                        text: modelData.name || "Álbum Desconhecido"
-                        font.pixelSize: 14
-                        font.weight: Font.Medium
-                        elide: Label.ElideRight
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: albumsPage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt)
-                }
+            delegate: Components.AlbumCard {
+                title: modelData.name || "Álbum Desconhecido"
+                subtitle: modelData.artist || "Artista desconhecido"
+                cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
+                onClicked: albumsPage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt)
             }
         }
     }

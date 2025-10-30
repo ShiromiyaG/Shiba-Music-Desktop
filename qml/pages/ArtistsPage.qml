@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components" as Components
 
 Page {
     id: artistsPage
@@ -20,36 +21,18 @@ Page {
             color: "#f5f7ff"
         }
 
-        ListView {
-            id: listView
+        GridView {
+            id: gridView
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            spacing: 10
+            cellWidth: 196
+            cellHeight: 244
             model: api.artists
-            delegate: Rectangle {
-                width: listView.width
-                height: 60
-                radius: 14
-                color: index % 2 === 0 ? "#1b2336" : "#182030"
-
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 14
-                    spacing: 14
-
-                    Label {
-                        text: modelData.name || "Artista Desconhecido"
-                        font.pixelSize: 14
-                        font.weight: Font.Medium
-                        elide: Label.ElideRight
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: artistsPage.artistClicked(modelData.id, modelData.name, modelData.coverArt)
-                }
+            delegate: Components.ArtistCard {
+                name: modelData.name || "Artista Desconhecido"
+                cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
+                onClicked: artistsPage.artistClicked(modelData.id, modelData.name, modelData.coverArt)
             }
         }
     }

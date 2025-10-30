@@ -40,12 +40,16 @@ Page {
             spacing: 20
             padding: 24
 
-            RowLayout {
+                        RowLayout {
+                width: contentCol.width - contentCol.padding * 2
                 spacing: 20
                 Rectangle {
-                    width: 220; height: 220; radius: 20
+                    Layout.preferredWidth: 220
+                    Layout.preferredHeight: 220
+                    radius: 20
                     color: "#121526"
                     border.color: "#2c3550"
+                    clip: true
                     Image {
                         anchors.fill: parent
                         source: api.coverArtUrl(coverArtId, 512)
@@ -97,28 +101,29 @@ Page {
                 }
             }
 
-            Components.SectionHeader {
+                        Components.SectionHeader {
+                width: contentCol.width - contentCol.padding * 2
                 title: "Faixas"
                 subtitle: api.tracks.length > 0 ? (api.tracks.length + " músicas") : "Álbum vazio"
             }
 
-            Loader {
-                width: contentCol.width
+                        Loader {
+                width: contentCol.width - contentCol.padding * 2
                 sourceComponent: api.tracks.length === 0 ? emptyTracks : trackList
             }
         }
     }
 
-    Component {
+        Component {
         id: trackList
         Column {
-            width: contentCol.width
+            width: parent.width
             spacing: 10
             Repeater {
                 model: api.tracks
                 delegate: Components.TrackRow {
                     index: index
-                    width: contentCol.width
+                    width: parent.width
                     title: (modelData.track > 0 ? modelData.track + ". " : "") + modelData.title
                     subtitle: modelData.artist
                     duration: modelData.duration
@@ -130,9 +135,9 @@ Page {
         }
     }
 
-    Component { id: emptyTracks
+        Component { id: emptyTracks
         Components.EmptyState {
-            width: contentCol.width
+            width: parent.width
             emoji: "🎵"
             title: "Nenhuma faixa foi retornada"
             description: "Tente atualizar o álbum ou verifique sua conexão."

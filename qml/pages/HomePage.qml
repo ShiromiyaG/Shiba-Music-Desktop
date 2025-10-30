@@ -45,8 +45,8 @@ Page {
                 font.weight: Font.DemiBold
             }
 
-            Loader {
-                width: column.width
+                        Loader {
+                width: column.width - column.padding * 2
                 sourceComponent: api.recentlyPlayedAlbums.length > 0 ? recentlyPlayed : emptyState
             }
 
@@ -58,93 +58,47 @@ Page {
                 font.weight: Font.DemiBold
             }
 
-            Loader {
-                width: column.width
+                        Loader {
+                width: column.width - column.padding * 2
                 sourceComponent: api.randomSongs.length > 0 ? madeForYou : emptyState
             }
         }
     }
 
-    Component {
+        Component {
         id: recentlyPlayed
-        Flow {
-            id: recentFlow
-            width: column.width
-            height: childrenRect.height
-            spacing: 20
-            property real cardWidth: Math.min(width / 4 - spacing, 220)
-            Repeater {
-                model: api.recentlyPlayedAlbums
-                delegate: Rectangle {
-                    property var album: modelData
-                    width: recentFlow.cardWidth
-                    height: 220
-                    radius: 20
-                    color: "#20293f"
-                    border.color: "#2c3752"
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: 16
-                        spacing: 10
-
-                        Rectangle {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 140
-                            radius: 16
-                            color: "#12182a"
-                            Image {
-                                anchors.fill: parent
-                                source: album.coverArt ? api.coverArtUrl(album.coverArt, 320) : ""
-                                fillMode: Image.PreserveAspectCrop
-                                asynchronous: true
-                                visible: album.coverArt && status !== Image.Error
-                            }
-                            Label {
-                                anchors.centerIn: parent
-                                visible: !album.coverArt
-                                text: "💿"
-                                font.pixelSize: 40
-                                color: "#5e6d8d"
-                            }
-                        }
-
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
-                            Label {
-                                text: album.name || "Album desconhecido"
-                                font.pixelSize: 15
-                                font.weight: Font.Medium
-                                elide: Label.ElideRight
-                            }
-                            Label {
-                                text: album.artist || "Artista desconhecido"
-                                color: "#8fa0c2"
-                                font.pixelSize: 12
-                                elide: Label.ElideRight
-                            }
-                        }
-                    }
-
-                    TapHandler {
-                        acceptedButtons: Qt.LeftButton
-                        onTapped: homePage.albumClicked(album.id, album.name, album.artist, album.coverArt)
+        ScrollView {
+            id: recentScroll
+            width: parent.width
+            height: 270
+            clip: true
+            ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+            ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+            
+            Row {
+                spacing: 16
+                Repeater {
+                    model: api.recentlyPlayedAlbums
+                    delegate: Components.AlbumCard {
+                        title: modelData.name || "Álbum Desconhecido"
+                        subtitle: modelData.artist || "Artista desconhecido"
+                        cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
+                        onClicked: homePage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt)
                     }
                 }
             }
         }
     }
 
-    Component {
+        Component {
         id: madeForYou
         Column {
-            width: column.width
+            width: parent.width
             spacing: 10
             ListView {
                 id: madeList
                 height: contentHeight
-                width: column.width
+                width: parent.width
                 clip: true
                 spacing: 8
                 interactive: false
@@ -174,6 +128,7 @@ Page {
                             Layout.preferredHeight: 46
                             radius: 12
                             color: "#101622"
+                            clip: true
                             Image {
                                 anchors.fill: parent
                                 source: track.coverArt ? api.coverArtUrl(track.coverArt, 128) : ""
@@ -189,16 +144,18 @@ Page {
                             }
                         }
 
-                        ColumnLayout {
+                                                ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
                             Label {
+                                Layout.fillWidth: true
                                 text: track.title || "Faixa desconhecida"
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
                                 elide: Label.ElideRight
                             }
                             Label {
+                                Layout.fillWidth: true
                                 text: track.artist || "-"
                                 color: "#8fa0c2"
                                 font.pixelSize: 12
@@ -236,10 +193,10 @@ Page {
         }
     }
 
-    Component {
+        Component {
         id: emptyState
         Components.EmptyState {
-            width: column.width
+            width: parent.width
             emoji: "🎧"
             title: "Nada por aqui ainda"
             description: "Busque ou atualize sua biblioteca para preencher estas seções."

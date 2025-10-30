@@ -33,13 +33,18 @@ Item {
             Label {
                 text: root.index >= 0 ? root.index + 1 : ""
                 visible: root.index >= 0
-                width: visible ? 24 : 0
+                Layout.preferredWidth: visible ? 28 : 0
                 color: "#5f6a7c"
                 horizontalAlignment: Text.AlignHCenter
+                font.pixelSize: 13
             }
 
             Rectangle {
-                width: 48; height: 48; radius: 8; color: "#111"; clip: true
+                Layout.preferredWidth: 48
+                Layout.preferredHeight: 48
+                radius: 8
+                color: "#111"
+                clip: true
                 Image {
                     id: coverImage
                     anchors.fill: parent
@@ -59,12 +64,14 @@ Item {
                 Layout.fillWidth: true
                 spacing: 2
                 Label {
+                    Layout.fillWidth: true
                     text: root.title
                     font.pixelSize: 14
                     font.weight: Font.Medium
                     elide: Label.ElideRight
                 }
                 Label {
+                    Layout.fillWidth: true
                     text: root.subtitle
                     elide: Label.ElideRight
                     color: "#8b96a8"
