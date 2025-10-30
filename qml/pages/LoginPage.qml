@@ -14,8 +14,8 @@ Page {
 
     ColumnLayout {
         anchors.centerIn: parent
-        spacing: 18
-        width: 420
+        spacing: 24
+        width: Math.min(420, parent.width - 40)
 
         ColumnLayout {
             Layout.fillWidth: true
@@ -28,7 +28,7 @@ Page {
                 Layout.alignment: Qt.AlignHCenter
             }
             Label {
-                text: "Conecte-se ao seu servidor Navidrome e curta suas playlists"
+                text: "Conecte-se ao seu servidor Navidrome"
                 wrapMode: Text.WordWrap
                 color: "#9aa4af"
                 horizontalAlignment: Text.AlignHCenter
@@ -46,8 +46,8 @@ Page {
             }
 
             ColumnLayout {
+                anchors.fill: parent
                 spacing: 12
-                Layout.fillWidth: true
 
                 TextField {
                     id: url
@@ -91,15 +91,6 @@ Page {
                     Layout.fillWidth: true
                 }
             }
-        }
-
-        Label {
-            text: "Precisa de ajuda? Certifique-se de habilitar o acesso externo no Navidrome."
-            font.pixelSize: 12
-            color: "#6f788a"
-            horizontalAlignment: Text.AlignHCenter
-            Layout.alignment: Qt.AlignHCenter
-            wrapMode: Text.WordWrap
         }
     }
 
