@@ -127,7 +127,7 @@ ApplicationWindow {
                     visible: api.authenticated
                     Layout.fillWidth: true
                     onClicked: {
-                        api.login("", "", "")
+                        api.logout()
                         win.currentSection = "home"
                     }
                 }
@@ -381,6 +381,8 @@ ApplicationWindow {
         switch (target) {
         case "home":
             pushContent(win.homePageUrl)
+            if (stack.currentItem && stack.currentItem.albumClicked)
+                stack.currentItem.albumClicked.connect(showAlbumPage)
             break
         case "favorites":
             pushContent(win.favoritesPageUrl)
@@ -442,5 +444,12 @@ ApplicationWindow {
     Shortcut {
         sequences: [StandardKey.Find, StandardKey.Search]
         onActivated: if (api.authenticated) searchBox.forceActiveFocus()
+    }
+
+    Component.onCompleted: {
+        var credentials = api.loadCredentials();
+        if (credentials.serverUrl && credentials.username && credentials.password) {
+            api.login(credentials.serverUrl, credentials.username, credentials.password);
+        }
     }
 }

@@ -13,8 +13,12 @@ class SubsonicClient : public QObject {
     Q_PROPERTY(QVariantList albums READ albums NOTIFY albumsChanged)
     Q_PROPERTY(QVariantList albumList READ albumList NOTIFY albumListChanged)
     Q_PROPERTY(QVariantList tracks READ tracks NOTIFY tracksChanged)
+    Q_PROPERTY(QVariantList recentlyPlayedAlbums READ recentlyPlayedAlbums NOTIFY recentlyPlayedAlbumsChanged)
+    Q_PROPERTY(QVariantList randomSongs READ randomSongs NOTIFY randomSongsChanged)
 public:
     explicit SubsonicClient(QObject *parent=nullptr);
+
+    void addToRecentlyPlayed(const QVariantMap& track);
 
     QString serverUrl() const { return m_server; }
     QString username()  const { return m_user; }
@@ -24,11 +28,16 @@ public:
     void setUsername(const QString& u);
 
     Q_INVOKABLE void login(const QString& url, const QString& user, const QString& password);
+    Q_INVOKABLE void logout();
     Q_INVOKABLE void fetchArtists();
     Q_INVOKABLE void fetchArtist(const QString& artistId);
     Q_INVOKABLE void fetchAlbum(const QString& albumId);
     Q_INVOKABLE void fetchAlbumList(const QString& type = "random");
+    Q_INVOKABLE void fetchRandomSongs();
     Q_INVOKABLE void search(const QString& term);
+
+    Q_INVOKABLE void saveCredentials(const QString& url, const QString& user, const QString& password);
+    Q_INVOKABLE QVariantMap loadCredentials();
 
     Q_INVOKABLE QUrl streamUrl(const QString& songId, int maxBitrateKbps = 0) const;
     Q_INVOKABLE QUrl coverArtUrl(const QString& artId, int size = 300) const;
@@ -37,6 +46,8 @@ public:
     Q_INVOKABLE QVariantList albums()  const { return m_albums; }
     Q_INVOKABLE QVariantList albumList() const { return m_albumList; }
     Q_INVOKABLE QVariantList tracks()  const { return m_tracks; }
+    Q_INVOKABLE QVariantList recentlyPlayedAlbums() const { return m_recentlyPlayedAlbums; }
+    Q_INVOKABLE QVariantList randomSongs() const { return m_randomSongs; }
     Q_INVOKABLE void clearTracks() { if (!m_tracks.isEmpty()) { m_tracks.clear(); emit tracksChanged(); } }
 
 signals:
@@ -48,12 +59,17 @@ signals:
     void albumsChanged();
     void albumListChanged();
     void tracksChanged();
+    void recentlyPlayedAlbumsChanged();
+    void randomSongsChanged();
 
 private:
     QUrl buildUrl(const QString& method, const QUrlQuery& extra = {}, bool isJson = true) const;
     QString randomSalt() const;
     QString md5(const QString& s) const;
     bool checkOk(const QJsonDocument& doc, QString *err = nullptr) const;
+
+    void loadRecentlyPlayed();
+    void saveRecentlyPlayed();
 
     void setAuthenticated(bool ok);
 
@@ -63,6 +79,7 @@ private:
     QNetworkReply* m_artistReply = nullptr;
     QNetworkReply* m_albumListReply = nullptr;
     QNetworkReply* m_albumReply = nullptr;
+    QNetworkReply* m_randomSongsReply = nullptr;
 
-    QVariantList m_artists, m_albums, m_albumList, m_tracks;
+    QVariantList m_artists, m_albums, m_albumList, m_tracks, m_recentlyPlayedAlbums, m_randomSongs;
 };

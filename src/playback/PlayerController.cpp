@@ -46,6 +46,8 @@ void PlayerController::playInternal(int index) {
     m_current = m_queue[m_index].toMap();
     emit currentTrackChanged();
 
+    m_api->addToRecentlyPlayed(m_current);
+
     const auto id = m_current.value("id").toString();
     const QUrl src = m_api->streamUrl(id);
     // scrobble start

@@ -3,6 +3,7 @@
 #include <QRandomGenerator>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QSettings>
 #include <QJsonObject>
 #include <QJsonArray>
 
@@ -13,7 +14,7 @@ static inline QString ensureNoTrailingSlash(QString s) {
     return s;
 }
 
-SubsonicClient::SubsonicClient(QObject *parent) : QObject(parent) {}
+SubsonicClient::SubsonicClient(QObject *parent) : QObject(parent) { loadRecentlyPlayed(); }
 
 void SubsonicClient::setServerUrl(const QString& url) {
     auto norm = ensureNoTrailingSlash(url.trimmed());
@@ -98,6 +99,11 @@ void SubsonicClient::login(const QString& url, const QString& user, const QStrin
         if (!ok) { emit errorOccurred("Falha no login: " + err); return; }
         fetchArtists();
     });
+}
+
+void SubsonicClient::logout() {
+    saveCredentials("", "", "");
+    setAuthenticated(false);
 }
 
 void SubsonicClient::fetchArtists() {
@@ -228,6 +234,7 @@ void SubsonicClient::fetchAlbum(const QString& albumId) {
                 {"title", s.value("title").toString()},
                 {"artist", s.value("artist").toString()},
                 {"album", s.value("album").toString()},
+                {"albumId", s.value("albumId").toString()},
                 {"track", s.value("track").toInt()},
                 {"duration", s.value("duration").toInt()},
                 {"coverArt", s.value("coverArt").toString()}
@@ -295,6 +302,60 @@ void SubsonicClient::fetchAlbumList(const QString& type) {
     });
 }
 
+void SubsonicClient::fetchRandomSongs() {
+    if (!m_authenticated) return;
+
+    if (m_randomSongsReply) {
+        m_randomSongsReply->abort();
+    }
+
+    m_randomSongs.clear();
+    emit randomSongsChanged();
+
+    QUrlQuery ex;
+    ex.addQueryItem("size", "10");
+    QNetworkRequest req(buildUrl("getRandomSongs", ex, true));
+    auto *reply = m_nam.get(req);
+    m_randomSongsReply = reply;
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+        if (reply != m_randomSongsReply) {
+            reply->deleteLater();
+            return;
+        }
+        m_randomSongsReply = nullptr;
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() != QNetworkReply::OperationCanceledError) {
+                emit errorOccurred(reply->errorString());
+            }
+            reply->deleteLater();
+            return;
+        }
+
+        const auto doc = QJsonDocument::fromJson(reply->readAll());
+        reply->deleteLater();
+        QString err;
+        if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
+
+        auto root = doc.object().value("subsonic-response").toObject();
+        auto songs = root.value("randomSongs").toObject().value("song").toArray();
+        for (const auto &sv : songs) {
+            auto s = sv.toObject();
+            m_randomSongs.push_back(QVariantMap{
+                {"id", s.value("id").toString()},
+                {"title", s.value("title").toString()},
+                {"artist", s.value("artist").toString()},
+                {"album", s.value("album").toString()},
+                {"albumId", s.value("albumId").toString()},
+                {"duration", s.value("duration").toInt()},
+                {"coverArt", s.value("coverArt").toString()}
+            });
+        }
+        emit randomSongsChanged();
+    });
+}
+
 void SubsonicClient::search(const QString& term) {
     if (!m_authenticated) return;
     QUrlQuery ex; ex.addQueryItem("query", term);
@@ -321,6 +382,7 @@ void SubsonicClient::search(const QString& term) {
                 {"title", s.value("title").toString()},
                 {"artist", s.value("artist").toString()},
                 {"album", s.value("album").toString()},
+                {"albumId", s.value("albumId").toString()},
                 {"duration", s.value("duration").toInt()},
                 {"coverArt", s.value("coverArt").toString()}
             });
@@ -356,4 +418,57 @@ void SubsonicClient::scrobble(const QString& songId, bool submission, qint64 tim
     QNetworkRequest req(buildUrl("scrobble", ex, true));
     auto *reply = m_nam.get(req);
     connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
+}
+
+void SubsonicClient::saveCredentials(const QString& url, const QString& user, const QString& password) {
+    QSettings settings;
+    settings.setValue("serverUrl", url);
+    settings.setValue("username", user);
+    settings.setValue("password", password);
+}
+
+QVariantMap SubsonicClient::loadCredentials() {
+    QSettings settings;
+    QVariantMap credentials;
+    credentials.insert("serverUrl", settings.value("serverUrl"));
+    credentials.insert("username", settings.value("username"));
+    credentials.insert("password", settings.value("password"));
+    return credentials;
+}
+
+void SubsonicClient::addToRecentlyPlayed(const QVariantMap& track) {
+    if (!track.contains("albumId")) return;
+
+    QVariantMap album;
+    album.insert("id", track.value("albumId"));
+    album.insert("name", track.value("album"));
+    album.insert("artist", track.value("artist"));
+    album.insert("coverArt", track.value("coverArt"));
+
+    // Remove if already present
+    for (int i = 0; i < m_recentlyPlayedAlbums.size(); ++i) {
+        if (m_recentlyPlayedAlbums[i].toMap().value("id") == album.value("id")) {
+            m_recentlyPlayedAlbums.removeAt(i);
+            break;
+        }
+    }
+    // Add to the front
+    m_recentlyPlayedAlbums.prepend(album);
+    // Limit the list size
+    if (m_recentlyPlayedAlbums.size() > 4) { // Keep last 4 for the home page
+        m_recentlyPlayedAlbums.removeLast();
+    }
+    saveRecentlyPlayed();
+    emit recentlyPlayedAlbumsChanged();
+}
+
+void SubsonicClient::saveRecentlyPlayed() {
+    QSettings settings;
+    settings.setValue("recentlyPlayedAlbums", m_recentlyPlayedAlbums);
+}
+
+void SubsonicClient::loadRecentlyPlayed() {
+    QSettings settings;
+    m_recentlyPlayedAlbums = settings.value("recentlyPlayedAlbums").toList();
+    emit recentlyPlayedAlbumsChanged();
 }

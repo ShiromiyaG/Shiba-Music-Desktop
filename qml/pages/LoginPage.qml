@@ -71,10 +71,9 @@ Page {
                 }
 
                 CheckBox {
-                    id: crossfadeCheck
-                    text: "Ativar crossfade entre faixas"
-                    checked: player.crossfade
-                    onToggled: player.crossfade = checked
+                    id: rememberCheck
+                    text: "Lembrar-se de mim"
+                    checked: true
                 }
 
                 Button {
@@ -104,8 +103,23 @@ Page {
         }
     }
 
+    Component.onCompleted: {
+        var credentials = api.loadCredentials();
+        if (credentials.serverUrl) {
+            url.text = credentials.serverUrl;
+        }
+        if (credentials.username) {
+            user.text = credentials.username;
+        }
+    }
+
     function submit() {
         err.text = ""
+        if (rememberCheck.checked) {
+            api.saveCredentials(url.text, user.text, pass.text);
+        } else {
+            api.saveCredentials("", "", "");
+        }
         api.login(url.text, user.text, pass.text)
     }
 

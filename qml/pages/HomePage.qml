@@ -6,8 +6,13 @@ import "qrc:/qml/components" as Components
 Page {
     id: homePage
     objectName: "homePage"
+    signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId)
     padding: 0
     background: Rectangle { color: "transparent" }
+
+    Component.onCompleted: {
+        api.fetchRandomSongs();
+    }
 
     Flickable {
         id: scrollArea
@@ -42,7 +47,7 @@ Page {
 
             Loader {
                 width: column.width
-                sourceComponent: api.tracks.length > 0 ? recentlyPlayed : emptyState
+                sourceComponent: api.recentlyPlayedAlbums.length > 0 ? recentlyPlayed : emptyState
             }
 
             Label {
@@ -55,7 +60,7 @@ Page {
 
             Loader {
                 width: column.width
-                sourceComponent: api.tracks.length > 0 ? madeForYou : emptyState
+                sourceComponent: api.randomSongs.length > 0 ? madeForYou : emptyState
             }
         }
     }
@@ -69,9 +74,9 @@ Page {
             spacing: 20
             property real cardWidth: Math.min(width / 4 - spacing, 220)
             Repeater {
-                model: Math.min(api.tracks.length, 4)
+                model: api.recentlyPlayedAlbums
                 delegate: Rectangle {
-                    property var track: api.tracks[index] || ({})
+                    property var album: modelData
                     width: recentFlow.cardWidth
                     height: 220
                     radius: 20
@@ -90,15 +95,15 @@ Page {
                             color: "#12182a"
                             Image {
                                 anchors.fill: parent
-                                source: track.coverArt ? api.coverArtUrl(track.coverArt, 320) : ""
+                                source: album.coverArt ? api.coverArtUrl(album.coverArt, 320) : ""
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
-                                visible: track.coverArt && status !== Image.Error
+                                visible: album.coverArt && status !== Image.Error
                             }
                             Label {
                                 anchors.centerIn: parent
-                                visible: !track.coverArt
-                                text: "🎵"
+                                visible: !album.coverArt
+                                text: "💿"
                                 font.pixelSize: 40
                                 color: "#5e6d8d"
                             }
@@ -108,13 +113,13 @@ Page {
                             Layout.fillWidth: true
                             spacing: 4
                             Label {
-                                text: track.title || "Faixa desconhecida"
+                                text: album.name || "Album desconhecido"
                                 font.pixelSize: 15
                                 font.weight: Font.Medium
                                 elide: Label.ElideRight
                             }
                             Label {
-                                text: track.artist || "Artista desconhecido"
+                                text: album.artist || "Artista desconhecido"
                                 color: "#8fa0c2"
                                 font.pixelSize: 12
                                 elide: Label.ElideRight
@@ -124,7 +129,7 @@ Page {
 
                     TapHandler {
                         acceptedButtons: Qt.LeftButton
-                        onTapped: player.playTrack(track)
+                        onTapped: homePage.albumClicked(album.id, album.name, album.artist, album.coverArt)
                     }
                 }
             }
@@ -143,9 +148,9 @@ Page {
                 clip: true
                 spacing: 8
                 interactive: false
-                model: Math.min(api.tracks.length, 8)
+                model: api.randomSongs
                 delegate: Rectangle {
-                    property var track: api.tracks[index] || ({})
+                    property var track: modelData
                     width: (madeList.view ? madeList.view.width : madeList.width)
                     height: 60
                     radius: 16
