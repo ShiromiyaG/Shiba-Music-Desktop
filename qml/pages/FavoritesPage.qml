@@ -12,7 +12,10 @@ Page {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 32
+        anchors.leftMargin: 0
+        anchors.rightMargin: 0
+        anchors.topMargin: 32
+        anchors.bottomMargin: 32
         spacing: 18
 
         Label {
@@ -20,6 +23,7 @@ Page {
             font.pixelSize: 26
             font.weight: Font.DemiBold
             color: "#f5f7ff"
+            Layout.leftMargin: 32
         }
 
         ListView {

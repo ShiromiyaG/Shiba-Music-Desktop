@@ -149,6 +149,8 @@ void SubsonicClient::fetchArtist(const QString& artistId) {
 
     m_albums.clear();
     emit albumsChanged();
+    m_tracks.clear();
+    emit tracksChanged();
 
     QUrlQuery ex; ex.addQueryItem("id", artistId);
     QNetworkRequest req(buildUrl("getArtist", ex, true));
@@ -185,6 +187,7 @@ void SubsonicClient::fetchArtist(const QString& artistId) {
                 {"year", a.value("year").toInt()},
                 {"coverArt", a.value("coverArt").toString()}
             });
+            fetchAlbumTracksAndAppend(a.value("id").toString());
         }
         emit albumsChanged();
     });
@@ -524,4 +527,45 @@ void SubsonicClient::loadRecentlyPlayed() {
     QSettings settings;
     m_recentlyPlayedAlbums = settings.value("recentlyPlayedAlbums").toList();
     emit recentlyPlayedAlbumsChanged();
+}
+
+void SubsonicClient::fetchAlbumTracksAndAppend(const QString& albumId) {
+    if (!m_authenticated) return;
+
+    QUrlQuery ex; ex.addQueryItem("id", albumId);
+    QNetworkRequest req(buildUrl("getAlbum", ex, true));
+    auto *reply = m_nam.get(req);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+        if (reply->error() != QNetworkReply::NoError) {
+            reply->deleteLater();
+            return;
+        }
+
+        const auto doc = QJsonDocument::fromJson(reply->readAll());
+        reply->deleteLater();
+        QString err;
+        if (!checkOk(doc, &err)) { return; }
+
+        auto root = doc.object().value("subsonic-response").toObject();
+        auto songs = root.value("album").toObject().value("song").toArray();
+        bool tracksAdded = false;
+        for (const auto &sv : songs) {
+            auto s = sv.toObject();
+            m_tracks.push_back(QVariantMap{
+                {"id", s.value("id").toString()},
+                {"title", s.value("title").toString()},
+                {"artist", s.value("artist").toString()},
+                {"album", s.value("album").toString()},
+                {"albumId", s.value("albumId").toString()},
+                {"track", s.value("track").toInt()},
+                {"duration", s.value("duration").toInt()},
+                {"coverArt", s.value("coverArt").toString()}
+            });
+            tracksAdded = true;
+        }
+        if (tracksAdded) {
+            emit tracksChanged();
+        }
+    });
 }

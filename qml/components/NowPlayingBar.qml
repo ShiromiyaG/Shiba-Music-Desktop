@@ -101,7 +101,7 @@ Rectangle {
 
             // Animação de pulsação quando tocando
             SequentialAnimation {
-                running: player.playing
+                running: player ? player.playing : false
                 loops: Animation.Infinite
                 NumberAnimation {
                     target: coverContainer.border
@@ -508,7 +508,7 @@ Rectangle {
                 width: 36
                 height: 36
                 checkable: true
-                checked: player.crossfade
+                checked: player ? player.crossfade : false
                 
                 background: Rectangle {
                     radius: 18

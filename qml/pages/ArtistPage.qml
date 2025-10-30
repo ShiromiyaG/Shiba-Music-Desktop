@@ -32,10 +32,9 @@ Page {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar { }
 
-        Column {
+                Column {
             id: contentCol
-            width: Math.min(scrollArea.width, 960)
-            x: (scrollArea.width - width) / 2
+            width: scrollArea.width
             spacing: 24
             padding: 24
 

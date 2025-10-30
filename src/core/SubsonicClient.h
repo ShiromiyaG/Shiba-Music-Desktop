@@ -74,6 +74,7 @@ private:
 
     void loadRecentlyPlayed();
     void saveRecentlyPlayed();
+    void fetchAlbumTracksAndAppend(const QString& albumId);
 
     void setAuthenticated(bool ok);
 
