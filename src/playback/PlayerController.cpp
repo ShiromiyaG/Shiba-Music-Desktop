@@ -8,6 +8,9 @@ PlayerController::PlayerController(SubsonicClient *api, QObject *parent)
     m_playerA.setAudioOutput(&m_outA);
     m_playerB.setAudioOutput(&m_outB);
 
+    m_outA.setVolume(m_volume);
+    m_outB.setVolume(m_volume);
+
     setupPlayerConnections(&m_playerA);
     setupPlayerConnections(&m_playerB);
 }
@@ -152,4 +155,24 @@ void PlayerController::clearQueue() {
     emit queueChanged();
     emit currentTrackChanged();
     emit playingChanged();
+}
+
+void PlayerController::setVolume(qreal v) {
+    if (v < 0.0) v = 0.0;
+    if (v > 1.0) v = 1.0;
+    if (qAbs(m_volume - v) < 0.001) return;
+    m_volume = v;
+    if (!m_muted) {
+        m_outA.setVolume(m_volume);
+        m_outB.setVolume(m_volume);
+    }
+    emit volumeChanged();
+}
+
+void PlayerController::setMuted(bool m) {
+    if (m_muted == m) return;
+    m_muted = m;
+    m_outA.setVolume(m_muted ? 0.0 : m_volume);
+    m_outB.setVolume(m_muted ? 0.0 : m_volume);
+    emit mutedChanged();
 }

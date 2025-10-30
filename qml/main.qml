@@ -47,193 +47,198 @@ ApplicationWindow {
         visible: active
     }
 
-    RowLayout {
-        id: appLayout
+    ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 24
-        spacing: 24
+        spacing: 0
         visible: api.authenticated
         enabled: visible
 
-        Rectangle {
-            id: sidebar
-            Layout.preferredWidth: 220
-            Layout.fillHeight: true
-            radius: 24
-            color: "#181d2b"
-            border.color: "#1f2536"
-
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 24
-                spacing: 24
-
-                ColumnLayout {
-                    spacing: 4
-                    Label {
-                        text: "Shiba"
-                        font.pixelSize: 24
-                        font.weight: Font.DemiBold
-                        color: "#f5f7ff"
-                    }
-                    Label {
-                        text: "Music Player"
-                        color: "#a0aac6"
-                        font.pixelSize: 12
-                    }
-                }
-
-                ListView {
-                    id: sidebarList
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    spacing: 6
-                    interactive: false
-                    model: win.navigationItems
-                    delegate: ItemDelegate {
-                        id: navItem
-                        width: sidebarList.width
-                        padding: 10
-                        hoverEnabled: true
-                        highlighted: modelData.target === win.currentSection
-                        background: Rectangle {
-                            radius: 12
-                            color: navItem.highlighted ? "#2d3650"
-                                   : navItem.hovered ? "#242c40" : "transparent"
-                            border.color: navItem.highlighted ? "#3b4764" : "transparent"
-                        }
-                        contentItem: RowLayout {
-                            spacing: 12
-                            Label {
-                                text: modelData.icon
-                                font.pixelSize: 16
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-                            Label {
-                                text: modelData.label
-                                color: "#d9e0f2"
-                                font.pixelSize: 15
-                                Layout.alignment: Qt.AlignVCenter
-                            }
-                        }
-                        onClicked: win.handleNavigation(modelData.target)
-                    }
-                }
-
-                Item { Layout.fillHeight: true }
-
-                Button {
-                    text: "Sair"
-                    visible: api.authenticated
-                    Layout.fillWidth: true
-                    onClicked: {
-                        api.logout()
-                        win.currentSection = "home"
-                    }
-                }
-            }
-        }
-
-        Rectangle {
-            id: mainSurface
+        RowLayout {
+            id: appLayout
             Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: 24
-            color: "#1b2031"
-            border.color: "#232a3f"
+            Layout.margins: 24
+            spacing: 24
 
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: 32
-                spacing: 24
+            Rectangle {
+                id: sidebar
+                Layout.preferredWidth: 220
+                Layout.fillHeight: true
+                radius: 24
+                color: "#181d2b"
+                border.color: "#1f2536"
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 16
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 24
+                    spacing: 24
 
-                    TextField {
-                        id: searchBox
-                        Layout.fillWidth: true
-                        leftPadding: 32
-                        rightPadding: clearButton.visible ? clearButton.implicitWidth + 16 : 16
-                        placeholderText: "Buscar músicas, artistas ou álbuns"
-                        font.pixelSize: 14
-                        background: Rectangle {
-                            radius: 18
-                            color: "#141925"
-                            border.color: "#2a3148"
+                    ColumnLayout {
+                        spacing: 4
+                        Label {
+                            text: "Shiba"
+                            font.pixelSize: 24
+                            font.weight: Font.DemiBold
+                            color: "#f5f7ff"
                         }
                         Label {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 12
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "🔍"
-                            color: "#7a859f"
+                            text: "Music Player"
+                            color: "#a0aac6"
+                            font.pixelSize: 12
                         }
-                        ToolButton {
-                            id: clearButton
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: "✕"
-                            visible: searchBox.text.length > 0
-                            onClicked: {
-                                searchBox.clear()
-                                api.search("")
-                            }
-                        }
-                        onAccepted: win.performSearch(text)
                     }
+
+                    ListView {
+                        id: sidebarList
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        spacing: 6
+                        interactive: false
+                        model: win.navigationItems
+                        delegate: ItemDelegate {
+                            id: navItem
+                            width: sidebarList.width
+                            padding: 10
+                            hoverEnabled: true
+                            highlighted: modelData.target === win.currentSection
+                            background: Rectangle {
+                                radius: 12
+                                color: navItem.highlighted ? "#2d3650"
+                                       : navItem.hovered ? "#242c40" : "transparent"
+                                border.color: navItem.highlighted ? "#3b4764" : "transparent"
+                            }
+                            contentItem: RowLayout {
+                                spacing: 12
+                                Label {
+                                    text: modelData.icon
+                                    font.pixelSize: 16
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+                                Label {
+                                    text: modelData.label
+                                    color: "#d9e0f2"
+                                    font.pixelSize: 15
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+                            }
+                            onClicked: win.handleNavigation(modelData.target)
+                        }
+                    }
+
+                    Item { Layout.fillHeight: true }
 
                     Button {
-                        text: "Atualizar"
+                        text: "Sair"
+                        visible: api.authenticated
+                        Layout.fillWidth: true
                         onClicked: {
-                            switch (win.currentSection) {
-                                case "home":
-                                    api.fetchRandomSongs();
-                                    break;
-                                case "artists":
-                                    api.fetchArtists();
-                                    break;
-                                case "albums":
-                                    api.fetchAlbumList();
-                                    break;
-                                case "favorites":
-                                    api.fetchFavorites();
-                                    break;
-                            }
-                        }
-                    }
-                }
-
-                StackView {
-                    id: stack
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    pushEnter: Transition {
-                        NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 220 }
-                        NumberAnimation { property: "x"; from: width * 0.08; to: 0; duration: 220; easing.type: Easing.OutCubic }
-                    }
-                    popExit: Transition {
-                        NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 180 }
-                        NumberAnimation { property: "x"; from: 0; to: width * 0.08; duration: 180; easing.type: Easing.InCubic }
-                    }
-                                      Component.onCompleted: {
-                        if (api.authenticated && depth === 0) {
-                            var page = push(win.homePageUrl)
-                            if (page && page.albumClicked)
-                                page.albumClicked.connect(win.showAlbumPage)
+                            api.logout()
                             win.currentSection = "home"
                         }
                     }
                 }
             }
+
+            Rectangle {
+                id: mainSurface
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                radius: 24
+                color: "#1b2031"
+                border.color: "#232a3f"
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 32
+                    spacing: 24
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 16
+
+                        TextField {
+                            id: searchBox
+                            Layout.fillWidth: true
+                            leftPadding: 32
+                            rightPadding: clearButton.visible ? clearButton.implicitWidth + 16 : 16
+                            placeholderText: "Buscar músicas, artistas ou álbuns"
+                            font.pixelSize: 14
+                            background: Rectangle {
+                                radius: 18
+                                color: "#141925"
+                                border.color: "#2a3148"
+                            }
+                            Label {
+                                anchors.left: parent.left
+                                anchors.leftMargin: 12
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "🔍"
+                                color: "#7a859f"
+                            }
+                            ToolButton {
+                                id: clearButton
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: "✕"
+                                visible: searchBox.text.length > 0
+                                onClicked: {
+                                    searchBox.clear()
+                                    api.search("")
+                                }
+                            }
+                            onAccepted: win.performSearch(text)
+                        }
+
+                        Button {
+                            text: "Atualizar"
+                            onClicked: {
+                                switch (win.currentSection) {
+                                    case "home":
+                                        api.fetchRandomSongs();
+                                        break;
+                                    case "artists":
+                                        api.fetchArtists();
+                                        break;
+                                    case "albums":
+                                        api.fetchAlbumList();
+                                        break;
+                                    case "favorites":
+                                        api.fetchFavorites();
+                                        break;
+                                }
+                            }
+                        }
+                    }
+
+                    StackView {
+                        id: stack
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        clip: true
+                        pushEnter: Transition {
+                            NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 220 }
+                            NumberAnimation { property: "x"; from: width * 0.08; to: 0; duration: 220; easing.type: Easing.OutCubic }
+                        }
+                        popExit: Transition {
+                            NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 180 }
+                            NumberAnimation { property: "x"; from: 0; to: width * 0.08; duration: 180; easing.type: Easing.InCubic }
+                        }
+                                          Component.onCompleted: {
+                            if (api.authenticated && depth === 0) {
+                                var page = push(win.homePageUrl)
+                                if (page && page.albumClicked)
+                                    page.albumClicked.connect(win.showAlbumPage)
+                                win.currentSection = "home"
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        Components.NowPlayingPanel {
-            id: nowPlayingPanel
-            Layout.preferredWidth: 320
-            Layout.fillHeight: true
+        Components.NowPlayingBar {
+            Layout.fillWidth: true
+            onQueueRequested: handleNavigation("queue")
         }
     }
 
@@ -293,18 +298,23 @@ ApplicationWindow {
                     model: player && player.queue ? player.queue : []
                     delegate: Rectangle {
                         width: parent.width
-                        height: 60
-                        radius: 14
+                        height: 64
+                        radius: 12
                         color: index % 2 === 0 ? "#1b2336" : "#182030"
+                        border.color: "#252e42"
+                        
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 14
-                            spacing: 14
+                            anchors.margins: 12
+                            spacing: 12
+                            
                             Rectangle {
-                                Layout.preferredWidth: 44
-                                Layout.preferredHeight: 44
-                                radius: 10
+                                Layout.preferredWidth: 40
+                                Layout.preferredHeight: 40
+                                radius: 8
                                 color: "#101622"
+                                clip: true
+                                
                                 Image {
                                     anchors.fill: parent
                                     source: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 128) : ""
@@ -312,36 +322,50 @@ ApplicationWindow {
                                     asynchronous: true
                                     visible: modelData.coverArt && status !== Image.Error
                                 }
+                                
                                 Label {
                                     anchors.centerIn: parent
                                     visible: !modelData.coverArt
                                     text: "♪"
                                     color: "#55617b"
+                                    font.pixelSize: 14
                                 }
                             }
+                            
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 2
+                                
                                 Label {
+                                    Layout.fillWidth: true
                                     text: modelData.title || "Faixa desconhecida"
                                     font.pixelSize: 14
                                     font.weight: Font.Medium
+                                    color: "#f5f7ff"
                                     elide: Label.ElideRight
                                 }
+                                
                                 Label {
+                                    Layout.fillWidth: true
                                     text: modelData.artist || "-"
                                     color: "#8fa0c2"
                                     font.pixelSize: 12
                                     elide: Label.ElideRight
                                 }
                             }
-                            ToolButton {
-                                text: "▶"
-                                onClicked: player.playFromQueue(index)
-                            }
-                            ToolButton {
-                                text: "✕"
-                                onClicked: player.removeFromQueue(index)
+                            
+                            Row {
+                                spacing: 6
+                                
+                                ToolButton {
+                                    text: "▶"
+                                    onClicked: player.playFromQueue(index)
+                                }
+                                
+                                ToolButton {
+                                    text: "✕"
+                                    onClicked: player.removeFromQueue(index)
+                                }
                             }
                         }
                     }

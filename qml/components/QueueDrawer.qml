@@ -46,27 +46,38 @@ Drawer {
         ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            contentItem: ListView {
+            clip: true
+            
+            ListView {
                 id: queueList
                 spacing: 8
                 clip: true
                 model: root.queueModel
-                delegate: Rectangle {
+                delegate: Item {
                     width: queueList.width
                     height: 72
-                    radius: 10
-                    property bool hovered: hoverHandler.hovered
-                    color: modelData.id === root.currentTrackId ? "#273140" : (hovered ? "#242B38" : "#1B2028")
-                    border.color: modelData.id === root.currentTrackId ? "#3D4A5F" : "#252C36"
-                    Behavior on color { ColorAnimation { duration: 160 } }
+                    
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: 10
+                        color: modelData.id === root.currentTrackId ? "#273140" : (hoverHandler.hovered ? "#242B38" : "#1B2028")
+                        border.color: modelData.id === root.currentTrackId ? "#3D4A5F" : "#252C36"
+                        Behavior on color { ColorAnimation { duration: 160 } }
+                    }
 
                     RowLayout {
                         anchors.fill: parent
-                        anchors.margins: 10
-                        spacing: 10
+                        anchors.margins: 12
+                        spacing: 12
 
+                        // Album Cover
                         Rectangle {
-                            width: 52; height: 52; radius: 8; color: "#111"; clip: true
+                            Layout.preferredWidth: 48
+                            Layout.preferredHeight: 48
+                            radius: 8
+                            color: "#111"
+                            clip: true
+                            
                             Image {
                                 anchors.fill: parent
                                 source: api.coverArtUrl(modelData.coverArt, 128)
@@ -75,29 +86,41 @@ Drawer {
                             }
                         }
 
+                        // Track Info
                         ColumnLayout {
                             Layout.fillWidth: true
                             spacing: 2
+                            
                             Label {
+                                Layout.fillWidth: true
                                 text: modelData.title
                                 font.pixelSize: 14
+                                font.weight: Font.Medium
                                 elide: Label.ElideRight
                             }
+                            
                             Label {
+                                Layout.fillWidth: true
                                 text: modelData.artist
-                                color: "#8b96a8"
                                 font.pixelSize: 12
+                                color: "#8b96a8"
                                 elide: Label.ElideRight
                             }
                         }
 
-                        ToolButton {
-                            text: "▶"
-                            onClicked: root.requestPlay(index)
-                        }
-                        ToolButton {
-                            text: "✕"
-                            onClicked: root.requestRemove(index)
+                        // Action Buttons
+                        Row {
+                            spacing: 6
+                            
+                            ToolButton {
+                                text: "▶"
+                                onClicked: root.requestPlay(index)
+                            }
+                            
+                            ToolButton {
+                                text: "✕"
+                                onClicked: root.requestRemove(index)
+                            }
                         }
                     }
 
@@ -115,31 +138,31 @@ Drawer {
             }
         }
 
-        Loader {
+        Item {
             Layout.fillWidth: true
-            active: queueList.count === 0
-            sourceComponent: emptyQueue
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 12
-            ToolButton {
-                text: "Limpar fila"
-                enabled: queueList.count > 0
-                onClicked: root.requestClear()
+            Layout.fillHeight: true
+            visible: queueList.count === 0
+            
+            Local.EmptyState {
+                anchors.centerIn: parent
+                width: parent.width
+                emoji: "📜"
+                title: "Sua fila está vazia"
+                description: "Adicione músicas tocando no botão + nas faixas."
             }
-            Item { Layout.fillWidth: true }
         }
-    }
 
-    Component {
-        id: emptyQueue
-        Local.EmptyState {
-            width: root.width - 32
-            emoji: "📜"
-            title: "Sua fila está vazia"
-            description: "Adicione músicas tocando no botão + nas faixas."
+        Button {
+            Layout.fillWidth: true
+            text: "Limpar Fila"
+            enabled: queueList.count > 0
+            onClicked: root.requestClear()
+            
+            background: Rectangle {
+                color: parent.enabled ? (parent.hovered ? "#2D3541" : "#242B38") : "#1B2028"
+                radius: 8
+                border.color: "#2D3541"
+            }
         }
     }
 }

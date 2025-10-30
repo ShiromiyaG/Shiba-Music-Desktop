@@ -14,6 +14,8 @@ class PlayerController : public QObject {
     Q_PROPERTY(qint64 position READ position NOTIFY positionChanged)
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
     Q_PROPERTY(bool crossfade READ crossfade WRITE setCrossfade NOTIFY crossfadeChanged)
+    Q_PROPERTY(qreal volume READ volume WRITE setVolume NOTIFY volumeChanged)
+    Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged)
 public:
     explicit PlayerController(SubsonicClient *api, QObject *parent=nullptr);
 
@@ -24,6 +26,10 @@ public:
     qint64 duration() const { return m_active->duration(); }
     bool crossfade() const { return m_crossfade; }
     void setCrossfade(bool on) { if (m_crossfade != on) { m_crossfade = on; emit crossfadeChanged(); } }
+    qreal volume() const { return m_volume; }
+    void setVolume(qreal v);
+    bool muted() const { return m_muted; }
+    void setMuted(bool m);
 
     Q_INVOKABLE void playTrack(const QVariantMap& track, int maxBitrateKbps = 0);
     Q_INVOKABLE void addToQueue(const QVariantMap& track);
@@ -42,6 +48,8 @@ signals:
     void positionChanged();
     void durationChanged();
     void crossfadeChanged();
+    void volumeChanged();
+    void mutedChanged();
 
 private:
     void playInternal(int index);
@@ -61,4 +69,6 @@ private:
     int m_index = -1;
     QVariantList m_queue;
     QVariantMap m_current;
+    qreal m_volume = 1.0;
+    bool m_muted = false;
 };
