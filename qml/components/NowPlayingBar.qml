@@ -15,7 +15,7 @@ Rectangle {
     }
     signal queueRequested()
     readonly property bool hasQueue: !!player.queue && player.queue.length > 0
-    readonly property bool hasTrack: player.currentTrack && player.currentTrack.id
+    readonly property bool hasTrack: !!(player.currentTrack && player.currentTrack.id)
 
     RowLayout {
         anchors.fill: parent
@@ -57,12 +57,13 @@ Rectangle {
                 }
 
                 // Placeholder quando não há imagem
-                Label {
+                Image {
                     anchors.centerIn: parent
                     visible: coverImage.status !== Image.Ready || !bar.hasTrack
-                    text: "♪"
-                    font.pixelSize: 36
-                    color: "#6e7681"
+                    source: "../icons/music_note.svg"
+                    width: 36
+                    height: 36
+                    fillMode: Image.PreserveAspectFit
                 }
 
                 // Overlay de play/pause
@@ -72,11 +73,12 @@ Rectangle {
                     opacity: coverMouseArea.containsMouse ? 0.5 : 0
                     Behavior on opacity { NumberAnimation { duration: 150 } }
                     
-                    Label {
+                    Image {
                         anchors.centerIn: parent
-                        text: player.playing ? "⏸" : "▶"
-                        font.pixelSize: 32
-                        color: "white"
+                        source: player.playing ? "../icons/pause.svg" : "../icons/play_arrow.svg"
+                        width: 32
+                        height: 32
+                        fillMode: Image.PreserveAspectFit
                         opacity: coverMouseArea.containsMouse ? 1 : 0
                         Behavior on opacity { NumberAnimation { duration: 150 } }
                     }
@@ -253,12 +255,14 @@ Rectangle {
 
         // Controles de reprodução
         Row {
+            Layout.alignment: Qt.AlignVCenter
             spacing: 4
             
             // Botão anterior
             RoundButton {
                 width: 40
                 height: 40
+                anchors.verticalCenter: parent.verticalCenter
                 enabled: bar.hasQueue
                 opacity: enabled ? 1.0 : 0.4
                 
@@ -268,15 +272,13 @@ Rectangle {
                     border.color: parent.hovered ? "#374151" : "transparent"
                 }
                 
-                contentItem: Label {
-                    text: "⏮"
-                    font.pixelSize: 18
-                    color: "#e6edf3"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                contentItem: Image {
+                    source: "../icons/skip_previous.svg"
+                    width: 18
+                    height: 18
+                    anchors.centerIn: parent
+                    fillMode: Image.PreserveAspectFit
                 }
-                
-                onClicked: player.previous()
                 
                 ToolTip.visible: hovered
                 ToolTip.text: "Anterior (Shift+P)"
@@ -287,6 +289,7 @@ Rectangle {
             RoundButton {
                 width: 52
                 height: 52
+                anchors.verticalCenter: parent.verticalCenter
                 
                 background: Rectangle {
                     radius: 26
@@ -300,12 +303,12 @@ Rectangle {
                     border.color: Qt.rgba(1, 1, 1, 0.15)
                     border.width: 1
                 }
-                contentItem: Label {
-                    text: player.playing ? "⏸" : "▶"
-                    font.pixelSize: 22
-                    color: "#ffffff"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                contentItem: Image {
+                    source: player.playing ? "../icons/pause.svg" : "../icons/play_arrow.svg"
+                    width: 22
+                    height: 22
+                    anchors.centerIn: parent
+                    fillMode: Image.PreserveAspectFit
                 }
                 
                 onClicked: player.toggle()
@@ -319,6 +322,7 @@ Rectangle {
             RoundButton {
                 width: 40
                 height: 40
+                anchors.verticalCenter: parent.verticalCenter
                 enabled: bar.hasQueue
                 opacity: enabled ? 1.0 : 0.4
                 
@@ -328,12 +332,12 @@ Rectangle {
                     border.color: parent.hovered ? "#374151" : "transparent"
                 }
                 
-                contentItem: Label {
-                    text: "⏭"
-                    font.pixelSize: 18
-                    color: "#e6edf3"
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                contentItem: Image {
+                    source: "../icons/skip_next.svg"
+                    width: 18
+                    height: 18
+                    anchors.centerIn: parent
+                    fillMode: Image.PreserveAspectFit
                 }
                 
                 onClicked: player.next()
@@ -346,10 +350,12 @@ Rectangle {
 
         // Controles extras (volume, fila, etc)
         Row {
+            Layout.alignment: Qt.AlignVCenter
             spacing: 4
             
             // Controle de volume
             Row {
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: 8
                 
                 RoundButton {
@@ -362,11 +368,12 @@ Rectangle {
                         border.color: parent.hovered ? "#374151" : "transparent"
                     }
                     
-                    contentItem: Label {
-                        text: player.muted ? "🔇" : (player.volume > 0.5 ? "🔊" : (player.volume > 0 ? "🔉" : "🔈"))
-                        font.pixelSize: 16
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
+                    contentItem: Image {
+                        source: player.muted ? "../icons/volume_off.svg" : (player.volume > 0.5 ? "../icons/volume_up.svg" : (player.volume > 0 ? "../icons/volume_down.svg" : "../icons/volume_mute.svg"))
+                        width: 16
+                        height: 16
+                        anchors.centerIn: parent
+                        fillMode: Image.PreserveAspectFit
                     }
                     
                     onClicked: player.muted = !player.muted
@@ -493,12 +500,13 @@ Rectangle {
                     Behavior on color { ColorAnimation { duration: 150 } }
                 }
                 
-                contentItem: Label {
-                    text: "✨"
-                    font.pixelSize: 16
+                contentItem: Image {
+                    source: "../icons/auto_awesome.svg"
+                    width: 16
+                    height: 16
+                    anchors.centerIn: parent
+                    fillMode: Image.PreserveAspectFit
                     opacity: parent.checked ? 1.0 : 0.5
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
                     
                     Behavior on opacity { NumberAnimation { duration: 150 } }
                 }
@@ -521,11 +529,12 @@ Rectangle {
                     border.color: parent.hovered ? "#374151" : "transparent"
                 }
                 
-                contentItem: Label {
-                    text: "📜"
-                    font.pixelSize: 16
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
+                contentItem: Image {
+                    source: "../icons/queue_music.svg"
+                    width: 16
+                    height: 16
+                    anchors.centerIn: parent
+                    fillMode: Image.PreserveAspectFit
                 }
                 
                 onClicked: bar.queueRequested()

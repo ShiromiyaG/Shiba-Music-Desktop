@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import "qrc:/qml/components" as Components
 
 Page {
@@ -42,25 +43,37 @@ Page {
                 width: contentCol.width - contentCol.padding * 2
                 height: 240
                 radius: 24
-                clip: true
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "#243047" }
                     GradientStop { position: 1.0; color: "#1b2233" }
                 }
                 border.color: "#303a52"
+                clip: true
 
                 Image {
+                    id: bgImage
                     anchors.fill: parent
                     source: api.coverArtUrl(coverArtId, 600)
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
-                    opacity: 0.35
-                    visible: !!coverArtId && status !== Image.Error
+                    visible: false
+                }
+
+                OpacityMask {
+                    anchors.fill: bgImage
+                    source: bgImage
+                    maskSource: Rectangle {
+                        width: bgImage.width
+                        height: bgImage.height
+                        radius: 24
+                    }
+                    opacity: 0.25
+                    visible: !!coverArtId && bgImage.status !== Image.Error
                 }
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: 18
+                    radius: 24
                     color: "#14171f"
                     opacity: 0.35
                 }

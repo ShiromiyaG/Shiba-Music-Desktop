@@ -180,6 +180,7 @@ ApplicationWindow {
                                 antialiasing: true
                             }
                             ToolButton {
+                                id: clearButton
                                 icon.source: "qrc:/qml/icons/close.svg"
                                 visible: searchBox.text.length > 0
                                 onClicked: {
