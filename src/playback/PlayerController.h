@@ -16,6 +16,8 @@ class PlayerController : public QObject {
     Q_PROPERTY(bool crossfade READ crossfade WRITE setCrossfade NOTIFY crossfadeChanged)
     Q_PROPERTY(qreal volume READ volume WRITE setVolume NOTIFY volumeChanged)
     Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged)
+    Q_PROPERTY(bool replayGainEnabled READ replayGainEnabled WRITE setReplayGainEnabled NOTIFY replayGainEnabledChanged)
+    Q_PROPERTY(int replayGainMode READ replayGainMode WRITE setReplayGainMode NOTIFY replayGainModeChanged)
 public:
     explicit PlayerController(SubsonicClient *api, QObject *parent=nullptr);
 
@@ -30,6 +32,10 @@ public:
     void setVolume(qreal v);
     bool muted() const { return m_muted; }
     void setMuted(bool m);
+    bool replayGainEnabled() const { return m_replayGainEnabled; }
+    void setReplayGainEnabled(bool enabled);
+    int replayGainMode() const { return m_replayGainMode; }
+    void setReplayGainMode(int mode);
 
     Q_INVOKABLE void playTrack(const QVariantMap& track, int maxBitrateKbps = 0);
     Q_INVOKABLE void addToQueue(const QVariantMap& track);
@@ -50,6 +56,8 @@ signals:
     void crossfadeChanged();
     void volumeChanged();
     void mutedChanged();
+    void replayGainEnabledChanged();
+    void replayGainModeChanged();
 
 private:
     void playInternal(int index);
@@ -69,6 +77,8 @@ private:
     int m_index = -1;
     QVariantList m_queue;
     QVariantMap m_current;
-    qreal m_volume = 1.0;
+    qreal m_volume = 0.5;
     bool m_muted = false;
+    bool m_replayGainEnabled = true;
+    int m_replayGainMode = 1; // 0 = track, 1 = album
 };

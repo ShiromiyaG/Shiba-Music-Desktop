@@ -41,6 +41,7 @@ qt_add_resources(shibamusic "qml"
         qml/pages/ArtistsPage.qml
         qml/pages/AlbumsPage.qml
         qml/pages/FavoritesPage.qml
+        qml/pages/SettingsPage.qml
         qml/icons/account_circle.svg
         qml/icons/add.svg
         qml/icons/album.svg
@@ -55,6 +56,7 @@ qt_add_resources(shibamusic "qml"
         qml/icons/queue_music.svg
         qml/icons/refresh.svg
         qml/icons/search.svg
+        qml/icons/settings.svg
         qml/icons/shuffle.svg
         qml/icons/skip_next.svg
         qml/icons/skip_previous.svg

@@ -6,6 +6,7 @@
 #include <QSettings>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QDebug>
 
 static constexpr auto API_VERSION = "1.16.1";   // Navidrome alvo
 static constexpr auto CLIENT_NAME = "ShibaMusicQt";
@@ -232,6 +233,7 @@ void SubsonicClient::fetchAlbum(const QString& albumId) {
         auto songs = root.value("album").toObject().value("song").toArray();
         for (const auto &sv : songs) {
             auto s = sv.toObject();
+            auto rg = s.value("replayGain").toObject();
             m_tracks.push_back(QVariantMap{
                 {"id", s.value("id").toString()},
                 {"title", s.value("title").toString()},
@@ -240,7 +242,9 @@ void SubsonicClient::fetchAlbum(const QString& albumId) {
                 {"albumId", s.value("albumId").toString()},
                 {"track", s.value("track").toInt()},
                 {"duration", s.value("duration").toInt()},
-                {"coverArt", s.value("coverArt").toString()}
+                {"coverArt", s.value("coverArt").toString()},
+                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
+                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
             });
         }
         emit tracksChanged();
@@ -345,6 +349,7 @@ void SubsonicClient::fetchRandomSongs() {
         auto songs = root.value("randomSongs").toObject().value("song").toArray();
         for (const auto &sv : songs) {
             auto s = sv.toObject();
+            auto rg = s.value("replayGain").toObject();
             m_randomSongs.push_back(QVariantMap{
                 {"id", s.value("id").toString()},
                 {"title", s.value("title").toString()},
@@ -352,7 +357,9 @@ void SubsonicClient::fetchRandomSongs() {
                 {"album", s.value("album").toString()},
                 {"albumId", s.value("albumId").toString()},
                 {"duration", s.value("duration").toInt()},
-                {"coverArt", s.value("coverArt").toString()}
+                {"coverArt", s.value("coverArt").toString()},
+                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
+                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
             });
         }
         emit randomSongsChanged();
@@ -398,6 +405,7 @@ void SubsonicClient::fetchFavorites() {
         auto songs = starred.value("song").toArray();
         for (const auto &sv : songs) {
             auto s = sv.toObject();
+            auto rg = s.value("replayGain").toObject();
             m_favorites.push_back(QVariantMap{
                 {"id", s.value("id").toString()},
                 {"title", s.value("title").toString()},
@@ -405,7 +413,9 @@ void SubsonicClient::fetchFavorites() {
                 {"album", s.value("album").toString()},
                 {"albumId", s.value("albumId").toString()},
                 {"duration", s.value("duration").toInt()},
-                {"coverArt", s.value("coverArt").toString()}
+                {"coverArt", s.value("coverArt").toString()},
+                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
+                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
             });
         }
         emit favoritesChanged();
@@ -433,6 +443,7 @@ void SubsonicClient::search(const QString& term) {
         auto songs = root.value("searchResult3").toObject().value("song").toArray();
         for (const auto &sv : songs) {
             auto s = sv.toObject();
+            auto rg = s.value("replayGain").toObject();
             m_tracks.push_back(QVariantMap{
                 {"id", s.value("id").toString()},
                 {"title", s.value("title").toString()},
@@ -440,7 +451,9 @@ void SubsonicClient::search(const QString& term) {
                 {"album", s.value("album").toString()},
                 {"albumId", s.value("albumId").toString()},
                 {"duration", s.value("duration").toInt()},
-                {"coverArt", s.value("coverArt").toString()}
+                {"coverArt", s.value("coverArt").toString()},
+                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
+                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
             });
         }
         emit tracksChanged();
@@ -552,6 +565,7 @@ void SubsonicClient::fetchAlbumTracksAndAppend(const QString& albumId) {
         bool tracksAdded = false;
         for (const auto &sv : songs) {
             auto s = sv.toObject();
+            auto rg = s.value("replayGain").toObject();
             m_tracks.push_back(QVariantMap{
                 {"id", s.value("id").toString()},
                 {"title", s.value("title").toString()},
@@ -560,7 +574,9 @@ void SubsonicClient::fetchAlbumTracksAndAppend(const QString& albumId) {
                 {"albumId", s.value("albumId").toString()},
                 {"track", s.value("track").toInt()},
                 {"duration", s.value("duration").toInt()},
-                {"coverArt", s.value("coverArt").toString()}
+                {"coverArt", s.value("coverArt").toString()},
+                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
+                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
             });
             tracksAdded = true;
         }

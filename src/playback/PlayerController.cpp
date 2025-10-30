@@ -1,6 +1,7 @@
 #include "PlayerController.h"
 #include "../core/SubsonicClient.h"
 #include <QPropertyAnimation>
+#include <QDebug>
 
 PlayerController::PlayerController(SubsonicClient *api, QObject *parent)
     : QObject(parent), m_api(api)
@@ -53,21 +54,34 @@ void PlayerController::playInternal(int index) {
 
     const auto id = m_current.value("id").toString();
     const QUrl src = m_api->streamUrl(id);
-    // scrobble start
     m_api->scrobble(id, /*submission*/true, 0);
 
+    qreal targetVolume = 1.0;
+    if (m_replayGainEnabled) {
+        const QString gainKey = (m_replayGainMode == 1) ? "replayGainAlbumGain" : "replayGainTrackGain";
+        if (m_current.contains(gainKey)) {
+            const qreal gainDb = m_current.value(gainKey).toDouble();
+            if (qAbs(gainDb) > 0.01) {
+                targetVolume = qPow(10.0, gainDb / 20.0);
+                targetVolume = qBound(0.1, targetVolume, 2.0);
+            }
+        }
+    }
+
+
+    const qreal finalVolume = targetVolume * m_volume;
+    
     if (m_crossfade && m_active->playbackState() == QMediaPlayer::PlayingState) {
         applySource(m_inactive, src);
         m_inactive->play();
-        // fade in/out
         QPropertyAnimation *aOut = new QPropertyAnimation(m_active->audioOutput(), "volume", this);
         aOut->setDuration(1200);
-        aOut->setStartValue(1.0);
+        aOut->setStartValue(m_active->audioOutput()->volume());
         aOut->setEndValue(0.0);
         QPropertyAnimation *aIn = new QPropertyAnimation(m_inactive->audioOutput(), "volume", this);
         aIn->setDuration(1200);
         aIn->setStartValue(0.0);
-        aIn->setEndValue(1.0);
+        aIn->setEndValue(finalVolume);
         connect(aOut, &QPropertyAnimation::finished, this, [this]{
             m_active->stop();
             std::swap(m_active, m_inactive);
@@ -78,7 +92,7 @@ void PlayerController::playInternal(int index) {
     } else {
         applySource(m_active, src);
         m_active->play();
-        m_active->audioOutput()->setVolume(1.0);
+        m_active->audioOutput()->setVolume(finalVolume);
         m_inactive->audioOutput()->setVolume(0.0);
     }
 }
@@ -163,8 +177,20 @@ void PlayerController::setVolume(qreal v) {
     if (qAbs(m_volume - v) < 0.001) return;
     m_volume = v;
     if (!m_muted) {
-        m_outA.setVolume(m_volume);
-        m_outB.setVolume(m_volume);
+        qreal targetVolume = 1.0;
+        if (m_replayGainEnabled && !m_current.isEmpty()) {
+            const QString gainKey = (m_replayGainMode == 1) ? "replayGainAlbumGain" : "replayGainTrackGain";
+            if (m_current.contains(gainKey)) {
+                const qreal gainDb = m_current.value(gainKey).toDouble();
+                if (qAbs(gainDb) > 0.01) {
+                    targetVolume = qPow(10.0, gainDb / 20.0);
+                    targetVolume = qBound(0.1, targetVolume, 2.0);
+                }
+            }
+        }
+        const qreal finalVolume = targetVolume * m_volume;
+        m_outA.setVolume(finalVolume);
+        m_outB.setVolume(finalVolume);
     }
     emit volumeChanged();
 }
@@ -175,4 +201,44 @@ void PlayerController::setMuted(bool m) {
     m_outA.setVolume(m_muted ? 0.0 : m_volume);
     m_outB.setVolume(m_muted ? 0.0 : m_volume);
     emit mutedChanged();
+}
+
+void PlayerController::setReplayGainEnabled(bool enabled) {
+    if (m_replayGainEnabled == enabled) return;
+    m_replayGainEnabled = enabled;
+    emit replayGainEnabledChanged();
+    if (!m_muted && !m_current.isEmpty()) {
+        qreal targetVolume = 1.0;
+        if (m_replayGainEnabled) {
+            const QString gainKey = (m_replayGainMode == 1) ? "replayGainAlbumGain" : "replayGainTrackGain";
+            if (m_current.contains(gainKey)) {
+                const qreal gainDb = m_current.value(gainKey).toDouble();
+                if (qAbs(gainDb) > 0.01) {
+                    targetVolume = qPow(10.0, gainDb / 20.0);
+                    targetVolume = qBound(0.1, targetVolume, 2.0);
+                }
+            }
+        }
+        m_outA.setVolume(targetVolume * m_volume);
+        m_outB.setVolume(targetVolume * m_volume);
+    }
+}
+
+void PlayerController::setReplayGainMode(int mode) {
+    if (m_replayGainMode == mode) return;
+    m_replayGainMode = mode;
+    emit replayGainModeChanged();
+    if (!m_muted && m_replayGainEnabled && !m_current.isEmpty()) {
+        qreal targetVolume = 1.0;
+        const QString gainKey = (m_replayGainMode == 1) ? "replayGainAlbumGain" : "replayGainTrackGain";
+        if (m_current.contains(gainKey)) {
+            const qreal gainDb = m_current.value(gainKey).toDouble();
+            if (qAbs(gainDb) > 0.01) {
+                targetVolume = qPow(10.0, gainDb / 20.0);
+                targetVolume = qBound(0.1, targetVolume, 2.0);
+            }
+        }
+        m_outA.setVolume(targetVolume * m_volume);
+        m_outB.setVolume(targetVolume * m_volume);
+    }
 }

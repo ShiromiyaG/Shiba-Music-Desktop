@@ -34,7 +34,8 @@ ApplicationWindow {
         { label: "Favoritos", icon: "qrc:/qml/icons/star.svg", target: "favorites" },
         { label: "Álbuns", icon: "qrc:/qml/icons/album.svg", target: "albums" },
         { label: "Artistas", icon: "qrc:/qml/icons/mic.svg", target: "artists" },
-        { label: "Fila", icon: "qrc:/qml/icons/queue_music.svg", target: "queue" }
+        { label: "Fila", icon: "qrc:/qml/icons/queue_music.svg", target: "queue" },
+        { label: "Configurações", icon: "qrc:/qml/icons/settings.svg", target: "settings" }
     ]
     property string currentSection: "home"
     property bool initialLibraryLoaded: false
@@ -446,6 +447,9 @@ ApplicationWindow {
             break
         case "queue":
             stack.push(queueComponent)
+            break
+        case "settings":
+            stack.push(Qt.resolvedUrl("qrc:/qml/pages/SettingsPage.qml"))
             break
         default:
             break
