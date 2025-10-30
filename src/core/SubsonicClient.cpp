@@ -37,13 +37,15 @@ QString SubsonicClient::randomSalt() const {
     return QString::fromLatin1(bytes);
 }
 
-QUrl SubsonicClient::buildUrl(const QString& method, const QUrlQuery& extra) const {
+QUrl SubsonicClient::buildUrl(const QString& method, const QUrlQuery& extra, bool isJson) const {
     QUrl url(m_server + "/rest/" + method + ".view");
     QUrlQuery q;
     q.addQueryItem("u", m_user);
     q.addQueryItem("v", API_VERSION);
     q.addQueryItem("c", CLIENT_NAME);
-    q.addQueryItem("f", "json");
+    if (isJson) {
+        q.addQueryItem("f", "json");
+    }
     // auth via token (t/s)
     q.addQueryItem("t", m_token);
     q.addQueryItem("s", m_salt);
@@ -79,9 +81,14 @@ void SubsonicClient::login(const QString& url, const QString& user, const QStrin
     m_token = md5(password + m_salt);
 
     // ping
-    QNetworkRequest req(buildUrl("ping"));
+    QNetworkRequest req(buildUrl("ping", {}, true));
     auto *reply = m_nam.get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply] {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(reply->errorString());
+            reply->deleteLater();
+            return;
+        }
         const auto all = reply->readAll();
         reply->deleteLater();
         const auto doc = QJsonDocument::fromJson(all);
@@ -95,9 +102,14 @@ void SubsonicClient::login(const QString& url, const QString& user, const QStrin
 
 void SubsonicClient::fetchArtists() {
     if (!m_authenticated) return;
-    QNetworkRequest req(buildUrl("getArtists"));
+    QNetworkRequest req(buildUrl("getArtists", {}, true));
     auto *reply = m_nam.get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply]{
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(reply->errorString());
+            reply->deleteLater();
+            return;
+        }
         const auto doc = QJsonDocument::fromJson(reply->readAll());
         reply->deleteLater();
         QString err;
@@ -124,16 +136,39 @@ void SubsonicClient::fetchArtists() {
 
 void SubsonicClient::fetchArtist(const QString& artistId) {
     if (!m_authenticated) return;
+
+    if (m_artistReply) {
+        m_artistReply->abort();
+    }
+
+    m_albums.clear();
+    emit albumsChanged();
+
     QUrlQuery ex; ex.addQueryItem("id", artistId);
-    QNetworkRequest req(buildUrl("getArtist", ex));
+    QNetworkRequest req(buildUrl("getArtist", ex, true));
     auto *reply = m_nam.get(req);
+    m_artistReply = reply;
+
     connect(reply, &QNetworkReply::finished, this, [this, reply]{
+        if (reply != m_artistReply) {
+            reply->deleteLater();
+            return;
+        }
+        m_artistReply = nullptr;
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() != QNetworkReply::OperationCanceledError) {
+                emit errorOccurred(reply->errorString());
+            }
+            reply->deleteLater();
+            return;
+        }
+
         const auto doc = QJsonDocument::fromJson(reply->readAll());
         reply->deleteLater();
         QString err;
         if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
 
-        m_albums.clear();
         auto root = doc.object().value("subsonic-response").toObject();
         auto albums = root.value("artist").toObject().value("album").toArray();
         for (const auto &av : albums) {
@@ -151,16 +186,39 @@ void SubsonicClient::fetchArtist(const QString& artistId) {
 
 void SubsonicClient::fetchAlbum(const QString& albumId) {
     if (!m_authenticated) return;
+
+    if (m_albumReply) {
+        m_albumReply->abort();
+    }
+
+    m_tracks.clear();
+    emit tracksChanged();
+
     QUrlQuery ex; ex.addQueryItem("id", albumId);
-    QNetworkRequest req(buildUrl("getAlbum", ex));
+    QNetworkRequest req(buildUrl("getAlbum", ex, true));
     auto *reply = m_nam.get(req);
+    m_albumReply = reply;
+
     connect(reply, &QNetworkReply::finished, this, [this, reply]{
+        if (reply != m_albumReply) {
+            reply->deleteLater();
+            return;
+        }
+        m_albumReply = nullptr;
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() != QNetworkReply::OperationCanceledError) {
+                emit errorOccurred(reply->errorString());
+            }
+            reply->deleteLater();
+            return;
+        }
+
         const auto doc = QJsonDocument::fromJson(reply->readAll());
         reply->deleteLater();
         QString err;
         if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
 
-        m_tracks.clear();
         auto root = doc.object().value("subsonic-response").toObject();
         auto songs = root.value("album").toObject().value("song").toArray();
         for (const auto &sv : songs) {
@@ -179,13 +237,76 @@ void SubsonicClient::fetchAlbum(const QString& albumId) {
     });
 }
 
+void SubsonicClient::fetchAlbumList(const QString& type) {
+    if (!m_authenticated) return;
+
+    if (m_albumListReply) {
+        m_albumListReply->abort();
+    }
+
+    m_albumList.clear();
+    emit albumListChanged();
+
+    QUrlQuery ex;
+    ex.addQueryItem("type", type);
+    ex.addQueryItem("size", "500");
+    QNetworkRequest req(buildUrl("getAlbumList2", ex, true));
+    auto *reply = m_nam.get(req);
+    m_albumListReply = reply;
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+        if (reply != m_albumListReply) {
+            reply->deleteLater();
+            return;
+        }
+        m_albumListReply = nullptr;
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() != QNetworkReply::OperationCanceledError) {
+                emit errorOccurred(reply->errorString());
+            }
+            reply->deleteLater();
+            return;
+        }
+
+        const auto doc = QJsonDocument::fromJson(reply->readAll());
+        reply->deleteLater();
+        QString err;
+        if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
+
+        auto root = doc.object().value("subsonic-response").toObject();
+        auto albums = root.value("albumList2").toObject().value("album").toArray();
+        for (const auto &av : albums) {
+            auto a = av.toObject();
+            m_albumList.push_back(QVariantMap{
+                {"id", a.value("id").toString()},
+                {"name", a.value("name").toString()},
+                {"artist", a.value("artist").toString()},
+                {"year", a.value("year").toInt()},
+                {"coverArt", a.value("coverArt").toString()}
+            });
+        }
+
+        std::sort(m_albumList.begin(), m_albumList.end(), [](const QVariant& v1, const QVariant& v2) {
+            return v1.toMap().value("name").toString().localeAwareCompare(v2.toMap().value("name").toString()) < 0;
+        });
+
+        emit albumListChanged();
+    });
+}
+
 void SubsonicClient::search(const QString& term) {
     if (!m_authenticated) return;
     QUrlQuery ex; ex.addQueryItem("query", term);
     ex.addQueryItem("songCount", "100");
-    QNetworkRequest req(buildUrl("search3", ex));
+    QNetworkRequest req(buildUrl("search3", ex, true));
     auto *reply = m_nam.get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply]{
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(reply->errorString());
+            reply->deleteLater();
+            return;
+        }
         const auto doc = QJsonDocument::fromJson(reply->readAll());
         reply->deleteLater();
         QString err;
@@ -211,7 +332,7 @@ void SubsonicClient::search(const QString& term) {
 QUrl SubsonicClient::streamUrl(const QString& songId, int maxBitrateKbps) const {
     QUrlQuery ex; ex.addQueryItem("id", songId);
     if (maxBitrateKbps > 0) ex.addQueryItem("maxBitRate", QString::number(maxBitrateKbps));
-    return buildUrl("stream", ex);
+    return buildUrl("stream", ex, false);
 }
 
 QUrl SubsonicClient::coverArtUrl(const QString& artId, int size) const {
@@ -220,7 +341,7 @@ QUrl SubsonicClient::coverArtUrl(const QString& artId, int size) const {
     ex.addQueryItem("id", artId);
     ex.addQueryItem("size", QString::number(size));
     ex.addQueryItem("format", "jpg");
-    return buildUrl("getCoverArt", ex);
+    return buildUrl("getCoverArt", ex, false);
 }
 
 void SubsonicClient::scrobble(const QString& songId, bool submission, qint64 timeMs) {
@@ -232,7 +353,7 @@ void SubsonicClient::scrobble(const QString& songId, bool submission, qint64 tim
         const qint64 secs = timeMs / 1000;
         ex.addQueryItem("time", QString::number(secs));
     }
-    QNetworkRequest req(buildUrl("scrobble", ex));
+    QNetworkRequest req(buildUrl("scrobble", ex, true));
     auto *reply = m_nam.get(req);
     connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
 }

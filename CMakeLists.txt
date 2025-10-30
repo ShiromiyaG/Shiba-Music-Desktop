@@ -32,10 +32,14 @@ qt_add_resources(shibamusic "qml"
         qml/components/SectionHeader.qml
         qml/components/EmptyState.qml
         qml/components/QueueDrawer.qml
+        qml/components/NowPlayingPanel.qml
         qml/pages/LoginPage.qml
         qml/pages/HomePage.qml
         qml/pages/ArtistPage.qml
         qml/pages/AlbumPage.qml
+        qml/pages/ArtistsPage.qml
+        qml/pages/AlbumsPage.qml
+        qml/pages/FavoritesPage.qml
 )
 
 target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Multimedia)

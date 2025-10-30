@@ -5,6 +5,8 @@ import "qrc:/qml/components" as Components
 
 Page {
     id: artistPage
+    signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId)
+
     property string artistId: ""
     property string artistName: ""
     property string coverArtId: ""
@@ -12,6 +14,11 @@ Page {
     background: Rectangle { color: "transparent" }
 
     Component.onCompleted: {
+        if (artistId.length > 0)
+            api.fetchArtist(artistId)
+    }
+
+    onArtistIdChanged: {
         if (artistId.length > 0)
             api.fetchArtist(artistId)
     }
@@ -35,9 +42,12 @@ Page {
             Rectangle {
                 width: parent.width
                 height: 240
-                radius: 18
-                color: "#1b2028"
-                border.color: "#2b3140"
+                radius: 24
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#243047" }
+                    GradientStop { position: 1.0; color: "#1b2233" }
+                }
+                border.color: "#303a52"
 
                 Image {
                     anchors.fill: parent
@@ -61,9 +71,9 @@ Page {
                     spacing: 24
 
                     Rectangle {
-                        width: 180; height: 180; radius: 16
-                        color: "#111"
-                        border.color: "#2b3140"
+                        width: 180; height: 180; radius: 18
+                        color: "#101321"
+                        border.color: "#2b3246"
                         Image {
                             anchors.fill: parent
                             source: api.coverArtUrl(coverArtId, 512)
@@ -136,20 +146,7 @@ Page {
                     title: modelData.name
                     subtitle: modelData.year > 0 ? modelData.year : ""
                     cover: api.coverArtUrl(modelData.coverArt, 300)
-                    onClicked: {
-                        api.fetchAlbum(modelData.id)
-                        if (StackView.view) {
-                            StackView.view.push({
-                                item: Qt.resolvedUrl("qrc:/qml/pages/AlbumPage.qml"),
-                                properties: {
-                                    albumId: modelData.id,
-                                    albumTitle: modelData.name,
-                                    artistName: modelData.artist || artistPage.artistName,
-                                    coverArtId: modelData.coverArt
-                                }
-                            })
-                        }
-                    }
+                    onClicked: artistPage.albumClicked(modelData.id, modelData.name, modelData.artist || artistPage.artistName, modelData.coverArt)
                 }
             }
         }

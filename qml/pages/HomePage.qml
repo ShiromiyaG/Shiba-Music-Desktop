@@ -23,127 +23,108 @@ Page {
             width: Math.min(scrollArea.width, 1024)
             x: (scrollArea.width - width) / 2
             spacing: 24
-            padding: 24
+            padding: 32
 
-            Rectangle {
-                id: hero
-                width: parent.width
-                height: 220
-                radius: 18
-                gradient: Gradient {
-                    GradientStop { position: 0.0; color: "#2b3a55" }
-                    GradientStop { position: 1.0; color: "#1f2532" }
-                }
-                border.color: "#3a4660"
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 24
-                    spacing: 18
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 6
-                        Label {
-                            text: "Seja bem-vindo(a)"
-                            color: "#cfd7e5"
-                            font.pixelSize: 14
-                        }
-                        Label {
-                            text: player.currentTrack.title ? player.currentTrack.title : "Descubra novas faixas hoje"
-                            wrapMode: Text.WordWrap
-                            font.pixelSize: 28
-                            font.weight: Font.DemiBold
-                        }
-                        Label {
-                            text: player.currentTrack.artist ? player.currentTrack.artist : "Busque artistas, álbuns ou faixas e comece a tocar"
-                            color: "#a6b0c3"
-                            wrapMode: Text.WordWrap
-                            font.pixelSize: 14
-                        }
-                        Row {
-                            spacing: 12
-                            ToolButton {
-                                text: "▶ Continuar"
-                                enabled: player.queue.length > 0
-                                onClicked: player.toggle()
-                            }
-                            ToolButton {
-                                text: "🔁"
-                                ToolTip.visible: hovered
-                                ToolTip.text: player.crossfade ? "Desativar crossfade" : "Ativar crossfade"
-                                onClicked: player.crossfade = !player.crossfade
-                            }
-                        }
-                    }
-                    Rectangle {
-                        width: 160; height: 160; radius: 14; color: "#111"
-                        border.color: "#2f3544"
-                        Image {
-                            anchors.fill: parent
-                            source: api.coverArtUrl(player.currentTrack.coverArt, 256)
-                            fillMode: Image.PreserveAspectCrop
-                            asynchronous: true
-                            visible: !!player.currentTrack.coverArt && status !== Image.Error
-                        }
-                        Label {
-                            anchors.centerIn: parent
-                            visible: !player.currentTrack || !player.currentTrack.coverArt
-                            text: "🎧"
-                            font.pixelSize: 48
-                        }
-                    }
-                }
+            Label {
+                text: "Discover"
+                font.pixelSize: 30
+                font.weight: Font.DemiBold
+                color: "#f5f7ff"
             }
 
-            Components.SectionHeader {
-                title: "Artistas"
-                subtitle: api.artists.length > 0 ? (api.artists.length + " na biblioteca") : ""
-                ToolButton {
-                    text: "Atualizar"
-                    onClicked: api.fetchArtists()
-                }
+            Label {
+                text: "RECENTLY PLAYED"
+                color: "#8da0c0"
+                font.pixelSize: 12
+                font.letterSpacing: 4
+                font.weight: Font.DemiBold
             }
 
             Loader {
                 width: column.width
-                sourceComponent: api.artists.length === 0 ? emptyArtists : artistFlow
+                sourceComponent: api.tracks.length > 0 ? recentlyPlayed : emptyState
             }
 
-            Components.SectionHeader {
-                title: "Faixas em destaque"
-                subtitle: api.tracks.length > 0 ? (api.tracks.length + " resultados") : "Use a busca para encontrar músicas"
+            Label {
+                text: "MADE FOR YOU"
+                color: "#8da0c0"
+                font.pixelSize: 12
+                font.letterSpacing: 4
+                font.weight: Font.DemiBold
             }
 
             Loader {
                 width: column.width
-                sourceComponent: api.tracks.length === 0 ? emptyTracks : trackList
+                sourceComponent: api.tracks.length > 0 ? madeForYou : emptyState
             }
         }
     }
 
     Component {
-        id: artistFlow
+        id: recentlyPlayed
         Flow {
+            id: recentFlow
             width: column.width
-            spacing: 16
+            height: childrenRect.height
+            spacing: 20
+            property real cardWidth: Math.min(width / 4 - spacing, 220)
             Repeater {
-                model: api.artists
-                delegate: Components.ArtistCard {
-                    width: 176
+                model: Math.min(api.tracks.length, 4)
+                delegate: Rectangle {
+                    property var track: api.tracks[index] || ({})
+                    width: recentFlow.cardWidth
                     height: 220
-                    name: modelData.name
-                    cover: api.coverArtUrl(modelData.coverArt, 300)
-                    onClicked: {
-                        api.fetchArtist(modelData.id)
-                        if (StackView.view) {
-                            StackView.view.push({
-                                item: Qt.resolvedUrl("qrc:/qml/pages/ArtistPage.qml"),
-                                properties: {
-                                    artistId: modelData.id,
-                                    artistName: modelData.name,
-                                    coverArtId: modelData.coverArt
-                                }
-                            })
+                    radius: 20
+                    color: "#20293f"
+                    border.color: "#2c3752"
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 16
+                        spacing: 10
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 140
+                            radius: 16
+                            color: "#12182a"
+                            Image {
+                                anchors.fill: parent
+                                source: track.coverArt ? api.coverArtUrl(track.coverArt, 320) : ""
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                visible: track.coverArt && status !== Image.Error
+                            }
+                            Label {
+                                anchors.centerIn: parent
+                                visible: !track.coverArt
+                                text: "🎵"
+                                font.pixelSize: 40
+                                color: "#5e6d8d"
+                            }
                         }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 4
+                            Label {
+                                text: track.title || "Faixa desconhecida"
+                                font.pixelSize: 15
+                                font.weight: Font.Medium
+                                elide: Label.ElideRight
+                            }
+                            Label {
+                                text: track.artist || "Artista desconhecido"
+                                color: "#8fa0c2"
+                                font.pixelSize: 12
+                                elide: Label.ElideRight
+                            }
+                        }
+                    }
+
+                    TapHandler {
+                        acceptedButtons: Qt.LeftButton
+                        onTapped: player.playTrack(track)
                     }
                 }
             }
@@ -151,40 +132,112 @@ Page {
     }
 
     Component {
-        id: trackList
+        id: madeForYou
         Column {
             width: column.width
-            spacing: 12
-            Repeater {
-                model: api.tracks
-                delegate: Components.TrackRow {
-                    index: index
-                    width: column.width
-                    title: modelData.title
-                    subtitle: modelData.artist + " — " + modelData.album
-                    duration: modelData.duration
-                    cover: api.coverArtUrl(modelData.coverArt, 128)
-                    onPlayClicked: player.playTrack(modelData)
-                    onQueueClicked: player.addToQueue(modelData)
+            spacing: 10
+            ListView {
+                id: madeList
+                height: contentHeight
+                width: column.width
+                clip: true
+                spacing: 8
+                interactive: false
+                model: Math.min(api.tracks.length, 8)
+                delegate: Rectangle {
+                    property var track: api.tracks[index] || ({})
+                    width: (madeList.view ? madeList.view.width : madeList.width)
+                    height: 60
+                    radius: 16
+                    color: index % 2 === 0 ? "#1b2336" : "#182030"
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 18
+
+                        Label {
+                            text: "#" + (index + 1)
+                            color: "#8da0c0"
+                            font.pixelSize: 13
+                            Layout.alignment: Qt.AlignVCenter
+                            width: 28
+                        }
+
+                        Rectangle {
+                            Layout.preferredWidth: 46
+                            Layout.preferredHeight: 46
+                            radius: 12
+                            color: "#101622"
+                            Image {
+                                anchors.fill: parent
+                                source: track.coverArt ? api.coverArtUrl(track.coverArt, 128) : ""
+                                fillMode: Image.PreserveAspectCrop
+                                asynchronous: true
+                                visible: track.coverArt && status !== Image.Error
+                            }
+                            Label {
+                                anchors.centerIn: parent
+                                visible: !track.coverArt
+                                text: "♪"
+                                color: "#55617b"
+                            }
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 2
+                            Label {
+                                text: track.title || "Faixa desconhecida"
+                                font.pixelSize: 14
+                                font.weight: Font.Medium
+                                elide: Label.ElideRight
+                            }
+                            Label {
+                                text: track.artist || "-"
+                                color: "#8fa0c2"
+                                font.pixelSize: 12
+                                elide: Label.ElideRight
+                            }
+                        }
+
+                        Label {
+                            text: track.album || "-"
+                            color: "#8fa0c2"
+                            font.pixelSize: 12
+                            Layout.preferredWidth: 180
+                            elide: Label.ElideRight
+                        }
+
+                        RowLayout {
+                            spacing: 8
+                            ToolButton {
+                                text: "❤"
+                                onClicked: player.addToQueue(track)
+                            }
+                            ToolButton {
+                                text: "⋯"
+                                onClicked: player.playTrack(track)
+                            }
+                        }
+                    }
+
+                    TapHandler {
+                        acceptedButtons: Qt.LeftButton
+                        onTapped: player.playTrack(track)
+                    }
                 }
             }
         }
     }
 
-    Component { id: emptyArtists
+    Component {
+        id: emptyState
         Components.EmptyState {
             width: column.width
-            title: "Nenhum artista carregado"
-            description: "Faça login ou toque em atualizar para sincronizar sua biblioteca."
-        }
-    }
-
-    Component { id: emptyTracks
-        Components.EmptyState {
-            width: column.width
-            emoji: "🔍"
-            title: "Faça uma busca para ouvir algo"
-            description: "Digite no campo superior e pressione Enter para procurar músicas."
+            emoji: "🎧"
+            title: "Nada por aqui ainda"
+            description: "Busque ou atualize sua biblioteca para preencher estas seções."
         }
     }
 }

@@ -13,6 +13,13 @@ Page {
     background: Rectangle { color: "transparent" }
 
     Component.onCompleted: {
+        api.clearTracks()
+        if (albumId.length > 0)
+            api.fetchAlbum(albumId)
+    }
+
+    onAlbumIdChanged: {
+        api.clearTracks()
         if (albumId.length > 0)
             api.fetchAlbum(albumId)
     }
@@ -36,9 +43,9 @@ Page {
             RowLayout {
                 spacing: 20
                 Rectangle {
-                    width: 220; height: 220; radius: 16
-                    color: "#111"
-                    border.color: "#2b3140"
+                    width: 220; height: 220; radius: 20
+                    color: "#121526"
+                    border.color: "#2c3550"
                     Image {
                         anchors.fill: parent
                         source: api.coverArtUrl(coverArtId, 512)
