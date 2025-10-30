@@ -92,14 +92,15 @@ ApplicationWindow {
                     ListView {
                         id: sidebarList
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
+                        Layout.preferredHeight: contentHeight
                         spacing: 6
                         interactive: false
+                        clip: true
                         model: win.navigationItems
                         delegate: ItemDelegate {
                             id: navItem
                             width: sidebarList.width
-                            padding: 10
+                            height: 44
                             hoverEnabled: true
                             highlighted: modelData.target === win.currentSection
                             background: Rectangle {
@@ -109,19 +110,21 @@ ApplicationWindow {
                                 border.color: navItem.highlighted ? "#3b4764" : "transparent"
                             }
                             contentItem: RowLayout {
+                                anchors.fill: parent
+                                anchors.leftMargin: 12
+                                anchors.rightMargin: 12
                                 spacing: 12
                                 Image {
                                     source: modelData.icon
-                                    sourceSize.width: 16
-                                    sourceSize.height: 16
+                                    sourceSize.width: 18
+                                    sourceSize.height: 18
                                     antialiasing: true
-                                    Layout.alignment: Qt.AlignVCenter
                                 }
                                 Label {
                                     text: modelData.label
                                     color: "#d9e0f2"
                                     font.pixelSize: 15
-                                    Layout.alignment: Qt.AlignVCenter
+                                    Layout.fillWidth: true
                                 }
                             }
                             onClicked: win.handleNavigation(modelData.target)

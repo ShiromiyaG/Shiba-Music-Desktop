@@ -116,26 +116,17 @@ Rectangle {
                     color: bar.hasTrack ? "#f0f6fc" : "#8b949e"
                 }
                 
-                RowLayout {
+                Label {
                     Layout.fillWidth: true
-                    spacing: 8
-                    
-                    Label {
-                        Layout.fillWidth: true
-                        text: bar.hasTrack ? player.currentTrack.artist : "Selecione uma música para começar"
-                        color: "#8b949e"
-                        font.pixelSize: 13
-                        elide: Label.ElideRight
+                    text: {
+                        if (!bar.hasTrack) return "Selecione uma música para começar";
+                        var txt = player.currentTrack.artist;
+                        if (player.currentTrack.album) txt += " • " + player.currentTrack.album;
+                        return txt;
                     }
-                    
-                    Label {
-                        visible: bar.hasTrack && player.currentTrack.album
-                        text: bar.hasTrack ? ("• " + player.currentTrack.album) : ""
-                        color: "#6e7681"
-                        font.pixelSize: 12
-                        elide: Label.ElideRight
-                        Layout.maximumWidth: 200
-                    }
+                    color: "#8b949e"
+                    font.pixelSize: 13
+                    elide: Label.ElideRight
                 }
             }
 
@@ -279,6 +270,8 @@ Rectangle {
                     anchors.centerIn: parent
                     fillMode: Image.PreserveAspectFit
                 }
+                
+                onClicked: player.previous()
                 
                 ToolTip.visible: hovered
                 ToolTip.text: "Anterior (Shift+P)"

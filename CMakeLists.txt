@@ -8,7 +8,26 @@ if(MSVC)
     add_compile_options(/Zc:__cplusplus /permissive-)
 endif()
 
-find_package(Qt6 6.9 REQUIRED COMPONENTS Quick QuickControls2 Network Multimedia Core5Compat)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Quick QuickControls2 Network Core5Compat)
+
+# Tentar encontrar libmpv no projeto primeiro
+set(MPV_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/libs/mpv/include")
+set(MPV_LIBRARY_DIR "${CMAKE_SOURCE_DIR}/libs/mpv/lib")
+
+if(EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h")
+    message(STATUS "Usando libmpv do projeto: ${MPV_INCLUDE_DIR}")
+    if(MINGW)
+        set(MPV_LIBRARY "${MPV_LIBRARY_DIR}/libmpv.dll.a")
+    else()
+        set(MPV_LIBRARY "${MPV_LIBRARY_DIR}/mpv.lib")
+    endif()
+else()
+    # Fallback para pkg-config
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
+    set(MPV_INCLUDE_DIR ${MPV_INCLUDE_DIRS})
+    set(MPV_LIBRARY PkgConfig::MPV)
+endif()
 
 qt_standard_project_setup()
 set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
@@ -16,6 +35,7 @@ set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
 qt_add_executable(shibamusic
     src/main.cpp
     src/core/SubsonicClient.h src/core/SubsonicClient.cpp
+    src/playback/MpvPlayer.h src/playback/MpvPlayer.cpp
     src/playback/PlayerController.h src/playback/PlayerController.cpp
     src/core/SubsonicNetworkAccessManagerFactory.h
     src/core/SubsonicNetworkAccessManagerFactory.cpp
@@ -67,4 +87,28 @@ qt_add_resources(shibamusic "qml"
         qml/icons/volume_up.svg
 )
 
-target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Multimedia Qt6::Core5Compat)
+target_include_directories(shibamusic PRIVATE ${MPV_INCLUDE_DIR})
+
+if(TARGET PkgConfig::MPV)
+    target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Core5Compat PkgConfig::MPV)
+else()
+    target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Core5Compat ${MPV_LIBRARY})
+    # Copiar DLL do mpv para a pasta de build
+    if(EXISTS "${CMAKE_SOURCE_DIR}/libs/mpv/bin/libmpv-2.dll")
+        add_custom_command(TARGET shibamusic POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_SOURCE_DIR}/libs/mpv/bin/libmpv-2.dll"
+            "$<TARGET_FILE_DIR:shibamusic>/libmpv-2.dll"
+            COMMENT "Copiando libmpv-2.dll para pasta de build"
+        )
+    elseif(EXISTS "${CMAKE_SOURCE_DIR}/libs/mpv/bin/mpv-2.dll")
+        add_custom_command(TARGET shibamusic POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_SOURCE_DIR}/libs/mpv/bin/mpv-2.dll"
+            "$<TARGET_FILE_DIR:shibamusic>/mpv-2.dll"
+            COMMENT "Copiando mpv-2.dll para pasta de build"
+        )
+    else()
+        message(WARNING "DLL do mpv não encontrada em libs/mpv/bin/")
+    endif()
+endif()

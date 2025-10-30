@@ -129,7 +129,7 @@ Page {
                                 enabled: api.tracks.length > 0
                                 onClicked: {
                                     if (api.tracks.length > 0)
-                                        player.playTrack(api.tracks[0])
+                                        player.playAlbum(api.tracks);
                                 }
                             }
                             ToolButton {
@@ -173,7 +173,7 @@ Page {
                     subtitle: modelData.artist
                     duration: modelData.duration
                     cover: api.coverArtUrl(modelData.coverArt, 128)
-                    onPlayClicked: player.playTrack(modelData)
+                    onPlayClicked: player.playAlbum(api.tracks, index)
                     onQueueClicked: player.addToQueue(modelData)
                 }
             }

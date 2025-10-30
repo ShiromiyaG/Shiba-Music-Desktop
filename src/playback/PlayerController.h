@@ -1,8 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QVariant>
-#include <QMediaPlayer>
-#include <QAudioOutput>
+#include "MpvPlayer.h"
 
 class SubsonicClient;
 
@@ -23,9 +22,9 @@ public:
 
     QVariantMap currentTrack() const { return m_current; }
     QVariantList queue() const { return m_queue; }
-    bool playing() const { return m_active->playbackState() == QMediaPlayer::PlayingState; }
-    qint64 position() const { return m_active->position(); }
-    qint64 duration() const { return m_active->duration(); }
+    bool playing() const { return !m_mpv->isPaused(); }
+    qint64 position() const { return m_mpv->position(); }
+    qint64 duration() const { return m_mpv->duration(); }
     bool crossfade() const { return m_crossfade; }
     void setCrossfade(bool on) { if (m_crossfade != on) { m_crossfade = on; emit crossfadeChanged(); } }
     qreal volume() const { return m_volume; }
@@ -37,7 +36,7 @@ public:
     int replayGainMode() const { return m_replayGainMode; }
     void setReplayGainMode(int mode);
 
-    Q_INVOKABLE void playTrack(const QVariantMap& track, int maxBitrateKbps = 0);
+    Q_INVOKABLE void playAlbum(const QVariantList& tracks, int index = 0);
     Q_INVOKABLE void addToQueue(const QVariantMap& track);
     Q_INVOKABLE void next();
     Q_INVOKABLE void previous();
@@ -59,20 +58,17 @@ signals:
     void replayGainEnabledChanged();
     void replayGainModeChanged();
 
+private slots:
+    void onEndOfFile();
+    void onPlaylistPosChanged(int pos);
+
 private:
-    void playInternal(int index);
-    void setupPlayerConnections(QMediaPlayer *p);
-    void applySource(QMediaPlayer *p, const QUrl& url);
+    void rebuildPlaylist();
+    void updateVolume();
 
     SubsonicClient *m_api;
-
-    QMediaPlayer m_playerA;
-    QMediaPlayer m_playerB;
-    QAudioOutput m_outA;
-    QAudioOutput m_outB;
-    QMediaPlayer *m_active = &m_playerA;
-    QMediaPlayer *m_inactive = &m_playerB;
-
+    MpvPlayer *m_mpv;
+    
     bool m_crossfade = true;
     int m_index = -1;
     QVariantList m_queue;
@@ -80,5 +76,6 @@ private:
     qreal m_volume = 0.5;
     bool m_muted = false;
     bool m_replayGainEnabled = true;
-    int m_replayGainMode = 1; // 0 = track, 1 = album
+    int m_replayGainMode = 1;
+    int m_lastPlaylistPos = -1;
 };

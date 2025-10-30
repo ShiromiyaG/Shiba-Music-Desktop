@@ -1,133 +1,120 @@
 #include "PlayerController.h"
 #include "../core/SubsonicClient.h"
-#include <QPropertyAnimation>
 #include <QDebug>
+#include <QtMath>
 
 PlayerController::PlayerController(SubsonicClient *api, QObject *parent)
-    : QObject(parent), m_api(api)
+    : QObject(parent), m_api(api), m_mpv(new MpvPlayer(this))
 {
-    m_playerA.setAudioOutput(&m_outA);
-    m_playerB.setAudioOutput(&m_outB);
-
-    m_outA.setVolume(m_volume);
-    m_outB.setVolume(m_volume);
-
-    setupPlayerConnections(&m_playerA);
-    setupPlayerConnections(&m_playerB);
+    connect(m_mpv, &MpvPlayer::positionChanged, this, &PlayerController::positionChanged);
+    connect(m_mpv, &MpvPlayer::durationChanged, this, &PlayerController::durationChanged);
+    connect(m_mpv, &MpvPlayer::playbackStateChanged, this, &PlayerController::playingChanged);
+    connect(m_mpv, &MpvPlayer::endOfFile, this, &PlayerController::onEndOfFile);
+    connect(m_mpv, &MpvPlayer::playlistPosChanged, this, &PlayerController::onPlaylistPosChanged);
+    
+    updateVolume();
 }
 
-void PlayerController::setupPlayerConnections(QMediaPlayer *p) {
-    connect(p, &QMediaPlayer::positionChanged, this, &PlayerController::positionChanged);
-    connect(p, &QMediaPlayer::durationChanged, this, &PlayerController::durationChanged);
-    connect(p, &QMediaPlayer::playbackStateChanged, this, &PlayerController::playingChanged);
-    connect(p, &QMediaPlayer::mediaStatusChanged, this, [this, p](QMediaPlayer::MediaStatus s){
-        if (p == m_active && s == QMediaPlayer::EndOfMedia) next();
-    });
-}
-
-void PlayerController::applySource(QMediaPlayer *p, const QUrl& url) {
-    p->setSource(url);
-}
-
-void PlayerController::playTrack(const QVariantMap& track, int maxBitrateKbps) {
-    Q_UNUSED(maxBitrateKbps);
-    m_queue.clear();
-    m_queue.push_back(track);
+void PlayerController::playAlbum(const QVariantList& tracks, int index) {
+    if (tracks.isEmpty() || index < 0 || index >= tracks.size()) {
+        return;
+    }
+    m_queue = tracks;
     emit queueChanged();
-    m_index = 0;
-    playInternal(m_index);
+    m_index = index;
+    m_current = tracks.at(index).toMap();
+    emit currentTrackChanged();
+    rebuildPlaylist();
 }
 
 void PlayerController::addToQueue(const QVariantMap& track) {
     m_queue.push_back(track);
     emit queueChanged();
-    if (m_index < 0) { m_index = 0; playInternal(m_index); }
+    if (m_index < 0) {
+        m_index = 0;
+        m_current = track;
+        emit currentTrackChanged();
+        rebuildPlaylist();
+    } else {
+        const auto id = track.value("id").toString();
+        const QString url = m_api->streamUrl(id).toString();
+        m_mpv->command(QVariantList{"loadfile", url, "append"});
+    }
 }
 
-void PlayerController::playInternal(int index) {
-    if (index < 0 || index >= m_queue.size()) return;
-    m_index = index;
-    m_current = m_queue[m_index].toMap();
-    emit currentTrackChanged();
-
-    m_api->addToRecentlyPlayed(m_current);
-
-    const auto id = m_current.value("id").toString();
-    const QUrl src = m_api->streamUrl(id);
-    m_api->scrobble(id, /*submission*/true, 0);
-
-    qreal targetVolume = 1.0;
-    if (m_replayGainEnabled) {
-        const QString gainKey = (m_replayGainMode == 1) ? "replayGainAlbumGain" : "replayGainTrackGain";
-        if (m_current.contains(gainKey)) {
-            const qreal gainDb = m_current.value(gainKey).toDouble();
-            if (qAbs(gainDb) > 0.01) {
-                targetVolume = qPow(10.0, gainDb / 20.0);
-                targetVolume = qBound(0.1, targetVolume, 2.0);
-            }
-        }
-    }
-
-
-    const qreal finalVolume = targetVolume * m_volume;
+void PlayerController::rebuildPlaylist() {
+    m_lastPlaylistPos = -1;
+    m_mpv->command(QVariantList{"stop"});
+    m_mpv->command(QVariantList{"playlist-clear"});
     
-    if (m_crossfade && m_active->playbackState() == QMediaPlayer::PlayingState) {
-        applySource(m_inactive, src);
-        m_inactive->play();
-        QPropertyAnimation *aOut = new QPropertyAnimation(m_active->audioOutput(), "volume", this);
-        aOut->setDuration(1200);
-        aOut->setStartValue(m_active->audioOutput()->volume());
-        aOut->setEndValue(0.0);
-        QPropertyAnimation *aIn = new QPropertyAnimation(m_inactive->audioOutput(), "volume", this);
-        aIn->setDuration(1200);
-        aIn->setStartValue(0.0);
-        aIn->setEndValue(finalVolume);
-        connect(aOut, &QPropertyAnimation::finished, this, [this]{
-            m_active->stop();
-            std::swap(m_active, m_inactive);
-            emit playingChanged();
-        });
-        aOut->start(QAbstractAnimation::DeleteWhenStopped);
-        aIn->start(QAbstractAnimation::DeleteWhenStopped);
-    } else {
-        applySource(m_active, src);
-        m_active->play();
-        m_active->audioOutput()->setVolume(finalVolume);
-        m_inactive->audioOutput()->setVolume(0.0);
+    for (int i = 0; i < m_queue.size(); ++i) {
+        const auto track = m_queue[i].toMap();
+        const auto id = track.value("id").toString();
+        const QString url = m_api->streamUrl(id).toString();
+        m_mpv->command(QVariantList{"loadfile", url, "append"});
+    }
+    
+    if (m_index >= 0 && m_index < m_queue.size()) {
+        m_mpv->setProperty("playlist-pos", m_index);
+        m_mpv->setProperty("pause", false);
+        updateVolume();
+        
+        m_api->addToRecentlyPlayed(m_current);
+        const auto id = m_current.value("id").toString();
+        m_api->scrobble(id, true, 0);
     }
 }
 
 void PlayerController::next() {
-    if (m_index+1 < m_queue.size()) {
+    if (m_index + 1 < m_queue.size()) {
         const auto id = m_current.value("id").toString();
-        if (!id.isEmpty()) m_api->scrobble(id, /*submission*/true, m_active->position());
-        playInternal(m_index+1);
-    } else {
-        m_active->stop();
-        emit playingChanged();
+        if (!id.isEmpty()) m_api->scrobble(id, true, m_mpv->position());
+        
+        m_index++;
+        m_current = m_queue[m_index].toMap();
+        emit currentTrackChanged();
+        m_mpv->command(QVariantList{"playlist-next"});
+        
+        m_api->addToRecentlyPlayed(m_current);
+        m_api->scrobble(m_current.value("id").toString(), true, 0);
     }
 }
 
 void PlayerController::previous() {
-    if (m_active->position() > 5000) {
-        m_active->setPosition(0);
+    if (m_mpv->position() > 5000) {
+        m_mpv->setProperty("time-pos", 0.0);
         return;
     }
-    if (m_index-1 >= 0) playInternal(m_index-1);
+    if (m_index > 0) {
+        m_index--;
+        m_current = m_queue[m_index].toMap();
+        emit currentTrackChanged();
+        m_mpv->command(QVariantList{"playlist-prev"});
+        
+        m_api->addToRecentlyPlayed(m_current);
+        m_api->scrobble(m_current.value("id").toString(), true, 0);
+    }
 }
 
 void PlayerController::toggle() {
-    if (m_active->playbackState() == QMediaPlayer::PlayingState) m_active->pause();
-    else m_active->play();
-    emit playingChanged();
+    if (m_queue.isEmpty() || m_index < 0) return;
+    bool paused = m_mpv->isPaused();
+    m_mpv->setProperty("pause", !paused);
 }
 
 void PlayerController::seek(qint64 ms) {
-    m_active->setPosition(ms);
+    m_mpv->setProperty("time-pos", ms / 1000.0);
 }
 
 void PlayerController::playFromQueue(int index) {
-    playInternal(index);
+    if (index < 0 || index >= m_queue.size()) return;
+    m_index = index;
+    m_current = m_queue[m_index].toMap();
+    emit currentTrackChanged();
+    m_mpv->setProperty("playlist-pos", index);
+    
+    m_api->addToRecentlyPlayed(m_current);
+    m_api->scrobble(m_current.value("id").toString(), true, 0);
 }
 
 void PlayerController::removeFromQueue(int index) {
@@ -141,7 +128,7 @@ void PlayerController::removeFromQueue(int index) {
     if (m_queue.isEmpty()) {
         m_index = -1;
         m_current.clear();
-        m_active->stop();
+        m_mpv->command(QVariantList{"stop"});
         emit currentTrackChanged();
         emit playingChanged();
         return;
@@ -152,12 +139,11 @@ void PlayerController::removeFromQueue(int index) {
     } else if (wasCurrent) {
         if (m_index >= m_queue.size())
             m_index = m_queue.size() - 1;
-        playInternal(m_index);
-        return;
+        m_current = m_queue[m_index].toMap();
+        emit currentTrackChanged();
     }
-
-    m_current = m_queue[m_index].toMap();
-    emit currentTrackChanged();
+    
+    rebuildPlaylist();
 }
 
 void PlayerController::clearQueue() {
@@ -165,71 +151,49 @@ void PlayerController::clearQueue() {
     m_queue.clear();
     m_index = -1;
     m_current.clear();
-    m_active->stop();
+    m_mpv->command(QVariantList{"stop"});
     emit queueChanged();
     emit currentTrackChanged();
     emit playingChanged();
 }
 
 void PlayerController::setVolume(qreal v) {
-    if (v < 0.0) v = 0.0;
-    if (v > 1.0) v = 1.0;
+    v = qBound(0.0, v, 1.0);
     if (qAbs(m_volume - v) < 0.001) return;
     m_volume = v;
-    if (!m_muted) {
-        qreal targetVolume = 1.0;
-        if (m_replayGainEnabled && !m_current.isEmpty()) {
-            const QString gainKey = (m_replayGainMode == 1) ? "replayGainAlbumGain" : "replayGainTrackGain";
-            if (m_current.contains(gainKey)) {
-                const qreal gainDb = m_current.value(gainKey).toDouble();
-                if (qAbs(gainDb) > 0.01) {
-                    targetVolume = qPow(10.0, gainDb / 20.0);
-                    targetVolume = qBound(0.1, targetVolume, 2.0);
-                }
-            }
-        }
-        const qreal finalVolume = targetVolume * m_volume;
-        m_outA.setVolume(finalVolume);
-        m_outB.setVolume(finalVolume);
-    }
+    updateVolume();
     emit volumeChanged();
 }
 
 void PlayerController::setMuted(bool m) {
     if (m_muted == m) return;
     m_muted = m;
-    m_outA.setVolume(m_muted ? 0.0 : m_volume);
-    m_outB.setVolume(m_muted ? 0.0 : m_volume);
+    updateVolume();
     emit mutedChanged();
 }
 
 void PlayerController::setReplayGainEnabled(bool enabled) {
     if (m_replayGainEnabled == enabled) return;
     m_replayGainEnabled = enabled;
+    updateVolume();
     emit replayGainEnabledChanged();
-    if (!m_muted && !m_current.isEmpty()) {
-        qreal targetVolume = 1.0;
-        if (m_replayGainEnabled) {
-            const QString gainKey = (m_replayGainMode == 1) ? "replayGainAlbumGain" : "replayGainTrackGain";
-            if (m_current.contains(gainKey)) {
-                const qreal gainDb = m_current.value(gainKey).toDouble();
-                if (qAbs(gainDb) > 0.01) {
-                    targetVolume = qPow(10.0, gainDb / 20.0);
-                    targetVolume = qBound(0.1, targetVolume, 2.0);
-                }
-            }
-        }
-        m_outA.setVolume(targetVolume * m_volume);
-        m_outB.setVolume(targetVolume * m_volume);
-    }
 }
 
 void PlayerController::setReplayGainMode(int mode) {
     if (m_replayGainMode == mode) return;
     m_replayGainMode = mode;
+    updateVolume();
     emit replayGainModeChanged();
-    if (!m_muted && m_replayGainEnabled && !m_current.isEmpty()) {
-        qreal targetVolume = 1.0;
+}
+
+void PlayerController::updateVolume() {
+    if (m_muted) {
+        m_mpv->setVolume(0.0);
+        return;
+    }
+    
+    qreal targetVolume = 1.0;
+    if (m_replayGainEnabled && !m_current.isEmpty()) {
         const QString gainKey = (m_replayGainMode == 1) ? "replayGainAlbumGain" : "replayGainTrackGain";
         if (m_current.contains(gainKey)) {
             const qreal gainDb = m_current.value(gainKey).toDouble();
@@ -238,7 +202,42 @@ void PlayerController::setReplayGainMode(int mode) {
                 targetVolume = qBound(0.1, targetVolume, 2.0);
             }
         }
-        m_outA.setVolume(targetVolume * m_volume);
-        m_outB.setVolume(targetVolume * m_volume);
     }
+    
+    m_mpv->setVolume(targetVolume * m_volume * 200.0);
+}
+
+void PlayerController::onPlaylistPosChanged(int pos) {
+    qDebug() << "[CTRL] onPlaylistPosChanged:" << pos << "current m_index:" << m_index;
+    if (pos == -1) {
+        qDebug() << "[CTRL] Playlist ended";
+        return;
+    }
+    
+    if (pos < 0 || pos >= m_queue.size()) {
+        qDebug() << "[CTRL] Invalid pos, ignoring";
+        return;
+    }
+    if (pos == m_index) {
+        qDebug() << "[CTRL] Same pos, ignoring";
+        return;
+    }
+    
+    const auto oldId = m_current.value("id").toString();
+    if (!oldId.isEmpty() && m_index >= 0) {
+        m_api->scrobble(oldId, true, 0);
+    }
+    
+    qDebug() << "[CTRL] Changing track from" << m_index << "to" << pos;
+    m_index = pos;
+    m_current = m_queue[m_index].toMap();
+    emit currentTrackChanged();
+    
+    m_api->addToRecentlyPlayed(m_current);
+    m_api->scrobble(m_current.value("id").toString(), true, 0);
+    updateVolume();
+}
+
+void PlayerController::onEndOfFile() {
+    // Não fazer nada aqui - deixar onPlaylistPosChanged gerenciar
 }
