@@ -56,11 +56,12 @@ Page {
                         asynchronous: true
                         visible: !!coverArtId && status !== Image.Error
                     }
-                    Label {
+                    Image {
                         anchors.centerIn: parent
                         visible: !coverArtId
-                        text: "📀"
-                        font.pixelSize: 54
+                        source: "qrc:/qml/icons/album.svg"
+                        sourceSize.width: 54
+                        sourceSize.height: 54
                     }
                 }
 
@@ -81,7 +82,8 @@ Page {
                     Row {
                         spacing: 12
                         ToolButton {
-                            text: "▶ Reproduzir"
+                            text: "Reproduzir"
+                            icon.source: "qrc:/qml/icons/play_arrow.svg"
                             enabled: api.tracks.length > 0
                             onClicked: {
                                 if (api.tracks.length > 0)
@@ -89,7 +91,8 @@ Page {
                             }
                         }
                         ToolButton {
-                            text: "➕ Fila"
+                            text: "Fila"
+                            icon.source: "qrc:/qml/icons/add.svg"
                             enabled: api.tracks.length > 0
                             onClicked: {
                                 for (var i = 0; i < api.tracks.length; ++i)
@@ -137,7 +140,7 @@ Page {
         Component { id: emptyTracks
         Components.EmptyState {
             width: parent.width
-            emoji: "🎵"
+            emoji: "qrc:/qml/icons/music_note.svg"
             title: "Nenhuma faixa foi retornada"
             description: "Tente atualizar o álbum ou verifique sua conexão."
         }

@@ -8,7 +8,7 @@ if(MSVC)
     add_compile_options(/Zc:__cplusplus /permissive-)
 endif()
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Quick QuickControls2 Network Multimedia)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Quick QuickControls2 Network Multimedia)
 
 qt_standard_project_setup()
 set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
@@ -41,6 +41,24 @@ qt_add_resources(shibamusic "qml"
         qml/pages/ArtistsPage.qml
         qml/pages/AlbumsPage.qml
         qml/pages/FavoritesPage.qml
+        qml/icons/account_circle.svg
+        qml/icons/add.svg
+        qml/icons/album.svg
+        qml/icons/auto_awesome.svg
+        qml/icons/check_box_outline_blank.svg
+        qml/icons/close.svg
+        qml/icons/home.svg
+        qml/icons/mic.svg
+        qml/icons/music_note.svg
+        qml/icons/pause.svg
+        qml/icons/play_arrow.svg
+        qml/icons/queue_music.svg
+        qml/icons/refresh.svg
+        qml/icons/search.svg
+        qml/icons/shuffle.svg
+        qml/icons/skip_next.svg
+        qml/icons/skip_previous.svg
+        qml/icons/star.svg
 )
 
 target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Multimedia)

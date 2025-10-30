@@ -7,23 +7,12 @@ import "qrc:/qml/js/utils.js" as Utils
 Rectangle {
     id: bar
     width: parent ? parent.width : 800
-    height: 120
-    color: "#0d1117"
+    height: 110
     
-    // Borda superior com gradiente sutil
-    Rectangle {
-        anchors.top: parent.top
-        width: parent.width
-        height: 1
-        gradient: Gradient {
-            orientation: Gradient.Horizontal
-            GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 0.3; color: "#2d3748" }
-            GradientStop { position: 0.7; color: "#2d3748" }
-            GradientStop { position: 1.0; color: "transparent" }
-        }
+    gradient: Gradient {
+        GradientStop { position: 0.0; color: "#161b22" }
+        GradientStop { position: 1.0; color: "#0d1117" }
     }
-
     signal queueRequested()
     readonly property bool hasQueue: !!player.queue && player.queue.length > 0
     readonly property bool hasTrack: player.currentTrack && player.currentTrack.id
@@ -35,17 +24,18 @@ Rectangle {
 
         // Capa do álbum com efeito de brilho
         Item {
-            width: 88
-            height: 88
+            Layout.alignment: Qt.AlignVCenter
+            width: 78
+            height: 78
             
             Rectangle {
                 id: coverContainer
                 anchors.centerIn: parent
-                width: 88
-                height: 88
-                radius: 12
-                color: "#161b22"
-                border.color: player.playing ? "#58a6ff" : "#30363d"
+                width: 78
+                height: 78
+                radius: 14
+                color: "#0d1117"
+                border.color: "#21262d"
                 border.width: 2
                 clip: true
 
@@ -56,11 +46,13 @@ Rectangle {
                     source: bar.hasTrack ? api.coverArtUrl(player.currentTrack.coverArt, 256) : ""
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
-                    
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        brightness: 0.1
-                        saturation: 1.2
+                    smooth: true
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "white"
+                        opacity: player.playing ? 0.1 : 0.0
+                        Behavior on opacity { NumberAnimation { duration: 300 } }
                     }
                 }
 
@@ -99,27 +91,6 @@ Rectangle {
                 }
             }
 
-            // Animação de pulsação quando tocando
-            SequentialAnimation {
-                running: player ? player.playing : false
-                loops: Animation.Infinite
-                NumberAnimation {
-                    target: coverContainer.border
-                    property: "width"
-                    from: 2
-                    to: 3
-                    duration: 800
-                    easing.type: Easing.InOutQuad
-                }
-                NumberAnimation {
-                    target: coverContainer.border
-                    property: "width"
-                    from: 3
-                    to: 2
-                    duration: 800
-                    easing.type: Easing.InOutQuad
-                }
-            }
         }
 
         // Informações da música e controles
@@ -138,9 +109,9 @@ Rectangle {
                     Layout.fillWidth: true
                     text: bar.hasTrack ? player.currentTrack.title : "Nenhuma música tocando"
                     elide: Label.ElideRight
-                    font.pixelSize: 15
-                    font.weight: Font.DemiBold
-                    color: bar.hasTrack ? "#e6edf3" : "#8b949e"
+                    font.pixelSize: 16
+                    font.weight: Font.Bold
+                    color: bar.hasTrack ? "#f0f6fc" : "#8b949e"
                 }
                 
                 RowLayout {
@@ -188,9 +159,11 @@ Rectangle {
                         id: seekBarBackground
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width
-                        height: 6
-                        radius: 3
-                        color: "#21262d"
+                        height: 7
+                        radius: 3.5
+                        color: "#161b22"
+                        border.color: "#21262d"
+                        border.width: 1
                         
                         Rectangle {
                             id: seekBarBuffer
@@ -207,7 +180,8 @@ Rectangle {
                             radius: parent.radius
                             gradient: Gradient {
                                 orientation: Gradient.Horizontal
-                                GradientStop { position: 0.0; color: "#1f6feb" }
+                                GradientStop { position: 0.0; color: "#0969da" }
+                                GradientStop { position: 0.5; color: "#1f6feb" }
                                 GradientStop { position: 1.0; color: "#58a6ff" }
                             }
                             
@@ -221,13 +195,6 @@ Rectangle {
                                 color: "#58a6ff"
                                 border.color: "#0d1117"
                                 border.width: 2
-                                
-                                layer.enabled: true
-                                layer.effect: MultiEffect {
-                                    shadowEnabled: true
-                                    shadowColor: "#58a6ff"
-                                    shadowBlur: 0.4
-                                }
                             }
                         }
                     }
@@ -318,27 +285,24 @@ Rectangle {
             
             // Botão play/pause principal
             RoundButton {
-                width: 48
-                height: 48
+                width: 52
+                height: 52
                 
                 background: Rectangle {
-                    radius: 24
+                    radius: 26
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: parent.parent.pressed ? "#1f6feb" : "#58a6ff" }
-                        GradientStop { position: 1.0; color: parent.parent.pressed ? "#0969da" : "#1f6feb" }
+                        GradientStop { position: 0.0; color: parent.parent.pressed ? "#0969da" : "#1f6feb" }
+                        GradientStop { position: 0.5; color: parent.parent.pressed ? "#1f6feb" : "#388bfd" }
+                        GradientStop { position: 1.0; color: parent.parent.pressed ? "#0969da" : "#58a6ff" }
                     }
                     
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        shadowEnabled: true
-                        shadowColor: "#1f6feb"
-                        shadowBlur: parent.parent.hovered ? 0.6 : 0.4
-                    }
+                    // Borda interna brilhante
+                    border.color: Qt.rgba(1, 1, 1, 0.15)
+                    border.width: 1
                 }
-                
                 contentItem: Label {
                     text: player.playing ? "⏸" : "▶"
-                    font.pixelSize: 20
+                    font.pixelSize: 22
                     color: "#ffffff"
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
@@ -420,9 +384,11 @@ Rectangle {
                     Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
                         width: parent.width
-                        height: 4
-                        radius: 2
-                        color: "#21262d"
+                        height: 5
+                        radius: 2.5
+                        color: "#161b22"
+                        border.color: "#21262d"
+                        border.width: 1
                         
                         Rectangle {
                             width: parent.width * player.volume
@@ -430,8 +396,17 @@ Rectangle {
                             radius: parent.radius
                             gradient: Gradient {
                                 orientation: Gradient.Horizontal
-                                GradientStop { position: 0.0; color: "#1f6feb" }
+                                GradientStop { position: 0.0; color: "#0969da" }
+                                GradientStop { position: 0.5; color: "#1f6feb" }
                                 GradientStop { position: 1.0; color: "#58a6ff" }
+                            }
+                            
+                            layer.enabled: true
+                            layer.effect: MultiEffect {
+                                shadowEnabled: true
+                                shadowColor: "#1f6feb"
+                                shadowBlur: 0.3
+                                shadowOpacity: 0.6
                             }
                             
                             Rectangle {

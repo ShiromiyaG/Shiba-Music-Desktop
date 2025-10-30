@@ -26,10 +26,12 @@ Rectangle {
                 height: 48
                 radius: 16
                 color: "#2a3145"
-                Label {
+                Image {
                     anchors.centerIn: parent
-                    text: "🦊"
-                    font.pixelSize: 24
+                    source: "qrc:/qml/icons/account_circle.svg"
+                    sourceSize.width: 24
+                    sourceSize.height: 24
+                    antialiasing: true
                 }
             }
             ColumnLayout {
@@ -77,12 +79,13 @@ Rectangle {
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                     }
-                    Label {
+                    Image {
                         anchors.centerIn: parent
                         visible: coverImageNowPlaying.status !== Image.Ready
-                        text: "🎶"
-                        font.pixelSize: 40
-                        color: "#5f6a82"
+                        source: "qrc:/qml/icons/music_note.svg"
+                        sourceSize.width: 40
+                        sourceSize.height: 40
+                        antialiasing: true
                     }
                 }
                 ColumnLayout {
@@ -110,21 +113,21 @@ Rectangle {
             Layout.fillWidth: true
             spacing: 12
             ToolButton {
-                text: "⏮"
+                icon.source: "qrc:/qml/icons/skip_previous.svg"
                 enabled: panel.hasQueue
                 onClicked: player.previous()
             }
             ToolButton {
-                text: player.playing ? "⏸" : "▶"
+                icon.source: player.playing ? "qrc:/qml/icons/pause.svg" : "qrc:/qml/icons/play_arrow.svg"
                 onClicked: player.toggle()
             }
             ToolButton {
-                text: "⏭"
+                icon.source: "qrc:/qml/icons/skip_next.svg"
                 enabled: panel.hasQueue
                 onClicked: player.next()
             }
             ToolButton {
-                text: player.crossfade ? "✨" : "▫"
+                icon.source: player.crossfade ? "qrc:/qml/icons/auto_awesome.svg" : "qrc:/qml/icons/check_box_outline_blank.svg"
                 checkable: true
                 checked: player.crossfade
                 onToggled: player.crossfade = checked
@@ -170,11 +173,13 @@ Rectangle {
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                             }
-                            Label {
+                            Image {
                                 anchors.centerIn: parent
                                 visible: coverImageQueue.status !== Image.Ready
-                                text: "♪"
-                                color: "#555f79"
+                                source: "qrc:/qml/icons/music_note.svg"
+                                sourceSize.width: 20
+                                sourceSize.height: 20
+                                antialiasing: true
                             }
                         }
                                                 ColumnLayout {
@@ -195,11 +200,11 @@ Rectangle {
                             }
                         }
                         ToolButton {
-                            text: "▶"
+                            icon.source: "qrc:/qml/icons/play_arrow.svg"
                             onClicked: player.playFromQueue(index)
                         }
                         ToolButton {
-                            text: "✕"
+                            icon.source: "qrc:/qml/icons/close.svg"
                             onClicked: player.removeFromQueue(index)
                         }
                     }

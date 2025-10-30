@@ -45,11 +45,12 @@ Item {
                     anchors.fill: parent
                     color: "#1f2530"
                     visible: coverImage.status !== Image.Ready
-                    Label {
+                    Image {
                         anchors.centerIn: parent
-                        text: "📀"
-                        font.pixelSize: 42
-                        color: "#8b96a8"
+                        source: "qrc:/qml/icons/album.svg"
+                        sourceSize.width: 42
+                        sourceSize.height: 42
+                        antialiasing: true
                     }
                 }
             }

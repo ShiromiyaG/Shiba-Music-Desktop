@@ -30,11 +30,11 @@ ApplicationWindow {
     }
 
     property var navigationItems: [
-        { label: "Início", icon: "🏠", target: "home" },
-        { label: "Favoritos", icon: "⭐", target: "favorites" },
-        { label: "Álbuns", icon: "💿", target: "albums" },
-        { label: "Artistas", icon: "🎤", target: "artists" },
-        { label: "Fila", icon: "🎵", target: "queue" }
+        { label: "Início", icon: "qrc:/qml/icons/home.svg", target: "home" },
+        { label: "Favoritos", icon: "qrc:/qml/icons/star.svg", target: "favorites" },
+        { label: "Álbuns", icon: "qrc:/qml/icons/album.svg", target: "albums" },
+        { label: "Artistas", icon: "qrc:/qml/icons/mic.svg", target: "artists" },
+        { label: "Fila", icon: "qrc:/qml/icons/queue_music.svg", target: "queue" }
     ]
     property string currentSection: "home"
     property bool initialLibraryLoaded: false
@@ -109,9 +109,11 @@ ApplicationWindow {
                             }
                             contentItem: RowLayout {
                                 spacing: 12
-                                Label {
-                                    text: modelData.icon
-                                    font.pixelSize: 16
+                                Image {
+                                    source: modelData.icon
+                                    sourceSize.width: 16
+                                    sourceSize.height: 16
+                                    antialiasing: true
                                     Layout.alignment: Qt.AlignVCenter
                                 }
                                 Label {
@@ -168,18 +170,17 @@ ApplicationWindow {
                                 color: "#141925"
                                 border.color: "#2a3148"
                             }
-                            Label {
+                            Image {
                                 anchors.left: parent.left
                                 anchors.leftMargin: 12
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: "🔍"
-                                color: "#7a859f"
+                                source: "qrc:/qml/icons/search.svg"
+                                sourceSize.width: 16
+                                sourceSize.height: 16
+                                antialiasing: true
                             }
                             ToolButton {
-                                id: clearButton
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                                text: "✕"
+                                icon.source: "qrc:/qml/icons/close.svg"
                                 visible: searchBox.text.length > 0
                                 onClicked: {
                                     searchBox.clear()
@@ -327,12 +328,13 @@ ApplicationWindow {
                                     visible: modelData.coverArt && status !== Image.Error
                                 }
                                 
-                                Label {
+                                Image {
                                     anchors.centerIn: parent
                                     visible: !modelData.coverArt
-                                    text: "♪"
-                                    color: "#55617b"
-                                    font.pixelSize: 14
+                                    source: "qrc:/qml/icons/music_note.svg"
+                                    sourceSize.width: 20
+                                    sourceSize.height: 20
+                                    antialiasing: true
                                 }
                             }
                             
@@ -362,12 +364,12 @@ ApplicationWindow {
                                 spacing: 6
                                 
                                 ToolButton {
-                                    text: "▶"
+                                    icon.source: "qrc:/qml/icons/play_arrow.svg"
                                     onClicked: player.playFromQueue(index)
                                 }
                                 
                                 ToolButton {
-                                    text: "✕"
+                                    icon.source: "qrc:/qml/icons/close.svg"
                                     onClicked: player.removeFromQueue(index)
                                 }
                             }

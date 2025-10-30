@@ -14,11 +14,9 @@ Item {
     ColumnLayout {
         anchors.centerIn: parent
         spacing: 8
-        Label {
-            text: emoji
-            font.pixelSize: 52
-            horizontalAlignment: Text.AlignHCenter
+        Loader {
             Layout.alignment: Qt.AlignHCenter
+            sourceComponent: emoji.startsWith("qrc:") ? imageComponent : textComponent
         }
         Label {
             text: root.title
@@ -34,6 +32,25 @@ Item {
             horizontalAlignment: Text.AlignHCenter
             Layout.preferredWidth: Math.min(root.width, 420)
             Layout.alignment: Qt.AlignHCenter
+        }
+    }
+
+    Component {
+        id: imageComponent
+        Image {
+            source: emoji
+            sourceSize.width: 52
+            sourceSize.height: 52
+            antialiasing: true
+        }
+    }
+
+    Component {
+        id: textComponent
+        Label {
+            text: emoji
+            font.pixelSize: 52
+            horizontalAlignment: Text.AlignHCenter
         }
     }
 }

@@ -84,11 +84,12 @@ Page {
                             asynchronous: true
                             visible: !!coverArtId && status !== Image.Error
                         }
-                        Label {
+                        Image {
                             anchors.centerIn: parent
                             visible: !coverArtId
-                            text: "🎤"
-                            font.pixelSize: 48
+                            source: "qrc:/qml/icons/mic.svg"
+                            sourceSize.width: 48
+                            sourceSize.height: 48
                         }
                     }
 
@@ -108,7 +109,8 @@ Page {
                         Row {
                             spacing: 12
                             ToolButton {
-                                text: "▶ Aleatório"
+                                text: "Aleatório"
+                                icon.source: "qrc:/qml/icons/shuffle.svg"
                                 enabled: api.tracks.length > 0
                                 onClicked: {
                                     if (api.tracks.length > 0)
@@ -116,7 +118,8 @@ Page {
                                 }
                             }
                             ToolButton {
-                                text: "↺ Atualizar"
+                                text: "Atualizar"
+                                icon.source: "qrc:/qml/icons/refresh.svg"
                                 onClicked: api.fetchArtist(artistId)
                             }
                         }
@@ -160,7 +163,7 @@ Page {
         id: emptyAlbums
         Components.EmptyState {
             width: parent.width
-            emoji: "📀"
+            emoji: "qrc:/qml/icons/album.svg"
             title: "Nenhum álbum encontrado"
             description: "Talvez este artista ainda esteja sincronizando. Tente atualizar."
         }

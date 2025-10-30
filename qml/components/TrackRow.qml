@@ -52,11 +52,13 @@ Item {
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                 }
-                Label {
+                Image {
                     anchors.centerIn: parent
                     visible: coverImage.status !== Image.Ready
-                    text: "♪"
-                    color: "#7482a0"
+                    source: "qrc:/qml/icons/music_note.svg"
+                    sourceSize.width: 20
+                    sourceSize.height: 20
+                    antialiasing: true
                 }
             }
 
@@ -88,13 +90,13 @@ Item {
             Row {
                 spacing: 6
                 ToolButton {
-                    text: "▶"
+                    icon.source: "qrc:/qml/icons/play_arrow.svg"
                     onClicked: root.playClicked()
                     ToolTip.visible: hovered
                     ToolTip.text: "Reproduzir agora"
                 }
                 ToolButton {
-                    text: "＋"
+                    icon.source: "qrc:/qml/icons/add.svg"
                     onClicked: root.queueClicked()
                     ToolTip.visible: hovered
                     ToolTip.text: "Adicionar à fila"
