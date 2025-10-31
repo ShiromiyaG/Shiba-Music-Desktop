@@ -64,6 +64,8 @@ qt_add_resources(shibamusic "qml"
         qml/pages/ArtistsPage.qml
         qml/pages/AlbumsPage.qml
         qml/pages/FavoritesPage.qml
+        qml/pages/PlaylistsPage.qml
+        qml/pages/PlaylistDetailPage.qml
         qml/pages/SettingsPage.qml
         qml/pages/QueuePage.qml
         qml/icons/account_circle.svg

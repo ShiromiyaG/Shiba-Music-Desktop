@@ -1,4 +1,5 @@
 #include "SubsonicClient.h"
+#include <set>
 #include <QCryptographicHash>
 #include <QRandomGenerator>
 #include <QNetworkRequest>
@@ -87,19 +88,27 @@ void SubsonicClient::login(const QString& url, const QString& user, const QStrin
     auto *reply = m_nam.get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply] {
         if (reply->error() != QNetworkReply::NoError) {
-            emit errorOccurred(reply->errorString());
+            const QString message = reply->errorString();
             reply->deleteLater();
+            setAuthenticated(false);
+            emit loginFailed(message);
+            emit errorOccurred(message);
             return;
         }
         const auto all = reply->readAll();
         reply->deleteLater();
-        const auto doc = QJsonDocument::fromJson(all);
-        QString err;
-        const bool ok = checkOk(doc, &err);
-        setAuthenticated(ok);
-        if (!ok) { emit errorOccurred("Falha no login: " + err); return; }
-        fetchArtists();
-    });
+    const auto doc = QJsonDocument::fromJson(all);
+    QString err;
+    const bool ok = checkOk(doc, &err);
+    setAuthenticated(ok);
+    if (!ok) {
+        const QString message = "Falha no login: " + err;
+        emit loginFailed(message);
+        emit errorOccurred(message);
+        return;
+    }
+    fetchArtists();
+});
 }
 
 void SubsonicClient::logout() {
@@ -363,6 +372,112 @@ void SubsonicClient::fetchRandomSongs() {
             });
         }
         emit randomSongsChanged();
+    });
+}
+
+void SubsonicClient::fetchPlaylists() {
+    if (!m_authenticated) return;
+
+    if (m_playlistsReply) {
+        m_playlistsReply->abort();
+    }
+
+    m_playlists.clear();
+    emit playlistsChanged();
+
+    QNetworkRequest req(buildUrl("getPlaylists", {}, true));
+    auto *reply = m_nam.get(req);
+    m_playlistsReply = reply;
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+        if (reply != m_playlistsReply) {
+            reply->deleteLater();
+            return;
+        }
+        m_playlistsReply = nullptr;
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() != QNetworkReply::OperationCanceledError) {
+                emit errorOccurred(reply->errorString());
+            }
+            reply->deleteLater();
+            return;
+        }
+
+        const auto doc = QJsonDocument::fromJson(reply->readAll());
+        reply->deleteLater();
+        QString err;
+        if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
+
+        auto root = doc.object().value("subsonic-response").toObject();
+        auto playlists = root.value("playlists").toObject().value("playlist").toArray();
+        for (const auto &pv : playlists) {
+            auto p = pv.toObject();
+            m_playlists.push_back(QVariantMap{
+                {"id", p.value("id").toString()},
+                {"name", p.value("name").toString()},
+                {"songCount", p.value("songCount").toInt()},
+                {"duration", p.value("duration").toInt()},
+                {"coverArt", p.value("coverArt").toString()}
+            });
+        }
+        emit playlistsChanged();
+    });
+}
+
+void SubsonicClient::fetchPlaylist(const QString& playlistId) {
+    if (!m_authenticated) return;
+
+    if (m_playlistReply) {
+        m_playlistReply->abort();
+    }
+
+    m_tracks.clear();
+    emit tracksChanged();
+
+    QUrlQuery ex; ex.addQueryItem("id", playlistId);
+    QNetworkRequest req(buildUrl("getPlaylist", ex, true));
+    auto *reply = m_nam.get(req);
+    m_playlistReply = reply;
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+        if (reply != m_playlistReply) {
+            reply->deleteLater();
+            return;
+        }
+        m_playlistReply = nullptr;
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() != QNetworkReply::OperationCanceledError) {
+                emit errorOccurred(reply->errorString());
+            }
+            reply->deleteLater();
+            return;
+        }
+
+        const auto doc = QJsonDocument::fromJson(reply->readAll());
+        reply->deleteLater();
+        QString err;
+        if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
+
+        auto root = doc.object().value("subsonic-response").toObject();
+        auto songs = root.value("playlist").toObject().value("entry").toArray();
+        for (const auto &sv : songs) {
+            auto s = sv.toObject();
+            auto rg = s.value("replayGain").toObject();
+            m_tracks.push_back(QVariantMap{
+                {"id", s.value("id").toString()},
+                {"title", s.value("title").toString()},
+                {"artist", s.value("artist").toString()},
+                {"album", s.value("album").toString()},
+                {"albumId", s.value("albumId").toString()},
+                {"duration", s.value("duration").toInt()},
+                {"coverArt", s.value("coverArt").toString()},
+                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
+                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
+            });
+        }
+        emit tracksChanged();
     });
 }
 

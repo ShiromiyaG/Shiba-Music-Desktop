@@ -1,3 +1,4 @@
+#include <set>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
@@ -14,8 +15,8 @@ int main(int argc, char *argv[]) {
     app.setApplicationName("Shiba Music");
 
     SubsonicClient api;
-    PlayerController player(&api);
     DiscordRPC discord;
+    PlayerController player(&api, &discord);
 
     QQmlApplicationEngine engine;
     engine.setNetworkAccessManagerFactory(new SubsonicNetworkAccessManagerFactory);

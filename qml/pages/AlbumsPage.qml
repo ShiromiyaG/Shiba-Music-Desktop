@@ -41,6 +41,7 @@ Page {
                 title: modelData.name || "Álbum Desconhecido"
                 subtitle: modelData.artist || "Artista desconhecido"
                 cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
+                albumId: modelData.id
                 onClicked: albumsPage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt)
             }
         }

@@ -13,6 +13,8 @@ Item {
     property int duration: 0
     property url cover
     property int index: -1
+    property string trackId: ""
+    property bool starred: false
 
     signal playClicked()
     signal queueClicked()
@@ -96,10 +98,55 @@ Item {
                     ToolTip.text: "Reproduzir agora"
                 }
                 ToolButton {
-                    icon.source: "qrc:/qml/icons/add.svg"
-                    onClicked: root.queueClicked()
-                    ToolTip.visible: hovered
-                    ToolTip.text: "Adicionar à fila"
+                    text: "⋯"
+                    onClicked: trackMenu.popup()
+                    
+                    Menu {
+                        id: trackMenu
+                        width: 200
+                        
+                        background: Rectangle {
+                            color: "#1d2330"
+                            radius: 12
+                            border.color: "#2a3040"
+                            border.width: 1
+                        }
+                        
+                        delegate: MenuItem {
+                            id: menuItem
+                            implicitWidth: 200
+                            implicitHeight: 40
+                            
+                            contentItem: Label {
+                                text: menuItem.text
+                                color: menuItem.highlighted ? "#f5f7ff" : "#b0b8c8"
+                                font.pixelSize: 13
+                                leftPadding: 16
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            
+                            background: Rectangle {
+                                color: menuItem.highlighted ? "#2a3545" : "transparent"
+                                radius: 8
+                            }
+                        }
+                        
+                        MenuItem {
+                            text: "Adicionar à fila"
+                            onTriggered: root.queueClicked()
+                        }
+                        MenuItem {
+                            text: root.starred ? "Remover dos favoritos" : "Adicionar aos favoritos"
+                            onTriggered: {
+                                if (root.starred) {
+                                    api.unstar(root.trackId)
+                                } else {
+                                    api.star(root.trackId)
+                                }
+                                root.starred = !root.starred
+                            }
+                        }
+                    }
                 }
             }
         }

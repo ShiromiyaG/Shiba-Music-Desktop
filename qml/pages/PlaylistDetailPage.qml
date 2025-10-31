@@ -1,28 +1,27 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
 import "qrc:/qml/components" as Components
 
 Page {
-    id: albumPage
-    property string albumId: ""
-    property string albumTitle: ""
-    property string artistName: ""
+    id: playlistPage
+    property string playlistId: ""
+    property string playlistName: ""
     property string coverArtId: ""
+    property int songCount: 0
 
     background: Rectangle { color: "transparent" }
 
     Component.onCompleted: {
         api.clearTracks()
-        if (albumId.length > 0)
-            api.fetchAlbum(albumId)
+        if (playlistId.length > 0)
+            api.fetchPlaylist(playlistId)
     }
 
-    onAlbumIdChanged: {
+    onPlaylistIdChanged: {
         api.clearTracks()
-        if (albumId.length > 0)
-            api.fetchAlbum(albumId)
+        if (playlistId.length > 0)
+            api.fetchPlaylist(playlistId)
     }
 
     Flickable {
@@ -34,50 +33,21 @@ Page {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar { }
 
-                Column {
+        Column {
             id: contentCol
             width: scrollArea.width
             spacing: 20
             padding: 24
 
-                        Rectangle {
+            Rectangle {
                 width: contentCol.width - contentCol.padding * 2
-                height: 240
+                height: 200
                 radius: 24
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: "#243047" }
                     GradientStop { position: 1.0; color: "#1b2233" }
                 }
                 border.color: "#303a52"
-                clip: true
-
-                Image {
-                    id: bgImage
-                    anchors.fill: parent
-                    source: api.coverArtUrl(coverArtId, 600)
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    visible: false
-                }
-
-                OpacityMask {
-                    anchors.fill: bgImage
-                    source: bgImage
-                    maskSource: Rectangle {
-                        width: bgImage.width
-                        height: bgImage.height
-                        radius: 24
-                    }
-                    opacity: 0.15
-                    visible: !!coverArtId && bgImage.status !== Image.Error
-                }
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: 24
-                    color: "#14171f"
-                    opacity: 0.35
-                }
 
                 RowLayout {
                     anchors.fill: parent
@@ -85,15 +55,15 @@ Page {
                     spacing: 20
 
                     Rectangle {
-                        Layout.preferredWidth: 180
-                        Layout.preferredHeight: 180
-                        radius: 18
+                        Layout.preferredWidth: 152
+                        Layout.preferredHeight: 152
+                        radius: 12
                         color: "#101321"
                         border.color: "#2b3246"
                         clip: true
                         Image {
                             anchors.fill: parent
-                            source: api.coverArtUrl(coverArtId, 512)
+                            source: coverArtId ? api.coverArtUrl(coverArtId, 256) : ""
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
                             visible: !!coverArtId && status !== Image.Error
@@ -101,7 +71,7 @@ Page {
                         Image {
                             anchors.centerIn: parent
                             visible: !coverArtId
-                            source: "qrc:/qml/icons/album.svg"
+                            source: "qrc:/qml/icons/queue_music.svg"
                             sourceSize.width: 48
                             sourceSize.height: 48
                         }
@@ -111,13 +81,13 @@ Page {
                         Layout.fillWidth: true
                         spacing: 6
                         Label {
-                            text: albumTitle.length > 0 ? albumTitle : "Álbum"
-                            font.pixelSize: 30
+                            text: playlistName || "Playlist"
+                            font.pixelSize: 28
                             font.weight: Font.DemiBold
                             wrapMode: Text.WordWrap
                         }
                         Label {
-                            text: artistName
+                            text: songCount + " músicas"
                             color: "#8b96a8"
                             font.pixelSize: 14
                         }
@@ -146,20 +116,20 @@ Page {
                 }
             }
 
-                        Components.SectionHeader {
+            Components.SectionHeader {
                 width: contentCol.width - contentCol.padding * 2
                 title: "Faixas"
-                subtitle: api.tracks.length > 0 ? (api.tracks.length + " músicas") : "Álbum vazio"
+                subtitle: api.tracks.length > 0 ? (api.tracks.length + " músicas") : "Playlist vazia"
             }
 
-                        Loader {
+            Loader {
                 width: contentCol.width - contentCol.padding * 2
                 sourceComponent: api.tracks.length === 0 ? emptyTracks : trackList
             }
         }
     }
 
-        Component {
+    Component {
         id: trackList
         Column {
             width: parent.width
@@ -169,7 +139,7 @@ Page {
                 delegate: Components.TrackRow {
                     index: index
                     width: parent.width
-                    title: (modelData.track > 0 ? modelData.track + ". " : "") + modelData.title
+                    title: modelData.title
                     subtitle: modelData.artist
                     duration: modelData.duration
                     cover: api.coverArtUrl(modelData.coverArt, 128)
@@ -180,12 +150,13 @@ Page {
         }
     }
 
-        Component { id: emptyTracks
+    Component { 
+        id: emptyTracks
         Components.EmptyState {
             width: parent.width
             emoji: "qrc:/qml/icons/music_note.svg"
-            title: "Nenhuma faixa foi retornada"
-            description: "Tente atualizar o álbum ou verifique sua conexão."
+            title: "Nenhuma faixa encontrada"
+            description: "Esta playlist está vazia."
         }
     }
 }

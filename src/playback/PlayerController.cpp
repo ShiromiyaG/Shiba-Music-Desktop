@@ -1,12 +1,15 @@
 #include "PlayerController.h"
 #include "../core/SubsonicClient.h"
 #include "../discord/DiscordRPC.h"
+#include <set>
 #include <QDebug>
+#include <QtGlobal>
 #include <QtMath>
 
-PlayerController::PlayerController(SubsonicClient *api, QObject *parent)
-    : QObject(parent), m_api(api), m_mpv(new MpvPlayer(this)), m_discord(new DiscordRPC(this))
+PlayerController::PlayerController(SubsonicClient *api, DiscordRPC *discord, QObject *parent)
+    : QObject(parent), m_api(api), m_mpv(new MpvPlayer(this)), m_discord(discord)
 {
+    Q_ASSERT(m_discord);
     connect(m_mpv, &MpvPlayer::positionChanged, this, &PlayerController::positionChanged);
     connect(m_mpv, &MpvPlayer::durationChanged, this, [this](qint64) {
         emit durationChanged();
@@ -167,6 +170,30 @@ void PlayerController::clearQueue() {
     emit currentTrackChanged();
     emit playingChanged();
     m_discord->clearPresence();
+}
+
+void PlayerController::playCurrentTracks(int index)
+{
+    const QVariantList currentTracks = m_api->tracks();
+    if (currentTracks.isEmpty()) {
+        return;
+    }
+    if (index < 0 || index >= currentTracks.size()) {
+        index = 0;
+    }
+    playAlbum(currentTracks, index);
+}
+
+void PlayerController::playTrack(const QVariantMap &track, int indexHint)
+{
+    Q_UNUSED(indexHint);
+    if (track.isEmpty()) {
+        return;
+    }
+
+    QVariantList singleTrackList;
+    singleTrackList.append(track);
+    playAlbum(singleTrackList, 0);
 }
 
 void PlayerController::setVolume(qreal v) {

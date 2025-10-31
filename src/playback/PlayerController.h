@@ -20,7 +20,7 @@ class PlayerController : public QObject {
     Q_PROPERTY(bool replayGainEnabled READ replayGainEnabled WRITE setReplayGainEnabled NOTIFY replayGainEnabledChanged)
     Q_PROPERTY(int replayGainMode READ replayGainMode WRITE setReplayGainMode NOTIFY replayGainModeChanged)
 public:
-    explicit PlayerController(SubsonicClient *api, QObject *parent=nullptr);
+    explicit PlayerController(SubsonicClient *api, DiscordRPC *discord, QObject *parent=nullptr);
 
     QVariantMap currentTrack() const { return m_current; }
     QVariantList queue() const { return m_queue; }
@@ -47,6 +47,8 @@ public:
     Q_INVOKABLE void playFromQueue(int index);
     Q_INVOKABLE void removeFromQueue(int index);
     Q_INVOKABLE void clearQueue();
+    Q_INVOKABLE void playCurrentTracks(int index = 0);
+    Q_INVOKABLE void playTrack(const QVariantMap &track, int indexHint = -1);
 
 signals:
     void currentTrackChanged();

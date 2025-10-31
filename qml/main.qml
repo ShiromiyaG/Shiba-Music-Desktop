@@ -31,6 +31,7 @@ ApplicationWindow {
 
     property var navigationItems: [
         { label: "Início", icon: "qrc:/qml/icons/home.svg", target: "home" },
+        { label: "Playlists", icon: "qrc:/qml/icons/queue_music.svg", target: "playlists" },
         { label: "Favoritos", icon: "qrc:/qml/icons/star.svg", target: "favorites" },
         { label: "Álbuns", icon: "qrc:/qml/icons/album.svg", target: "albums" },
         { label: "Artistas", icon: "qrc:/qml/icons/mic.svg", target: "artists" },
@@ -38,12 +39,24 @@ ApplicationWindow {
     ]
     property string currentSection: "home"
     property bool initialLibraryLoaded: false
+    property bool hasStoredCredentials: false
+
+    Connections {
+        target: api
+        function onLoginFailed(message) {
+            win.hasStoredCredentials = false
+            Qt.callLater(function() {
+                if (loginLoader.item && loginLoader.item.showError)
+                    loginLoader.item.showError(message)
+            })
+        }
+    }
 
     Loader {
         id: loginLoader
         anchors.fill: parent
         source: win.loginPageUrl
-        active: !api.authenticated
+        active: !api.authenticated && !hasStoredCredentials
         visible: active
     }
 
@@ -418,6 +431,7 @@ ApplicationWindow {
                 api.fetchArtists()
             } else {
                 win.initialLibraryLoaded = false
+                win.hasStoredCredentials = false
                 loginLoader.active = true
                 stack.clear()
                 win.currentSection = "home"
@@ -456,6 +470,9 @@ ApplicationWindow {
             var page = stack.push(win.homePageUrl)
             if (page && page.albumClicked)
                 page.albumClicked.connect(showAlbumPage)
+            break
+        case "playlists":
+            stack.push(Qt.resolvedUrl("qrc:/qml/pages/PlaylistsPage.qml"))
             break
         case "favorites":
             stack.push(win.favoritesPageUrl)
@@ -524,15 +541,36 @@ ApplicationWindow {
         page.coverArtId = coverArtId
     }
 
+    function showPlaylistPage(playlistId, playlistName, coverArtId, songCount) {
+        var page = stack.push(Qt.resolvedUrl("qrc:/qml/pages/PlaylistDetailPage.qml"))
+        page.playlistId = playlistId
+        page.playlistName = playlistName
+        page.coverArtId = coverArtId
+        page.songCount = songCount
+    }
+
     Shortcut {
         sequences: [StandardKey.Find, StandardKey.Search]
         onActivated: if (api.authenticated) searchBox.forceActiveFocus()
     }
 
+    Timer {
+        id: autoLoginTimer
+        interval: 100
+        running: false
+        onTriggered: {
+            var credentials = api.loadCredentials();
+            if (credentials.serverUrl && credentials.username && credentials.password) {
+                api.login(credentials.serverUrl, credentials.username, credentials.password);
+            } else {
+                hasStoredCredentials = false
+            }
+        }
+    }
+
     Component.onCompleted: {
         var credentials = api.loadCredentials();
-        if (credentials.serverUrl && credentials.username && credentials.password) {
-            api.login(credentials.serverUrl, credentials.username, credentials.password);
-        }
+        hasStoredCredentials = !!(credentials.serverUrl && credentials.username && credentials.password)
+        autoLoginTimer.start()
     }
 }

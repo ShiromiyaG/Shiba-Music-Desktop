@@ -114,10 +114,14 @@ Page {
         api.login(url.text, user.text, pass.text)
     }
 
+    function showError(message) {
+        err.text = message
+    }
+
     Connections {
         target: api
         function onErrorOccurred(message) {
-            err.text = message
+            loginPage.showError(message)
         }
     }
 }

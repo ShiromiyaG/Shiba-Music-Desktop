@@ -9,7 +9,9 @@ Item {
     property string title
     property string subtitle
     property url cover
+    property string albumId: ""
     signal clicked()
+    signal playClicked()
 
     Rectangle {
         id: frame
@@ -85,6 +87,31 @@ Item {
             anchors.fill: parent
             hoverEnabled: true
             onClicked: root.clicked()
+
+            ToolButton {
+                id: playBtn
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.margins: 8
+                icon.source: "qrc:/qml/icons/play_arrow.svg"
+                visible: hoverArea.containsMouse && albumId.length > 0
+                property string pendingAlbumId: ""
+                
+                Connections {
+                    target: api
+                    function onTracksChanged() {
+                        if (playBtn.pendingAlbumId.length > 0 && api.tracks.length > 0) {
+                            player.playCurrentTracks()
+                            playBtn.pendingAlbumId = ""
+                        }
+                    }
+                }
+                
+                onClicked: {
+                    pendingAlbumId = albumId
+                    api.fetchAlbum(albumId)
+                }
+            }
         }
     }
 }
