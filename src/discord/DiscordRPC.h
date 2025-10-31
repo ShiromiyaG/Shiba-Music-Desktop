@@ -58,7 +58,7 @@ private:
     bool m_enabled = true;
     bool m_initialized = false;
     bool m_showPaused = false;
-    QString m_clientId = "";
+    QString m_clientId = "1433468922966970483";
 
     QString m_lastTitle;
     QString m_lastArtist;

@@ -144,7 +144,6 @@ Page {
                         }
                         TextField {
                             text: discord.clientId
-                            placeholderText: "Digite seu Application ID"
                             Layout.preferredWidth: 200
                             onEditingFinished: discord.clientId = text
                         }

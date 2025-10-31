@@ -1,4 +1,4 @@
-#include "DiscordRPC.h"#include "config.h"
+#include "DiscordRPC.h"
 
 
 
