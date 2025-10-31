@@ -27,7 +27,7 @@ Item {
             Rectangle {
                 Layout.preferredWidth: 176
                 Layout.preferredHeight: 176
-                radius: 8
+                radius: 0
                 color: "#111"
                 border.color: "#2a313f"
                 clip: true

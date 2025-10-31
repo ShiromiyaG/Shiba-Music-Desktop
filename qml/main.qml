@@ -34,7 +34,6 @@ ApplicationWindow {
         { label: "Favoritos", icon: "qrc:/qml/icons/star.svg", target: "favorites" },
         { label: "Álbuns", icon: "qrc:/qml/icons/album.svg", target: "albums" },
         { label: "Artistas", icon: "qrc:/qml/icons/mic.svg", target: "artists" },
-        { label: "Fila", icon: "qrc:/qml/icons/queue_music.svg", target: "queue" },
         { label: "Configurações", icon: "qrc:/qml/icons/settings.svg", target: "settings" }
     ]
     property string currentSection: "home"
@@ -244,7 +243,30 @@ ApplicationWindow {
 
         Components.NowPlayingBar {
             Layout.fillWidth: true
-            onQueueRequested: handleNavigation("queue")
+            z: 999
+            onQueueRequested: queueOverlay.visible = true
+        }
+    }
+
+    Item {
+        anchors.fill: parent
+        anchors.bottomMargin: 110
+        z: 1
+        clip: true
+        
+        Loader {
+            id: queueOverlay
+            anchors.fill: parent
+            visible: false
+            active: visible
+            source: visible ? Qt.resolvedUrl("qrc:/qml/pages/QueuePage.qml") : ""
+            
+            Connections {
+                target: queueOverlay.item
+                function onCloseRequested() {
+                    queueOverlay.visible = false
+                }
+            }
         }
     }
 

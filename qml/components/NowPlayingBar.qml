@@ -33,7 +33,7 @@ Rectangle {
                 anchors.centerIn: parent
                 width: 78
                 height: 78
-                radius: 14
+                radius: 0
                 color: "#0d1117"
                 border.color: "#21262d"
                 border.width: 2
@@ -47,13 +47,6 @@ Rectangle {
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     smooth: true
-
-                    Rectangle {
-                        anchors.fill: parent
-                        color: "white"
-                        opacity: player.playing ? 0.1 : 0.0
-                        Behavior on opacity { NumberAnimation { duration: 300 } }
-                    }
                 }
 
                 // Placeholder quando não há imagem
@@ -66,7 +59,7 @@ Rectangle {
                     fillMode: Image.PreserveAspectFit
                 }
 
-                // Overlay de play/pause
+                // Overlay de seta para cima
                 Rectangle {
                     anchors.fill: parent
                     color: "#000000"
@@ -75,7 +68,7 @@ Rectangle {
                     
                     Image {
                         anchors.centerIn: parent
-                        source: player.playing ? "../icons/pause.svg" : "../icons/play_arrow.svg"
+                        source: "../icons/arrow_upward.svg"
                         width: 32
                         height: 32
                         fillMode: Image.PreserveAspectFit
@@ -89,7 +82,7 @@ Rectangle {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: player.toggle()
+                    onClicked: bar.queueRequested()
                 }
             }
 
@@ -511,55 +504,7 @@ Rectangle {
                 ToolTip.delay: 500
             }
             
-            // Fila
-            RoundButton {
-                width: 36
-                height: 36
-                
-                background: Rectangle {
-                    radius: 18
-                    color: parent.hovered ? "#1f2937" : "transparent"
-                    border.color: parent.hovered ? "#374151" : "transparent"
-                }
-                
-                contentItem: Image {
-                    source: "../icons/queue_music.svg"
-                    width: 16
-                    height: 16
-                    anchors.centerIn: parent
-                    fillMode: Image.PreserveAspectFit
-                }
-                
-                onClicked: bar.queueRequested()
-                
-                ToolTip.visible: hovered
-                ToolTip.text: "Abrir fila (Q)"
-                ToolTip.delay: 500
-                
-                // Badge com número de músicas
-                Rectangle {
-                    visible: bar.hasQueue && player.queue.length > 1
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.rightMargin: 2
-                    anchors.topMargin: 2
-                    width: Math.max(16, badgeText.width + 6)
-                    height: 16
-                    radius: 8
-                    color: "#1f6feb"
-                    border.color: "#0d1117"
-                    border.width: 1
-                    
-                    Label {
-                        id: badgeText
-                        anchors.centerIn: parent
-                        text: player.queue.length
-                        color: "white"
-                        font.pixelSize: 9
-                        font.weight: Font.Bold
-                    }
-                }
-            }
+
         }
     }
 }
