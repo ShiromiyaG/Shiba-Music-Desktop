@@ -57,26 +57,22 @@ Item {
 
             Label {
                 Layout.fillWidth: true
-                Layout.maximumWidth: parent.width - 24
                 text: root.title
                 font.pixelSize: 14
                 font.weight: Font.Medium
                 color: "#f5f7ff"
                 elide: Text.ElideRight
-                maximumLineCount: 2
-                wrapMode: Text.WordWrap
-                clip: true
+                maximumLineCount: 1
+                wrapMode: Text.NoWrap
             }
             Label {
                 Layout.fillWidth: true
-                Layout.maximumWidth: parent.width - 24
                 text: root.subtitle
                 font.pixelSize: 12
                 color: "#8b96a8"
                 elide: Text.ElideRight
                 maximumLineCount: 1
                 visible: text.length > 0
-                clip: true
             }
 
             Item {

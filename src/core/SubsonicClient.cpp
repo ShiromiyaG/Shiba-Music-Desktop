@@ -524,7 +524,7 @@ void SubsonicClient::addToRecentlyPlayed(const QVariantMap& track) {
     // Add to the front
     m_recentlyPlayedAlbums.prepend(album);
     // Limit the list size
-    if (m_recentlyPlayedAlbums.size() > 4) { // Keep last 4 for the home page
+    if (m_recentlyPlayedAlbums.size() > 20) {
         m_recentlyPlayedAlbums.removeLast();
     }
     saveRecentlyPlayed();

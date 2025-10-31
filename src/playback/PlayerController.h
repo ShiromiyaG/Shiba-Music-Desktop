@@ -1,6 +1,7 @@
 #pragma once
 #include <QObject>
 #include <QVariant>
+#include <QSettings>
 #include "MpvPlayer.h"
 
 class SubsonicClient;
@@ -76,7 +77,7 @@ private:
     int m_index = -1;
     QVariantList m_queue;
     QVariantMap m_current;
-    qreal m_volume = 0.5;
+    qreal m_volume = 1.0;
     bool m_muted = false;
     bool m_replayGainEnabled = true;
     int m_replayGainMode = 1;

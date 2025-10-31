@@ -21,9 +21,10 @@ Page {
         contentWidth: column.width
         contentHeight: column.height
         boundsBehavior: Flickable.StopAtBounds
+        flickableDirection: Flickable.VerticalFlick
         ScrollBar.vertical: ScrollBar { }
 
-                Column {
+        Column {
             id: column
             width: scrollArea.width
             spacing: 24
@@ -44,7 +45,7 @@ Page {
                 font.weight: Font.DemiBold
             }
 
-                        Loader {
+            Loader {
                 width: column.width - column.padding * 2
                 sourceComponent: api.recentlyPlayedAlbums.length > 0 ? recentlyPlayed : emptyState
             }
@@ -57,39 +58,62 @@ Page {
                 font.weight: Font.DemiBold
             }
 
-                        Loader {
+            Loader {
                 width: column.width - column.padding * 2
                 sourceComponent: api.randomSongs.length > 0 ? madeForYou : emptyState
             }
         }
     }
 
-        Component {
+    Component {
         id: recentlyPlayed
-        ScrollView {
-            id: recentScroll
+        Column {
             width: parent.width
-            height: 270
-            clip: true
-            ScrollBar.vertical.policy: ScrollBar.AlwaysOff
-            ScrollBar.horizontal.policy: ScrollBar.AsNeeded
+            spacing: 8
             
-            Row {
-                spacing: 16
-                Repeater {
-                    model: api.recentlyPlayedAlbums
-                    delegate: Components.AlbumCard {
-                        title: modelData.name || "Álbum Desconhecido"
-                        subtitle: modelData.artist || "Artista desconhecido"
-                        cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
-                        onClicked: homePage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt)
+            Flickable {
+                id: recentScroll
+                width: parent.width
+                height: 270
+                clip: true
+                contentWidth: recentRow.width
+                contentHeight: recentRow.height
+                boundsBehavior: Flickable.StopAtBounds
+                flickableDirection: Flickable.HorizontalFlick
+                interactive: false
+                
+                Row {
+                    id: recentRow
+                    spacing: 16
+                    Repeater {
+                        model: api.recentlyPlayedAlbums
+                        delegate: Components.AlbumCard {
+                            title: modelData.name || "Álbum Desconhecido"
+                            subtitle: modelData.artist || "Artista desconhecido"
+                            cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
+                            onClicked: homePage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt)
+                        }
+                    }
+                }
+            }
+            
+            ScrollBar {
+                id: recentScrollBar
+                width: parent.width
+                orientation: Qt.Horizontal
+                size: recentScroll.width / recentScroll.contentWidth
+                position: recentScroll.contentX / recentScroll.contentWidth
+                active: true
+                onPositionChanged: {
+                    if (pressed) {
+                        recentScroll.contentX = position * recentScroll.contentWidth
                     }
                 }
             }
         }
     }
 
-        Component {
+    Component {
         id: madeForYou
         Column {
             width: parent.width
@@ -104,14 +128,17 @@ Page {
                 model: api.randomSongs
                 delegate: Rectangle {
                     property var track: modelData
-                    width: (madeList.view ? madeList.view.width : madeList.width)
+                    width: madeList.width
                     height: 60
                     radius: 16
                     color: index % 2 === 0 ? "#1b2336" : "#182030"
 
                     RowLayout {
-                        anchors.fill: parent
-                        anchors.margins: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.leftMargin: 14
+                        anchors.rightMargin: 14
                         spacing: 18
 
                         Label {
@@ -119,12 +146,14 @@ Page {
                             color: "#8da0c0"
                             font.pixelSize: 13
                             Layout.alignment: Qt.AlignVCenter
-                            width: 28
+                            Layout.preferredWidth: 28
+                            horizontalAlignment: Text.AlignLeft
                         }
 
                         Rectangle {
                             Layout.preferredWidth: 46
                             Layout.preferredHeight: 46
+                            Layout.alignment: Qt.AlignVCenter
                             radius: 12
                             color: "#101622"
                             clip: true
@@ -143,22 +172,25 @@ Page {
                             }
                         }
 
-                                                ColumnLayout {
+                        ColumnLayout {
                             Layout.fillWidth: true
+                            Layout.minimumWidth: 200
+                            Layout.preferredWidth: 300
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: 2
                             Label {
                                 Layout.fillWidth: true
                                 text: track.title || "Faixa desconhecida"
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
-                                elide: Label.ElideRight
+                                elide: Text.ElideRight
                             }
                             Label {
                                 Layout.fillWidth: true
                                 text: track.artist || "-"
                                 color: "#8fa0c2"
                                 font.pixelSize: 12
-                                elide: Label.ElideRight
+                                elide: Text.ElideRight
                             }
                         }
 
@@ -166,11 +198,15 @@ Page {
                             text: track.album || "-"
                             color: "#8fa0c2"
                             font.pixelSize: 12
-                            Layout.preferredWidth: 180
-                            elide: Label.ElideRight
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 180
+                            Layout.preferredWidth: 300
+                            Layout.alignment: Qt.AlignVCenter
+                            elide: Text.ElideRight
                         }
 
                         RowLayout {
+                            Layout.alignment: Qt.AlignVCenter
                             spacing: 8
                             ToolButton {
                                 text: "❤"
@@ -178,21 +214,21 @@ Page {
                             }
                             ToolButton {
                                 text: "⋯"
-                                onClicked: player.playTrack(track)
+                                onClicked: player.playAlbum([track], 0)
                             }
                         }
                     }
 
                     TapHandler {
                         acceptedButtons: Qt.LeftButton
-                        onTapped: player.playTrack(track)
+                        onTapped: player.playAlbum([track], 0)
                     }
                 }
             }
         }
     }
 
-        Component {
+    Component {
         id: emptyState
         Components.EmptyState {
             width: parent.width

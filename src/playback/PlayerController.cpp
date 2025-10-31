@@ -19,6 +19,8 @@ PlayerController::PlayerController(SubsonicClient *api, QObject *parent)
     connect(m_mpv, &MpvPlayer::endOfFile, this, &PlayerController::onEndOfFile);
     connect(m_mpv, &MpvPlayer::playlistPosChanged, this, &PlayerController::onPlaylistPosChanged);
     
+    QSettings settings;
+    m_volume = settings.value("player/volume", 1.0).toDouble();
     updateVolume();
 }
 
@@ -171,6 +173,8 @@ void PlayerController::setVolume(qreal v) {
     v = qBound(0.0, v, 1.0);
     if (qAbs(m_volume - v) < 0.001) return;
     m_volume = v;
+    QSettings settings;
+    settings.setValue("player/volume", m_volume);
     updateVolume();
     emit volumeChanged();
 }
