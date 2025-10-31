@@ -29,6 +29,7 @@ cd H:\ShibaMusicCPP
 mkdir build
 cd build
 qt-cmake -G Ninja ..
+$env:PATH = "C:\Qt\Tools\Ninja;" + $env:PATH
 C:\Qt\Tools\Ninja\ninja.exe
 copy ..\libs\mpv\bin\mpv-2.dll .
 "C:\Qt\6.9.3\mingw_64\bin\windeployqt.exe" shibamusic.exe

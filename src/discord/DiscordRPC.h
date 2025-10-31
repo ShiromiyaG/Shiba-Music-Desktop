@@ -26,7 +26,9 @@ public:
 
     Q_INVOKABLE void updatePresence(const QString &title, const QString &artist,
                                     const QString &album, bool playing,
-                                    qint64 position, qint64 duration);
+                                    qint64 position, qint64 duration,
+                                    const QString &coverArtUrl = QString(),
+                                    const QString &trackId = QString());
     Q_INVOKABLE void clearPresence();
 
 signals:
@@ -39,6 +41,7 @@ signals:
 private:
     void initialize();
     void shutdown();
+    void resetLastPresence();
     bool ensureConnection();
     bool openIpcConnection();
     bool sendHandshake();
@@ -54,14 +57,17 @@ private:
 
     bool m_enabled = true;
     bool m_initialized = false;
-    bool m_showPaused = true;
+    bool m_showPaused = false;
     QString m_clientId = "1433468922966970483";
 
     QString m_lastTitle;
     QString m_lastArtist;
     QString m_lastAlbum;
+    QString m_lastCoverUrl;
+    QString m_lastTrackId;
     bool m_lastPlaying = false;
     qint64 m_lastPosition = 0;
+    qint64 m_lastDuration = 0;
     qintptr m_ipcHandle = -1;
     bool m_connectionReady = false;
     QTimer *m_pollTimer = nullptr;

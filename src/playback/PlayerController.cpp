@@ -8,7 +8,10 @@ PlayerController::PlayerController(SubsonicClient *api, QObject *parent)
     : QObject(parent), m_api(api), m_mpv(new MpvPlayer(this)), m_discord(new DiscordRPC(this))
 {
     connect(m_mpv, &MpvPlayer::positionChanged, this, &PlayerController::positionChanged);
-    connect(m_mpv, &MpvPlayer::durationChanged, this, &PlayerController::durationChanged);
+    connect(m_mpv, &MpvPlayer::durationChanged, this, [this](qint64) {
+        emit durationChanged();
+        updateDiscordPresence();
+    });
     connect(m_mpv, &MpvPlayer::playbackStateChanged, this, [this]() {
         emit playingChanged();
         updateDiscordPresence();
@@ -258,6 +261,9 @@ void PlayerController::updateDiscordPresence() {
     QString title = m_current.value("title").toString();
     QString artist = m_current.value("artist").toString();
     QString album = m_current.value("album").toString();
+    const QString coverArtId = m_current.value("coverArt").toString();
+    const QString coverUrl = m_api->coverArtUrl(coverArtId, 512).toString();
+    const QString trackId = m_current.value("id").toString();
     
-    m_discord->updatePresence(title, artist, album, playing(), position(), duration());
+    m_discord->updatePresence(title, artist, album, playing(), position(), duration(), coverUrl, trackId);
 }
