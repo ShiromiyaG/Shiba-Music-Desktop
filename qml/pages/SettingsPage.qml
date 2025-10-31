@@ -84,6 +84,73 @@ Page {
                 }
             }
 
+            // Seção Discord
+            Rectangle {
+                width: parent.width - parent.padding * 2
+                height: discordSection.height + 32
+                radius: 16
+                color: "#1b2336"
+                border.color: "#252e42"
+
+                Column {
+                    id: discordSection
+                    anchors.centerIn: parent
+                    width: parent.width - 32
+                    spacing: 16
+
+                    Label {
+                        text: "Discord"
+                        font.pixelSize: 18
+                        font.weight: Font.DemiBold
+                    }
+
+                    RowLayout {
+                        width: parent.width
+                        Label {
+                            text: "Rich Presence"
+                            Layout.fillWidth: true
+                        }
+                        Switch {
+                            checked: discord.enabled
+                            onToggled: discord.enabled = checked
+                        }
+                    }
+
+                    Label {
+                        text: "Exibe a música atual no seu perfil do Discord"
+                        color: "#8b96a8"
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
+                        width: parent.width
+                    }
+
+                    RowLayout {
+                        width: parent.width
+                        Label {
+                            text: "Mostrar quando pausado"
+                            Layout.fillWidth: true
+                        }
+                        Switch {
+                            checked: discord.showPaused
+                            onToggled: discord.showPaused = checked
+                        }
+                    }
+
+                    RowLayout {
+                        width: parent.width
+                        Label {
+                            text: "Application ID"
+                            Layout.fillWidth: true
+                        }
+                        TextField {
+                            text: discord.clientId
+                            Layout.preferredWidth: 200
+                            onEditingFinished: discord.clientId = text
+                        }
+                    }
+                }
+            }
+
             // Seção Servidor
             Rectangle {
                 width: parent.width - parent.padding * 2

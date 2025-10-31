@@ -5,6 +5,7 @@
 #include "core/SubsonicClient.h"
 #include "core/SubsonicNetworkAccessManagerFactory.h"
 #include "playback/PlayerController.h"
+#include "discord/DiscordRPC.h"
 
 int main(int argc, char *argv[]) {
     QQuickStyle::setStyle("Material");
@@ -14,11 +15,13 @@ int main(int argc, char *argv[]) {
 
     SubsonicClient api;
     PlayerController player(&api);
+    DiscordRPC discord;
 
     QQmlApplicationEngine engine;
     engine.setNetworkAccessManagerFactory(new SubsonicNetworkAccessManagerFactory);
     engine.rootContext()->setContextProperty("api", &api);
     engine.rootContext()->setContextProperty("player", &player);
+    engine.rootContext()->setContextProperty("discord", &discord);
     engine.load(QUrl("qrc:/qml/main.qml"));
     if (engine.rootObjects().isEmpty()) return -1;
     return app.exec();

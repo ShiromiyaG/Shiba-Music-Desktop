@@ -14,6 +14,8 @@ find_package(Qt6 6.9 REQUIRED COMPONENTS Quick QuickControls2 Network Core5Compa
 set(MPV_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/libs/mpv/include")
 set(MPV_LIBRARY_DIR "${CMAKE_SOURCE_DIR}/libs/mpv/lib")
 
+set(RAPIDJSON_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/libs/rapidjson/include")
+
 if(EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h")
     message(STATUS "Usando libmpv do projeto: ${MPV_INCLUDE_DIR}")
     if(MINGW)
@@ -39,6 +41,7 @@ qt_add_executable(shibamusic
     src/playback/PlayerController.h src/playback/PlayerController.cpp
     src/core/SubsonicNetworkAccessManagerFactory.h
     src/core/SubsonicNetworkAccessManagerFactory.cpp
+    src/discord/DiscordRPC.h src/discord/DiscordRPC.cpp
 )
 
 qt_add_resources(shibamusic "qml"
@@ -87,7 +90,7 @@ qt_add_resources(shibamusic "qml"
         qml/icons/volume_up.svg
 )
 
-target_include_directories(shibamusic PRIVATE ${MPV_INCLUDE_DIR})
+target_include_directories(shibamusic PRIVATE ${MPV_INCLUDE_DIR} ${RAPIDJSON_INCLUDE_DIR})
 
 if(TARGET PkgConfig::MPV)
     target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Core5Compat PkgConfig::MPV)

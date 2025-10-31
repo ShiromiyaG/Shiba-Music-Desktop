@@ -4,6 +4,7 @@
 #include "MpvPlayer.h"
 
 class SubsonicClient;
+class DiscordRPC;
 
 class PlayerController : public QObject {
     Q_OBJECT
@@ -65,9 +66,11 @@ private slots:
 private:
     void rebuildPlaylist();
     void updateVolume();
+    void updateDiscordPresence();
 
     SubsonicClient *m_api;
     MpvPlayer *m_mpv;
+    DiscordRPC *m_discord;
     
     bool m_crossfade = true;
     int m_index = -1;

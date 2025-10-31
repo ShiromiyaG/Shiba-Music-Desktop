@@ -1,14 +1,18 @@
 #include "PlayerController.h"
 #include "../core/SubsonicClient.h"
+#include "../discord/DiscordRPC.h"
 #include <QDebug>
 #include <QtMath>
 
 PlayerController::PlayerController(SubsonicClient *api, QObject *parent)
-    : QObject(parent), m_api(api), m_mpv(new MpvPlayer(this))
+    : QObject(parent), m_api(api), m_mpv(new MpvPlayer(this)), m_discord(new DiscordRPC(this))
 {
     connect(m_mpv, &MpvPlayer::positionChanged, this, &PlayerController::positionChanged);
     connect(m_mpv, &MpvPlayer::durationChanged, this, &PlayerController::durationChanged);
-    connect(m_mpv, &MpvPlayer::playbackStateChanged, this, &PlayerController::playingChanged);
+    connect(m_mpv, &MpvPlayer::playbackStateChanged, this, [this]() {
+        emit playingChanged();
+        updateDiscordPresence();
+    });
     connect(m_mpv, &MpvPlayer::endOfFile, this, &PlayerController::onEndOfFile);
     connect(m_mpv, &MpvPlayer::playlistPosChanged, this, &PlayerController::onPlaylistPosChanged);
     
@@ -25,6 +29,7 @@ void PlayerController::playAlbum(const QVariantList& tracks, int index) {
     m_current = tracks.at(index).toMap();
     emit currentTrackChanged();
     rebuildPlaylist();
+    updateDiscordPresence();
 }
 
 void PlayerController::addToQueue(const QVariantMap& track) {
@@ -100,6 +105,7 @@ void PlayerController::toggle() {
     if (m_queue.isEmpty() || m_index < 0) return;
     bool paused = m_mpv->isPaused();
     m_mpv->setProperty("pause", !paused);
+    updateDiscordPresence();
 }
 
 void PlayerController::seek(qint64 ms) {
@@ -155,6 +161,7 @@ void PlayerController::clearQueue() {
     emit queueChanged();
     emit currentTrackChanged();
     emit playingChanged();
+    m_discord->clearPresence();
 }
 
 void PlayerController::setVolume(qreal v) {
@@ -240,4 +247,17 @@ void PlayerController::onPlaylistPosChanged(int pos) {
 
 void PlayerController::onEndOfFile() {
     // Não fazer nada aqui - deixar onPlaylistPosChanged gerenciar
+}
+
+void PlayerController::updateDiscordPresence() {
+    if (m_current.isEmpty()) {
+        m_discord->clearPresence();
+        return;
+    }
+    
+    QString title = m_current.value("title").toString();
+    QString artist = m_current.value("artist").toString();
+    QString album = m_current.value("album").toString();
+    
+    m_discord->updatePresence(title, artist, album, playing(), position(), duration());
 }
