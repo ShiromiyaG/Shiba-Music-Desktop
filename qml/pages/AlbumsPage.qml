@@ -5,7 +5,7 @@ import "../components" as Components
 
 Page {
     id: albumsPage
-    signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId)
+    signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId, string artistId)
 
     background: Rectangle { color: "transparent" }
 
@@ -42,7 +42,8 @@ Page {
                 subtitle: modelData.artist || "Artista desconhecido"
                 cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
                 albumId: modelData.id
-                onClicked: albumsPage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt)
+                artistId: modelData.artistId || ""
+                onClicked: albumsPage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt, modelData.artistId || "")
             }
         }
     }

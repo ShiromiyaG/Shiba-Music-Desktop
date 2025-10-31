@@ -6,7 +6,7 @@ import "qrc:/qml/components" as Components
 Page {
     id: homePage
     objectName: "homePage"
-    signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId)
+    signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId, string artistId)
     padding: 0
     background: Rectangle { color: "transparent" }
 
@@ -91,7 +91,9 @@ Page {
                             title: modelData.name || "Álbum Desconhecido"
                             subtitle: modelData.artist || "Artista desconhecido"
                             cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
-                            onClicked: homePage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt)
+                            albumId: modelData.id
+                            artistId: modelData.artistId || ""
+                            onClicked: homePage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt, modelData.artistId || "")
                         }
                     }
                 }
@@ -268,7 +270,7 @@ Page {
                                     }
                                     MenuItem {
                                         text: "Ir para álbum"
-                                        onTriggered: homePage.albumClicked(track.albumId, track.album, track.artist, track.coverArt)
+                                        onTriggered: homePage.albumClicked(track.albumId, track.album, track.artist, track.coverArt, track.artistId || "")
                                     }
                                 }
                             }

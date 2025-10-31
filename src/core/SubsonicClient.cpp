@@ -194,6 +194,7 @@ void SubsonicClient::fetchArtist(const QString& artistId) {
             m_albums.push_back(QVariantMap{
                 {"id", a.value("id").toString()},
                 {"name", a.value("name").toString()},
+                {"artistId", a.value("artistId").toString()},
                 {"year", a.value("year").toInt()},
                 {"coverArt", a.value("coverArt").toString()}
             });
@@ -247,6 +248,7 @@ void SubsonicClient::fetchAlbum(const QString& albumId) {
                 {"id", s.value("id").toString()},
                 {"title", s.value("title").toString()},
                 {"artist", s.value("artist").toString()},
+                {"artistId", s.value("artistId").toString()},
                 {"album", s.value("album").toString()},
                 {"albumId", s.value("albumId").toString()},
                 {"track", s.value("track").toInt()},
@@ -304,6 +306,7 @@ void SubsonicClient::fetchAlbumList(const QString& type) {
             m_albumList.push_back(QVariantMap{
                 {"id", a.value("id").toString()},
                 {"name", a.value("name").toString()},
+                {"artistId", a.value("artistId").toString()},
                 {"artist", a.value("artist").toString()},
                 {"year", a.value("year").toInt()},
                 {"coverArt", a.value("coverArt").toString()}
@@ -363,6 +366,7 @@ void SubsonicClient::fetchRandomSongs() {
                 {"id", s.value("id").toString()},
                 {"title", s.value("title").toString()},
                 {"artist", s.value("artist").toString()},
+                {"artistId", s.value("artistId").toString()},
                 {"album", s.value("album").toString()},
                 {"albumId", s.value("albumId").toString()},
                 {"duration", s.value("duration").toInt()},
@@ -469,6 +473,7 @@ void SubsonicClient::fetchPlaylist(const QString& playlistId) {
                 {"id", s.value("id").toString()},
                 {"title", s.value("title").toString()},
                 {"artist", s.value("artist").toString()},
+                {"artistId", s.value("artistId").toString()},
                 {"album", s.value("album").toString()},
                 {"albumId", s.value("albumId").toString()},
                 {"duration", s.value("duration").toInt()},
@@ -525,6 +530,7 @@ void SubsonicClient::fetchFavorites() {
                 {"id", s.value("id").toString()},
                 {"title", s.value("title").toString()},
                 {"artist", s.value("artist").toString()},
+                {"artistId", s.value("artistId").toString()},
                 {"album", s.value("album").toString()},
                 {"albumId", s.value("albumId").toString()},
                 {"duration", s.value("duration").toInt()},
@@ -563,6 +569,7 @@ void SubsonicClient::search(const QString& term) {
                 {"id", s.value("id").toString()},
                 {"title", s.value("title").toString()},
                 {"artist", s.value("artist").toString()},
+                {"artistId", s.value("artistId").toString()},
                 {"album", s.value("album").toString()},
                 {"albumId", s.value("albumId").toString()},
                 {"duration", s.value("duration").toInt()},
@@ -645,6 +652,7 @@ void SubsonicClient::addToRecentlyPlayed(const QVariantMap& track) {
     album.insert("id", track.value("albumId"));
     album.insert("name", track.value("album"));
     album.insert("artist", track.value("artist"));
+    album.insert("artistId", track.value("artistId"));
     album.insert("coverArt", track.value("coverArt"));
 
     // Remove if already present
@@ -703,6 +711,7 @@ void SubsonicClient::fetchAlbumTracksAndAppend(const QString& albumId) {
                 {"id", s.value("id").toString()},
                 {"title", s.value("title").toString()},
                 {"artist", s.value("artist").toString()},
+                {"artistId", s.value("artistId").toString()},
                 {"album", s.value("album").toString()},
                 {"albumId", s.value("albumId").toString()},
                 {"track", s.value("track").toInt()},

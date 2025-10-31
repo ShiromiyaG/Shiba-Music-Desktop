@@ -533,12 +533,15 @@ ApplicationWindow {
         }
     }
 
-    function showAlbumPage(albumId, albumTitle, artistName, coverArtId) {
-        var page = stack.push(Qt.resolvedUrl("qrc:/qml/pages/AlbumPage.qml"))
-        page.albumId = albumId
-        page.albumTitle = albumTitle
-        page.artistName = artistName
-        page.coverArtId = coverArtId
+    function showAlbumPage(albumId, albumTitle, artistName, coverArtId, artistId) {
+        var page = stack.push(Qt.resolvedUrl("qrc:/qml/pages/AlbumPage.qml"), {
+            albumId: albumId,
+            albumTitle: albumTitle,
+            artistName: artistName,
+            coverArtId: coverArtId,
+            artistId: artistId || ""
+        })
+        // navigation to artist page handled internally by AlbumPage via StackView.view
     }
 
     function showPlaylistPage(playlistId, playlistName, coverArtId, songCount) {

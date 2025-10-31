@@ -10,6 +10,7 @@ Item {
     property string subtitle
     property url cover
     property string albumId: ""
+    property string artistId: ""
     signal clicked()
     signal playClicked()
 

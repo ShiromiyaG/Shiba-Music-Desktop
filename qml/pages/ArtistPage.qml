@@ -6,7 +6,7 @@ import "qrc:/qml/components" as Components
 
 Page {
     id: artistPage
-    signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId)
+    signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId, string artistId)
 
     property string artistId: ""
     property string artistName: ""
@@ -166,7 +166,9 @@ Page {
                     title: modelData.name
                     subtitle: modelData.year > 0 ? modelData.year : ""
                     cover: api.coverArtUrl(modelData.coverArt, 300)
-                    onClicked: artistPage.albumClicked(modelData.id, modelData.name, modelData.artist || artistPage.artistName, modelData.coverArt)
+                    albumId: modelData.id
+                    artistId: modelData.artistId || artistPage.artistId
+                    onClicked: artistPage.albumClicked(modelData.id, modelData.name, modelData.artist || artistPage.artistName, modelData.coverArt, modelData.artistId || artistPage.artistId)
                 }
             }
         }
