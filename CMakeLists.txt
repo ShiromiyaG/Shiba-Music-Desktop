@@ -34,6 +34,18 @@ endif()
 qt_standard_project_setup()
 set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
 
+# Application ID do Discord (opcional)
+if(DEFINED ENV{DISCORD_APP_ID})
+    set(DISCORD_APP_ID $ENV{DISCORD_APP_ID})
+else()
+    set(DISCORD_APP_ID "")
+endif()
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/src/config.h.in"
+    "${CMAKE_BINARY_DIR}/config.h"
+)
+
 qt_add_executable(shibamusic
     src/main.cpp
     src/core/SubsonicClient.h src/core/SubsonicClient.cpp
@@ -90,7 +102,7 @@ qt_add_resources(shibamusic "qml"
         qml/icons/volume_up.svg
 )
 
-target_include_directories(shibamusic PRIVATE ${MPV_INCLUDE_DIR} ${RAPIDJSON_INCLUDE_DIR})
+target_include_directories(shibamusic PRIVATE ${MPV_INCLUDE_DIR} ${RAPIDJSON_INCLUDE_DIR} ${CMAKE_BINARY_DIR})
 
 if(TARGET PkgConfig::MPV)
     target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Core5Compat PkgConfig::MPV)

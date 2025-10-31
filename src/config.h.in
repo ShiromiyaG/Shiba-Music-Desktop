@@ -1,0 +1,3 @@
+#pragma once
+
+#define DEFAULT_DISCORD_APP_ID "@DISCORD_APP_ID@"

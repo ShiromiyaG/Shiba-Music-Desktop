@@ -34,3 +34,5 @@ C:\Qt\Tools\Ninja\ninja.exe
 copy ..\libs\mpv\bin\mpv-2.dll .
 "C:\Qt\6.9.3\mingw_64\bin\windeployqt.exe" shibamusic.exe
 ```
+
+**Para compilar com Application ID do Discord pré-configurado, veja `BUILD_INSTRUCTIONS.md`**
