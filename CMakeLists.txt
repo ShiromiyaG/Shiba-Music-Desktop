@@ -84,6 +84,8 @@ qt_add_resources(shibamusic "qml"
         qml/icons/skip_next.svg
         qml/icons/skip_previous.svg
         qml/icons/star.svg
+        qml/icons/favorite.svg
+        qml/icons/favorite_border.svg
         qml/icons/volume_down.svg
         qml/icons/volume_mute.svg
         qml/icons/volume_off.svg

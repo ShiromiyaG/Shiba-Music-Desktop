@@ -209,12 +209,68 @@ Page {
                             Layout.alignment: Qt.AlignVCenter
                             spacing: 8
                             ToolButton {
-                                text: "❤"
-                                onClicked: player.addToQueue(track)
+                                property bool isFavorite: track.starred || false
+                                display: AbstractButton.IconOnly
+                                icon.source: isFavorite ? "qrc:/qml/icons/favorite.svg" : "qrc:/qml/icons/favorite_border.svg"
+                                icon.color: isFavorite ? "#ff6b6b" : "#8da0c0"
+                                icon.width: 20
+                                icon.height: 20
+                                onClicked: {
+                                    if (isFavorite) {
+                                        api.unstar(track.id)
+                                    } else {
+                                        api.star(track.id)
+                                    }
+                                    isFavorite = !isFavorite
+                                }
                             }
                             ToolButton {
                                 text: "⋯"
-                                onClicked: player.playAlbum([track], 0)
+                                onClicked: trackMenu.popup()
+                                
+                                Menu {
+                                    id: trackMenu
+                                    width: 200
+                                    
+                                    background: Rectangle {
+                                        color: "#1d2330"
+                                        radius: 12
+                                        border.color: "#2a3040"
+                                        border.width: 1
+                                    }
+                                    
+                                    delegate: MenuItem {
+                                        id: menuItem
+                                        implicitWidth: 200
+                                        implicitHeight: 40
+                                        
+                                        contentItem: Label {
+                                            text: menuItem.text
+                                            color: menuItem.highlighted ? "#f5f7ff" : "#b0b8c8"
+                                            font.pixelSize: 13
+                                            leftPadding: 16
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+                                        
+                                        background: Rectangle {
+                                            color: menuItem.highlighted ? "#2a3545" : "transparent"
+                                            radius: 8
+                                        }
+                                    }
+                                    
+                                    MenuItem {
+                                        text: "Tocar agora"
+                                        onTriggered: player.playAlbum([track], 0)
+                                    }
+                                    MenuItem {
+                                        text: "Adicionar à fila"
+                                        onTriggered: player.addToQueue(track)
+                                    }
+                                    MenuItem {
+                                        text: "Ir para álbum"
+                                        onTriggered: homePage.albumClicked(track.albumId, track.album, track.artist, track.coverArt)
+                                    }
+                                }
                             }
                         }
                     }

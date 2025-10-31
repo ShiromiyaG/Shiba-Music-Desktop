@@ -4,8 +4,8 @@ import QtQuick.Layouts
 
 Item {
     id: root
-    width: 190
-    height: 240
+    width: 200
+    height: 260
     property string title
     property string subtitle
     property url cover
@@ -25,9 +25,9 @@ Item {
             spacing: 10
 
             Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 150
-                radius: 12
+                Layout.preferredWidth: 176
+                Layout.preferredHeight: 176
+                radius: 8
                 color: "#111"
                 border.color: "#2a313f"
                 clip: true

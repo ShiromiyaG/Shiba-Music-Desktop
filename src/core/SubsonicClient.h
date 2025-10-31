@@ -37,6 +37,8 @@ public:
     Q_INVOKABLE void fetchRandomSongs();
     Q_INVOKABLE void fetchFavorites();
     Q_INVOKABLE void search(const QString& term);
+    Q_INVOKABLE void star(const QString& id);
+    Q_INVOKABLE void unstar(const QString& id);
 
     Q_INVOKABLE void saveCredentials(const QString& url, const QString& user, const QString& password);
     Q_INVOKABLE QVariantMap loadCredentials();

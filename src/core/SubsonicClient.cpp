@@ -489,6 +489,24 @@ void SubsonicClient::scrobble(const QString& songId, bool submission, qint64 tim
     connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
 }
 
+void SubsonicClient::star(const QString& id) {
+    if (!m_authenticated || id.isEmpty()) return;
+    QUrlQuery ex;
+    ex.addQueryItem("id", id);
+    QNetworkRequest req(buildUrl("star", ex, true));
+    auto *reply = m_nam.get(req);
+    connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
+}
+
+void SubsonicClient::unstar(const QString& id) {
+    if (!m_authenticated || id.isEmpty()) return;
+    QUrlQuery ex;
+    ex.addQueryItem("id", id);
+    QNetworkRequest req(buildUrl("unstar", ex, true));
+    auto *reply = m_nam.get(req);
+    connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
+}
+
 void SubsonicClient::saveCredentials(const QString& url, const QString& user, const QString& password) {
     QSettings settings;
     settings.setValue("serverUrl", url);
