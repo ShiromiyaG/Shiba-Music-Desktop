@@ -35,7 +35,6 @@
 ### Planned
 - 🎧 Playlist management
 - 🔄 Cross-platform support (Linux, macOS)
-- 📱 Mobile version
 - 🎨 Theme customization
 
 ---
