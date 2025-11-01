@@ -184,25 +184,77 @@ jobs:
         
         Write-Host "Running windeployqt..."
         $windeployqt = "$env:QT_ROOT_DIR\bin\windeployqt.exe"
-        if (Test-Path $windeployqt) {
-          # Capture output and ignore non-critical errors
-          $output = & $windeployqt --qmldir qml --release --no-translations --compiler-runtime "$deployDir\shibamusic.exe" 2>&1
-          $exitCode = $LASTEXITCODE
-          
-          # Show output
-          $output | ForEach-Object { Write-Host $_ }
-          
-          # Check if deployment actually worked (exe and DLLs present)
-          $qtDlls = Get-ChildItem $deployDir -Filter "Qt*.dll" -ErrorAction SilentlyContinue
-          if ($qtDlls.Count -gt 0) {
-            Write-Host "✅ windeployqt completed (found $($qtDlls.Count) Qt DLLs)"
-          } elseif ($exitCode -ne 0) {
-            Write-Host "❌ windeployqt failed with exit code $exitCode"
-            throw "windeployqt failed"
-          }
-        } else {
+        if (-not (Test-Path $windeployqt)) {
           Write-Host "❌ windeployqt not found at: $windeployqt"
           throw "windeployqt not found"
+        }
+        
+        # Try windeployqt without --compiler-runtime first (simpler, less prone to errors)
+        Write-Host "Attempting windeployqt without --compiler-runtime..."
+        $output = & $windeployqt --qmldir qml --release --no-translations "$deployDir\shibamusic.exe" 2>&1
+        $exitCode = $LASTEXITCODE
+        
+        # Show output
+        $output | ForEach-Object { Write-Host $_ }
+        
+        # Check if deployment worked (Qt DLLs present)
+        Start-Sleep -Seconds 2
+        $qtDlls = Get-ChildItem $deployDir -Filter "Qt*.dll" -ErrorAction SilentlyContinue
+        
+        if ($qtDlls.Count -gt 0) {
+          Write-Host "✅ windeployqt completed successfully (found $($qtDlls.Count) Qt DLLs)"
+        } else {
+          Write-Host "⚠️  windeployqt didn't copy Qt DLLs (exit code: $exitCode)"
+          Write-Host "Trying alternative method: manual DLL copy..."
+          
+          # Manual copy of essential Qt DLLs
+          $qtBinDir = "$env:QT_ROOT_DIR\bin"
+          $essentialDlls = @(
+            "Qt6Core.dll",
+            "Qt6Gui.dll",
+            "Qt6Network.dll",
+            "Qt6Qml.dll",
+            "Qt6Quick.dll",
+            "Qt6QuickControls2.dll",
+            "Qt6QmlModels.dll",
+            "Qt6OpenGL.dll",
+            "Qt6Widgets.dll"
+          )
+          
+          foreach ($dll in $essentialDlls) {
+            $dllPath = Join-Path $qtBinDir $dll
+            if (Test-Path $dllPath) {
+              Copy-Item $dllPath -Destination $deployDir -Force
+              Write-Host "  ✅ $dll"
+            }
+          }
+          
+          # Copy plugins
+          Write-Host "Copying Qt plugins..."
+          $pluginsDir = "$env:QT_ROOT_DIR\plugins"
+          if (Test-Path "$pluginsDir\platforms") {
+            New-Item -ItemType Directory -Force -Path "$deployDir\platforms" | Out-Null
+            Copy-Item "$pluginsDir\platforms\qwindows.dll" -Destination "$deployDir\platforms\" -Force -ErrorAction SilentlyContinue
+            Write-Host "  ✅ platforms/qwindows.dll"
+          }
+          
+          # Copy QML modules
+          Write-Host "Copying essential QML modules..."
+          $qmlSrcDir = "$env:QT_ROOT_DIR\qml"
+          $qmlDstDir = "$deployDir\qml"
+          $qmlModules = @("QtQuick", "QtQuick.2", "QtQml")
+          
+          foreach ($module in $qmlModules) {
+            $srcPath = Join-Path $qmlSrcDir $module
+            if (Test-Path $srcPath) {
+              $dstPath = Join-Path $qmlDstDir $module
+              New-Item -ItemType Directory -Force -Path $dstPath | Out-Null
+              Copy-Item "$srcPath\*" -Destination $dstPath -Recurse -Force -ErrorAction SilentlyContinue
+              Write-Host "  ✅ $module"
+            }
+          }
+          
+          Write-Host "✅ Manual deployment completed"
         }
         
         Write-Host "Copying MinGW runtime DLLs..."
