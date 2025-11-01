@@ -57,7 +57,7 @@ endif()
 qt_standard_project_setup()
 set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
 
-qt_add_executable(shibamusic
+qt_add_executable(shibamusic WIN32
     src/main.cpp
     src/core/SubsonicClient.h src/core/SubsonicClient.cpp
     src/playback/MpvPlayer.h src/playback/MpvPlayer.cpp
