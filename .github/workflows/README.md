@@ -2,6 +2,21 @@
 
 Fully automated CI/CD system for Shiba Music - **Single workflow handles everything!**
 
+---
+
+## ⚠️ FIRST TIME SETUP REQUIRED!
+
+**If this is your first time using this workflow, you MUST:**
+
+1. 🔐 Create a Personal Access Token → [Instructions](./TOKEN-SETUP.md)
+2. 🔑 Add `RELEASE_TOKEN` secret to repository
+3. 🎮 Add `DISCORD_CLIENT_ID` secret to repository
+4. ⚙️ Enable workflow write permissions
+
+**The workflow WILL FAIL without these! See [Setup Checklist](#-setup-checklist) below.**
+
+---
+
 ## 📋 Workflow: `release.yml`
 
 **Purpose:** Automatically creates tags, builds, and publishes releases when `version.txt` is updated.
@@ -86,36 +101,55 @@ version.txt updated
 
 ## ⚙️ Required Configuration
 
-### GitHub Actions Permissions
+### ✅ Setup Checklist
 
-⚠️ **CRITICAL:** You must configure these permissions for the workflow to work!
+Before the workflow can work, you MUST complete ALL these steps:
 
-1. Go to: `Settings` → `Actions` → `General`
-2. Scroll down to **"Workflow permissions"**
-3. Select: **"Read and write permissions"** (⚠️ REQUIRED!)
-4. Check: **"Allow GitHub Actions to create and approve pull requests"**
-5. Click **"Save"**
+- [ ] **1. Create Personal Access Token**
+  - Go to [GitHub Settings → Tokens](https://github.com/settings/tokens/new)
+  - Create token with `repo` scope
+  - Copy the token (you'll need it next)
 
-**Without these permissions, the workflow cannot create tags or releases!**
+- [ ] **2. Add RELEASE_TOKEN Secret**
+  - Repository → Settings → Secrets → Actions
+  - New secret: Name = `RELEASE_TOKEN`, Value = your token
+  - ⚠️ **Workflow will fail without this!**
+
+- [ ] **3. Add DISCORD_CLIENT_ID Secret**
+  - Same place: Settings → Secrets → Actions
+  - New secret: Name = `DISCORD_CLIENT_ID`, Value = your Discord App ID
+  - ⚠️ **Required for builds!**
+
+- [ ] **4. Enable Workflow Permissions**
+  - Settings → Actions → General
+  - Select "Read and write permissions"
+  - Check "Allow GitHub Actions to create and approve pull requests"
+  - Click Save
+
+**All 4 steps are REQUIRED! Missing any will cause failures.**
 
 ### GitHub Secrets
 
+⚠️ **CRITICAL: You MUST add these secrets or the workflow will fail!**
+
 **Required Secrets:**
 
-1. **RELEASE_TOKEN** (Required for creating tags and releases)
+1. **RELEASE_TOKEN** ⚠️ REQUIRED - Workflow will fail without this!
    - Go to: `Settings` → `Secrets and variables` → `Actions`
    - Click `New repository secret`
-   - Name: `RELEASE_TOKEN`
-   - Value: Create a [Personal Access Token](https://github.com/settings/tokens/new) with `repo` scope
+   - Name: **`RELEASE_TOKEN`** (exactly this, case-sensitive)
+   - Value: Create a [Personal Access Token](https://github.com/settings/tokens/new) with **`repo`** scope
    - Click `Add secret`
+   - 📖 [Detailed Instructions](./TOKEN-SETUP.md)
 
-2. **DISCORD_CLIENT_ID** (Required for Discord Rich Presence)
+2. **DISCORD_CLIENT_ID** ⚠️ REQUIRED - For Discord Rich Presence
    - Click `New repository secret`
-   - Name: `DISCORD_CLIENT_ID`
+   - Name: **`DISCORD_CLIENT_ID`** (exactly this, case-sensitive)
    - Value: Your Discord Application ID
    - Click `Add secret`
+   - 📖 [How to get Discord ID](./SECRETS-SETUP.md)
 
-See [Secrets Setup Guide](./SECRETS-SETUP.md) for detailed instructions.
+**Without these secrets, the workflow WILL FAIL with 403 errors!**
 
 ### libmpv
 

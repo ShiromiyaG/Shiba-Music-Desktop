@@ -2,9 +2,28 @@
 
 This guide shows how to create a Personal Access Token (PAT) for the release workflow.
 
-## ⚠️ Required Setup
+## ⚠️ REQUIRED - Workflow will fail without this!
 
-The workflow needs a Personal Access Token to create tags and releases. Without it, you'll get errors.
+**Error you're seeing?**
+```
+remote: Write access to repository not granted.
+fatal: unable to access 'https://github.com/...': error: 403
+```
+
+**Solution:** Follow the steps below to create and add a Personal Access Token.
+
+---
+
+## 🚀 Quick Start (5 minutes)
+
+1. **Create token:** [Click here](https://github.com/settings/tokens/new) → Select `repo` scope → Generate
+2. **Copy token:** Save it somewhere (you won't see it again!)
+3. **Add to repo:** Repository Settings → Secrets → Actions → New secret
+4. **Name:** `RELEASE_TOKEN`
+5. **Value:** Paste your token
+6. **Done!** Re-run the workflow
+
+---
 
 ## Step-by-Step Instructions
 
