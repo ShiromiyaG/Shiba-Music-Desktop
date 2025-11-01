@@ -1,15 +1,76 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
 import "qrc:/qml/components" as Components
 
 Page {
     id: homePage
     objectName: "homePage"
     signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId, string artistId)
+    signal artistClicked(string artistId, string artistName, string coverArtId)
     padding: 0
     background: Rectangle { color: "transparent" }
+
+    property bool searchActive: false
+    property bool searchLoading: false
+    property string searchQuery: ""
+    property var searchResults: []
+    property var searchArtistsResults: []
+    property var searchAlbumsResults: []
+
+    onSearchActiveChanged: if (!searchActive) {
+        searchLoading = false
+        searchResults = []
+        searchArtistsResults = []
+        searchAlbumsResults = []
+        searchQuery = ""
+    }
+
+    Connections {
+        target: api
+        function onSearchArtistsChanged() {
+            if (!homePage.searchActive) return
+            var results = api.searchArtists || []
+            var copy = []
+            if (results && results.length) {
+                for (var i = 0; i < results.length; ++i)
+                    copy.push(results[i])
+            }
+            homePage.searchArtistsResults = copy
+        }
+        function onSearchAlbumsChanged() {
+            if (!homePage.searchActive) return
+            var results = api.searchAlbums || []
+            var copy = []
+            if (results && results.length) {
+                for (var i = 0; i < results.length; ++i)
+                    copy.push(results[i])
+            }
+            homePage.searchAlbumsResults = copy
+        }
+        function onTracksChanged() {
+            if (!homePage.searchActive)
+                return
+            var results = api.tracks || []
+            var copy = []
+            if (results && results.length) {
+                for (var i = 0; i < results.length; ++i)
+                    copy.push(results[i])
+            }
+            homePage.searchResults = copy
+            homePage.searchLoading = false
+        }
+        function onErrorOccurred(message) {
+            if (!homePage.searchActive)
+                return
+            if (homePage.searchLoading) {
+                homePage.searchLoading = false
+                homePage.searchResults = []
+                homePage.searchArtistsResults = []
+                homePage.searchAlbumsResults = []
+            }
+        }
+    }
 
     Component.onCompleted: {
         api.fetchRandomSongs();
@@ -31,7 +92,181 @@ Page {
             spacing: 24
             padding: 32
 
+            // Search results - shown exclusively when search is active
+            Item {
+                width: column.width
+                visible: searchActive
+                implicitHeight: searchSectionContent.implicitHeight
+                Column {
+                    id: searchSectionContent
+                    width: parent.width - column.padding * 2
+                    x: column.padding
+                    spacing: 0
+                    
+                    Label {
+                        text: searchQuery.length ? ("Resultados para \"" + searchQuery + "\"") : "Resultados da busca"
+                        font.pixelSize: 26
+                        font.weight: Font.DemiBold
+                        color: "#f5f7ff"
+                    }
+                    
+                    Loader {
+                        width: parent.width
+                        sourceComponent: searchLoading ? searchResultsLoading : null
+                    }
+                    
+                    // Artists section
+                    Column {
+                        width: parent.width
+                        spacing: 4
+                        topPadding: 4
+                        visible: !searchLoading && searchArtistsResults.length > 0
+                        
+                        Label {
+                            text: "ARTISTAS"
+                            color: "#8da0c0"
+                            font.pixelSize: 11
+                            font.letterSpacing: 3
+                            font.weight: Font.DemiBold
+                        }
+                        
+                        Item {
+                            width: parent.width
+                            height: 230
+                            
+                            Flickable {
+                                id: artistsScroll
+                                anchors.fill: parent
+                                clip: true
+                                contentWidth: artistsRow.width
+                                contentHeight: artistsRow.height
+                                boundsBehavior: Flickable.StopAtBounds
+                                flickableDirection: Flickable.HorizontalFlick
+                                
+                                Row {
+                                    id: artistsRow
+                                    spacing: 16
+                                    Repeater {
+                                        model: searchArtistsResults
+                                        delegate: Components.ArtistCard {
+                                            name: modelData.name || "Artista Desconhecido"
+                                            albumCount: modelData.albumCount || 0
+                                            cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
+                                            artistId: modelData.id
+                                            onClicked: homePage.artistClicked(modelData.id, modelData.name, modelData.coverArt)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        ScrollBar {
+                            width: parent.width
+                            orientation: Qt.Horizontal
+                            size: artistsScroll.width / artistsScroll.contentWidth
+                            position: artistsScroll.contentX / artistsScroll.contentWidth
+                            active: true
+                            onPositionChanged: {
+                                if (pressed) {
+                                    artistsScroll.contentX = position * artistsScroll.contentWidth
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Albums section
+                    Column {
+                        width: parent.width
+                        spacing: 8
+                        topPadding: 28
+                        visible: !searchLoading && searchAlbumsResults.length > 0
+                        
+                        Label {
+                            text: "ÁLBUNS"
+                            color: "#8da0c0"
+                            font.pixelSize: 11
+                            font.letterSpacing: 3
+                            font.weight: Font.DemiBold
+                        }
+                        
+                        Item {
+                            width: parent.width
+                            height: 270
+                            
+                            Flickable {
+                                id: albumsScroll
+                                anchors.fill: parent
+                                clip: true
+                                contentWidth: albumsRow.width
+                                contentHeight: albumsRow.height
+                                boundsBehavior: Flickable.StopAtBounds
+                                flickableDirection: Flickable.HorizontalFlick
+                                
+                                Row {
+                                    id: albumsRow
+                                    spacing: 16
+                                    Repeater {
+                                        model: searchAlbumsResults
+                                        delegate: Components.AlbumCard {
+                                            title: modelData.name || "Álbum Desconhecido"
+                                            subtitle: modelData.artist || "Artista desconhecido"
+                                            cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
+                                            albumId: modelData.id
+                                            artistId: modelData.artistId || ""
+                                            onClicked: homePage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt, modelData.artistId || "")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        ScrollBar {
+                            width: parent.width
+                            orientation: Qt.Horizontal
+                            size: albumsScroll.width / albumsScroll.contentWidth
+                            position: albumsScroll.contentX / albumsScroll.contentWidth
+                            active: true
+                            onPositionChanged: {
+                                if (pressed) {
+                                    albumsScroll.contentX = position * albumsScroll.contentWidth
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Songs section
+                    Column {
+                        width: parent.width
+                        spacing: 8
+                        topPadding: 28
+                        visible: !searchLoading && searchResults.length > 0
+                        
+                        Label {
+                            text: "MÚSICAS"
+                            color: "#8da0c0"
+                            font.pixelSize: 11
+                            font.letterSpacing: 3
+                            font.weight: Font.DemiBold
+                        }
+                        
+                        Loader {
+                            width: parent.width
+                            sourceComponent: searchResultsList
+                        }
+                    }
+                    
+                    // Empty state
+                    Loader {
+                        width: parent.width
+                        visible: !searchLoading && searchArtistsResults.length === 0 && searchAlbumsResults.length === 0 && searchResults.length === 0
+                        sourceComponent: searchResultsEmpty
+                    }
+                }
+            }
+
+            // Normal content - hidden when search is active
             Label {
+                visible: !searchActive
                 text: "Discover"
                 font.pixelSize: 30
                 font.weight: Font.DemiBold
@@ -39,6 +274,7 @@ Page {
             }
 
             Label {
+                visible: !searchActive
                 text: "RECENTLY PLAYED"
                 color: "#8da0c0"
                 font.pixelSize: 12
@@ -47,11 +283,13 @@ Page {
             }
 
             Loader {
+                visible: !searchActive
                 width: column.width - column.padding * 2
                 sourceComponent: api.recentlyPlayedAlbums.length > 0 ? recentlyPlayed : emptyState
             }
 
             Label {
+                visible: !searchActive
                 text: "MADE FOR YOU"
                 color: "#8da0c0"
                 font.pixelSize: 12
@@ -60,6 +298,7 @@ Page {
             }
 
             Loader {
+                visible: !searchActive
                 width: column.width - column.padding * 2
                 sourceComponent: api.randomSongs.length > 0 ? madeForYou : emptyState
             }
@@ -123,6 +362,150 @@ Page {
     }
 
     Component {
+        id: searchResultsLoading
+        Item {
+            width: parent ? parent.width : 0
+            height: 80
+            BusyIndicator {
+                anchors.centerIn: parent
+                running: true
+            }
+        }
+    }
+
+    Component {
+        id: searchResultsList
+        Item {
+            width: parent ? parent.width : 0
+            implicitHeight: resultsColumn.implicitHeight
+
+            Column {
+                id: resultsColumn
+                width: parent.width
+                spacing: 8
+
+                Repeater {
+                    model: homePage.searchResults
+                    delegate: Rectangle {
+                        property var track: modelData
+                        width: resultsColumn.width
+                        height: 72
+                        radius: 16
+                        color: trackHover.hovered ? "#273040" : (index % 2 === 0 ? "#1b2336" : "#182030")
+                        border.color: trackHover.hovered ? "#3b465f" : "transparent"
+                        Behavior on color { ColorAnimation { duration: 120 } }
+
+                        HoverHandler {
+                            id: trackHover
+                        }
+
+                        RowLayout {
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.leftMargin: 12
+                            anchors.rightMargin: 12
+                            spacing: 14
+
+                            Rectangle {
+                                Layout.preferredWidth: 48
+                                Layout.preferredHeight: 48
+                                Layout.alignment: Qt.AlignVCenter
+                                radius: 8
+                                color: "#101622"
+                                clip: true
+                                
+                                Image {
+                                    anchors.fill: parent
+                                    source: track.coverArt ? api.coverArtUrl(track.coverArt, 128) : ""
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                    visible: track.coverArt && status !== Image.Error
+                                }
+                                
+                                Image {
+                                    anchors.centerIn: parent
+                                    visible: !track.coverArt || parent.children[0].status === Image.Error
+                                    source: "qrc:/qml/icons/music_note.svg"
+                                    sourceSize.width: 24
+                                    sourceSize.height: 24
+                                    antialiasing: true
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 180
+                                spacing: 2
+                                
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: track.title || "-"
+                                    color: "#f5f7ff"
+                                    font.pixelSize: 14
+                                    font.weight: Font.Medium
+                                    elide: Text.ElideRight
+                                }
+                                
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: track.artist || "-"
+                                    color: "#8fa0c2"
+                                    font.pixelSize: 12
+                                    elide: Text.ElideRight
+                                }
+                            }
+                            
+                            Label {
+                                text: track.album || "-"
+                                color: "#8fa0c2"
+                                font.pixelSize: 12
+                                elide: Text.ElideRight
+                                Layout.preferredWidth: 180
+                                Layout.maximumWidth: 220
+                            }
+                            
+                            RowLayout {
+                                spacing: 4
+                                
+                                ToolButton {
+                                    icon.source: "qrc:/qml/icons/add.svg"
+                                    display: AbstractButton.IconOnly
+                                    ToolTip.visible: hovered
+                                    ToolTip.text: "Adicionar à fila"
+                                    onClicked: player.addToQueue(track)
+                                }
+                                ToolButton {
+                                    icon.source: "qrc:/qml/icons/play_arrow.svg"
+                                    display: AbstractButton.IconOnly
+                                    ToolTip.visible: hovered
+                                    ToolTip.text: "Reproduzir agora"
+                                    onClicked: player.playAlbum([track], 0)
+                                }
+                            }
+                        }
+                        
+                        TapHandler {
+                            acceptedButtons: Qt.LeftButton
+                            onTapped: player.playAlbum([track], 0)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: searchResultsEmpty
+        Components.EmptyState {
+            width: parent ? parent.width : 0
+            emoji: "qrc:/qml/icons/search.svg"
+            title: "Nada encontrado"
+            description: "Tente outro termo ou verifique a grafia."
+        }
+    }
+
+    Component {
         id: madeForYou
         Column {
             width: parent.width
@@ -140,7 +523,13 @@ Page {
                     width: madeList.width
                     height: 60
                     radius: 16
-                    color: index % 2 === 0 ? "#1b2336" : "#182030"
+                    color: madeTrackHover.hovered ? "#273040" : (index % 2 === 0 ? "#1b2336" : "#182030")
+                    border.color: madeTrackHover.hovered ? "#3b465f" : "transparent"
+                    Behavior on color { ColorAnimation { duration: 120 } }
+
+                    HoverHandler {
+                        id: madeTrackHover
+                    }
 
                     RowLayout {
                         anchors.verticalCenter: parent.verticalCenter

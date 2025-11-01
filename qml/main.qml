@@ -178,7 +178,7 @@ ApplicationWindow {
                             id: searchBox
                             Layout.fillWidth: true
                             leftPadding: 32
-                            rightPadding: clearButton.visible ? clearButton.implicitWidth + 16 : 16
+                            rightPadding: clearButton.visible ? clearButton.width + 8 : 16
                             placeholderText: "Buscar músicas, artistas ou álbuns"
                             font.pixelSize: 14
                             background: Rectangle {
@@ -197,11 +197,16 @@ ApplicationWindow {
                             }
                             ToolButton {
                                 id: clearButton
+                                anchors.right: parent.right
+                                anchors.rightMargin: 4
+                                anchors.verticalCenter: parent.verticalCenter
                                 icon.source: "qrc:/qml/icons/close.svg"
+                                icon.width: 16
+                                icon.height: 16
                                 visible: searchBox.text.length > 0
                                 onClicked: {
                                     searchBox.clear()
-                                    api.search("")
+                                    win.performSearch("")
                                 }
                             }
                             onAccepted: win.performSearch(text)
@@ -246,6 +251,8 @@ ApplicationWindow {
                                 var page = push(win.homePageUrl)
                                 if (page && page.albumClicked)
                                     page.albumClicked.connect(win.showAlbumPage)
+                                if (page && page.artistClicked)
+                                    page.artistClicked.connect(win.showArtistPage)
                                 win.currentSection = "home"
                             }
                         }
@@ -345,8 +352,13 @@ ApplicationWindow {
                         width: parent.width
                         height: 64
                         radius: 12
-                        color: index % 2 === 0 ? "#1b2336" : "#182030"
-                        border.color: "#252e42"
+                        color: mainQueueHover.hovered ? "#273040" : (index % 2 === 0 ? "#1b2336" : "#182030")
+                        border.color: mainQueueHover.hovered ? "#3b465f" : "#252e42"
+                        Behavior on color { ColorAnimation { duration: 120 } }
+                        
+                        HoverHandler {
+                            id: mainQueueHover
+                        }
                         
                         RowLayout {
                             anchors.fill: parent
@@ -451,10 +463,34 @@ ApplicationWindow {
     }
 
     function performSearch(text) {
-        if (!api.authenticated || !text || !text.length)
+        if (!api.authenticated)
             return
-        api.search(text)
-        pushContent(win.homePageUrl)
+
+        const query = text ? text.trim() : ""
+        var page = null
+        if (stack.depth > 0 && stack.currentItem && stack.currentItem.objectName === "homePage") {
+            page = stack.currentItem
+        } else {
+            page = pushContent(win.homePageUrl)
+        }
+
+        if (page) {
+            if (!query.length) {
+                page.searchActive = false
+                page.searchQuery = ""
+                page.searchLoading = false
+                page.searchResults = []
+            } else {
+                page.searchActive = true
+                page.searchQuery = query
+                page.searchLoading = true
+                page.searchResults = []
+                api.search(query)
+            }
+        } else if (query.length) {
+            api.search(query)
+        }
+
         win.currentSection = "home"
     }
 
@@ -463,6 +499,9 @@ ApplicationWindow {
             return
         win.currentSection = target
 
+        // Clear search when navigating to a different page
+        searchBox.clear()
+
         stack.clear()
 
         switch (target) {
@@ -470,6 +509,8 @@ ApplicationWindow {
             var page = stack.push(win.homePageUrl)
             if (page && page.albumClicked)
                 page.albumClicked.connect(showAlbumPage)
+            if (page && page.artistClicked)
+                page.artistClicked.connect(showArtistPage)
             break
         case "playlists":
             stack.push(Qt.resolvedUrl("qrc:/qml/pages/PlaylistsPage.qml"))
@@ -524,6 +565,9 @@ ApplicationWindow {
     }
 
     function showArtistPage(artistId, artistName, coverArtId) {
+        // Clear search when navigating to artist page
+        searchBox.clear()
+        
         var page = stack.push(Qt.resolvedUrl("qrc:/qml/pages/ArtistPage.qml"))
         page.artistId = artistId
         page.artistName = artistName
@@ -534,6 +578,9 @@ ApplicationWindow {
     }
 
     function showAlbumPage(albumId, albumTitle, artistName, coverArtId, artistId) {
+        // Clear search when navigating to album page
+        searchBox.clear()
+        
         var page = stack.push(Qt.resolvedUrl("qrc:/qml/pages/AlbumPage.qml"), {
             albumId: albumId,
             albumTitle: albumTitle,
@@ -545,6 +592,9 @@ ApplicationWindow {
     }
 
     function showPlaylistPage(playlistId, playlistName, coverArtId, songCount) {
+        // Clear search when navigating to playlist page
+        searchBox.clear()
+        
         var page = stack.push(Qt.resolvedUrl("qrc:/qml/pages/PlaylistDetailPage.qml"))
         page.playlistId = playlistId
         page.playlistName = playlistName

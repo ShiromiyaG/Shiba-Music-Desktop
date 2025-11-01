@@ -8,6 +8,8 @@ Item {
     height: 224
     property string name
     property url cover
+    property int albumCount: 0
+    property string artistId: ""
     signal clicked()
 
     Rectangle {
@@ -54,19 +56,32 @@ Item {
                 }
             }
 
-            Label {
+            Column {
                 Layout.fillWidth: true
-                Layout.maximumWidth: parent.width - 24
                 Layout.alignment: Qt.AlignHCenter
-                text: root.name
-                font.pixelSize: 14
-                font.weight: Font.Medium
-                color: "#f5f7ff"
-                horizontalAlignment: Text.AlignHCenter
-                elide: Text.ElideRight
-                maximumLineCount: 2
-                wrapMode: Text.WordWrap
-                clip: true
+                spacing: 2
+                
+                Label {
+                    width: parent.width
+                    text: root.name
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    color: "#f5f7ff"
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
+                    maximumLineCount: 2
+                    wrapMode: Text.WordWrap
+                    clip: true
+                }
+                
+                Label {
+                    width: parent.width
+                    text: root.albumCount > 0 ? (root.albumCount + " álbun" + (root.albumCount !== 1 ? "s" : "")) : ""
+                    font.pixelSize: 11
+                    color: "#8fa0c2"
+                    horizontalAlignment: Text.AlignHCenter
+                    visible: root.albumCount > 0
+                }
             }
 
             Item {

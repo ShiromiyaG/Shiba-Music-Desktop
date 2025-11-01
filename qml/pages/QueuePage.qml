@@ -117,8 +117,13 @@ Item {
                             width: ListView.view.width
                             height: 64
                             radius: 8
-                            color: index === player.currentIndex ? "#3a3a3a" : "#2a2a2a"
-                            border.color: index === player.currentIndex ? "#5a5a5a" : "transparent"
+                            color: index === player.currentIndex ? "#3a3a3a" : (queueHover.hovered ? "#353535" : "#2a2a2a")
+                            border.color: index === player.currentIndex ? "#5a5a5a" : (queueHover.hovered ? "#454545" : "transparent")
+                            Behavior on color { ColorAnimation { duration: 120 } }
+
+                            HoverHandler {
+                                id: queueHover
+                            }
 
                             RowLayout {
                                 anchors.fill: parent

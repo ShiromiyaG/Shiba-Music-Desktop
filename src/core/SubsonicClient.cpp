@@ -521,6 +521,8 @@ void SubsonicClient::fetchFavorites() {
 void SubsonicClient::search(const QString& term) {
     if (!m_authenticated) return;
     QUrlQuery ex; ex.addQueryItem("query", term);
+    ex.addQueryItem("artistCount", "20");
+    ex.addQueryItem("albumCount", "40");
     ex.addQueryItem("songCount", "100");
     QNetworkRequest req(buildUrl("search3", ex, true));
     auto *reply = m_nam.get(req);
@@ -534,9 +536,43 @@ void SubsonicClient::search(const QString& term) {
         reply->deleteLater();
         QString err;
         if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
-        m_tracks.clear();
+        
         auto root = doc.object().value("subsonic-response").toObject();
-        auto songs = root.value("searchResult3").toObject().value("song").toArray();
+        auto searchResult = root.value("searchResult3").toObject();
+        
+        // Parse artists
+        m_searchArtists.clear();
+        auto artists = searchResult.value("artist").toArray();
+        for (const auto &av : artists) {
+            auto a = av.toObject();
+            m_searchArtists.push_back(QVariantMap{
+                {"id", a.value("id").toString()},
+                {"name", a.value("name").toString()},
+                {"albumCount", a.value("albumCount").toInt()},
+                {"coverArt", a.value("coverArt").toString()}
+            });
+        }
+        
+        // Parse albums
+        m_searchAlbums.clear();
+        auto albums = searchResult.value("album").toArray();
+        for (const auto &av : albums) {
+            auto a = av.toObject();
+            m_searchAlbums.push_back(QVariantMap{
+                {"id", a.value("id").toString()},
+                {"name", a.value("name").toString()},
+                {"artist", a.value("artist").toString()},
+                {"artistId", a.value("artistId").toString()},
+                {"coverArt", a.value("coverArt").toString()},
+                {"songCount", a.value("songCount").toInt()},
+                {"duration", a.value("duration").toInt()},
+                {"year", a.value("year").toInt()}
+            });
+        }
+        
+        // Parse songs
+        m_tracks.clear();
+        auto songs = searchResult.value("song").toArray();
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
@@ -553,6 +589,9 @@ void SubsonicClient::search(const QString& term) {
                 {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
             });
         }
+        
+        emit searchArtistsChanged();
+        emit searchAlbumsChanged();
         emit tracksChanged();
     });
 }

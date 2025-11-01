@@ -13,6 +13,8 @@ class SubsonicClient : public QObject {
     Q_PROPERTY(QVariantList albums READ albums NOTIFY albumsChanged)
     Q_PROPERTY(QVariantList albumList READ albumList NOTIFY albumListChanged)
     Q_PROPERTY(QVariantList tracks READ tracks NOTIFY tracksChanged)
+    Q_PROPERTY(QVariantList searchArtists READ searchArtists NOTIFY searchArtistsChanged)
+    Q_PROPERTY(QVariantList searchAlbums READ searchAlbums NOTIFY searchAlbumsChanged)
     Q_PROPERTY(QVariantList recentlyPlayedAlbums READ recentlyPlayedAlbums NOTIFY recentlyPlayedAlbumsChanged)
     Q_PROPERTY(QVariantList randomSongs READ randomSongs NOTIFY randomSongsChanged)
     Q_PROPERTY(QVariantList favorites READ favorites NOTIFY favoritesChanged)
@@ -54,6 +56,8 @@ public:
     Q_INVOKABLE QVariantList albums()  const { return m_albums; }
     Q_INVOKABLE QVariantList albumList() const { return m_albumList; }
     Q_INVOKABLE QVariantList tracks()  const { return m_tracks; }
+    Q_INVOKABLE QVariantList searchArtists() const { return m_searchArtists; }
+    Q_INVOKABLE QVariantList searchAlbums() const { return m_searchAlbums; }
     Q_INVOKABLE QVariantList recentlyPlayedAlbums() const { return m_recentlyPlayedAlbums; }
     Q_INVOKABLE QVariantList randomSongs() const { return m_randomSongs; }
     Q_INVOKABLE QVariantList favorites() const { return m_favorites; }
@@ -71,6 +75,8 @@ signals:
     void albumsChanged();
     void albumListChanged();
     void tracksChanged();
+    void searchArtistsChanged();
+    void searchAlbumsChanged();
     void recentlyPlayedAlbumsChanged();
     void randomSongsChanged();
     void favoritesChanged();
@@ -101,7 +107,7 @@ private:
     QNetworkReply* m_playlistsReply = nullptr;
     QNetworkReply* m_playlistReply = nullptr;
 
-    QVariantList m_artists, m_albums, m_albumList, m_tracks, m_recentlyPlayedAlbums, m_randomSongs, m_favorites, m_playlists;
+    QVariantList m_artists, m_albums, m_albumList, m_tracks, m_searchArtists, m_searchAlbums, m_recentlyPlayedAlbums, m_randomSongs, m_favorites, m_playlists;
     QString m_artistCover;
     QString m_pendingAlbumListType;
     int m_pendingAlbumListOffset = 0;
