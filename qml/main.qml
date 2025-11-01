@@ -12,7 +12,7 @@ ApplicationWindow {
     minimumHeight: 720
     visible: true
     color: "#11141a"
-    title: "Shiba Music"
+    title: qsTr("Shiba Music")
     Material.theme: Material.Dark
     Material.accent: Material.Indigo
 
@@ -29,18 +29,29 @@ ApplicationWindow {
         }
     }
 
-    property var navigationItems: [
-        { label: "Início", icon: "qrc:/qml/icons/home.svg", target: "home" },
-        { label: "Playlists", icon: "qrc:/qml/icons/queue_music.svg", target: "playlists" },
-        { label: "Favoritos", icon: "qrc:/qml/icons/star.svg", target: "favorites" },
-        { label: "Álbuns", icon: "qrc:/qml/icons/album.svg", target: "albums" },
-        { label: "Artistas", icon: "qrc:/qml/icons/mic.svg", target: "artists" },
-        { label: "Configurações", icon: "qrc:/qml/icons/settings.svg", target: "settings" }
-    ]
+    function getNavigationItems() {
+        return [
+            { label: qsTr("Home"), icon: "qrc:/qml/icons/home.svg", target: "home" },
+            { label: qsTr("Playlists"), icon: "qrc:/qml/icons/queue_music.svg", target: "playlists" },
+            { label: qsTr("Favorites"), icon: "qrc:/qml/icons/star.svg", target: "favorites" },
+            { label: qsTr("Albums"), icon: "qrc:/qml/icons/album.svg", target: "albums" },
+            { label: qsTr("Artists"), icon: "qrc:/qml/icons/mic.svg", target: "artists" },
+            { label: qsTr("Settings"), icon: "qrc:/qml/icons/settings.svg", target: "settings" }
+        ]
+    }
+    
+    property var navigationItems: getNavigationItems()
     property string currentSection: "home"
     property bool initialLibraryLoaded: false
     property bool hasStoredCredentials: false
 
+    Connections {
+        target: translationManager
+        function onLanguageChanged() {
+            win.navigationItems = win.getNavigationItems()
+        }
+    }
+    
     Connections {
         target: api
         function onLoginFailed(message) {
@@ -63,7 +74,7 @@ ApplicationWindow {
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
-        visible: api.authenticated
+        visible: api ? api.authenticated : false
         enabled: visible
 
         RowLayout {
@@ -89,13 +100,13 @@ ApplicationWindow {
                     ColumnLayout {
                         spacing: 4
                         Label {
-                            text: "Shiba"
+                            text: qsTr("Shiba")
                             font.pixelSize: 24
                             font.weight: Font.DemiBold
                             color: "#f5f7ff"
                         }
                         Label {
-                            text: "Music Player"
+                            text: qsTr("Music Player")
                             color: "#a0aac6"
                             font.pixelSize: 12
                         }
@@ -109,6 +120,14 @@ ApplicationWindow {
                         interactive: false
                         clip: true
                         model: win.navigationItems
+                        
+                        // Disable all animations to prevent jumping
+                        add: null
+                        addDisplaced: null
+                        remove: null
+                        removeDisplaced: null
+                        move: null
+                        moveDisplaced: null
                         delegate: ItemDelegate {
                             id: navItem
                             width: sidebarList.width
@@ -146,8 +165,8 @@ ApplicationWindow {
                     Item { Layout.fillHeight: true }
 
                     Button {
-                        text: "Sair"
-                        visible: api.authenticated
+                        text: qsTr("Logout")
+                        visible: api ? api.authenticated : false
                         Layout.fillWidth: true
                         onClicked: {
                             api.logout()
@@ -179,7 +198,7 @@ ApplicationWindow {
                             Layout.fillWidth: true
                             leftPadding: 32
                             rightPadding: clearButton.visible ? clearButton.width + 8 : 16
-                            placeholderText: "Buscar músicas, artistas ou álbuns"
+                            placeholderText: qsTr("Search songs, artists or albums")
                             font.pixelSize: 14
                             background: Rectangle {
                                 radius: 18
@@ -213,7 +232,7 @@ ApplicationWindow {
                         }
 
                         Button {
-                            text: "Atualizar"
+                            text: qsTr("Refresh")
                             onClicked: {
                                 switch (win.currentSection) {
                                     case "home":
@@ -330,7 +349,7 @@ ApplicationWindow {
                 anchors.bottomMargin: 32
                 spacing: 18
                 Label {
-                    text: "Sua fila"
+                    text: qsTr("Your queue")
                     font.pixelSize: 26
                     font.weight: Font.DemiBold
                     color: "#f5f7ff"
@@ -338,7 +357,7 @@ ApplicationWindow {
                 }
                 Label {
                     visible: !player.queue || player.queue.length === 0
-                    text: "Nenhuma faixa na fila. Adicione músicas usando o botão +."
+                    text: qsTr("No tracks in queue. Add songs using the + button.")
                     color: "#a0aac6"
                     font.pixelSize: 14
                 }

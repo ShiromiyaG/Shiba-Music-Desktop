@@ -95,7 +95,7 @@ Item {
                     icon.source: "qrc:/qml/icons/play_arrow.svg"
                     onClicked: root.playClicked()
                     ToolTip.visible: hovered
-                    ToolTip.text: "Reproduzir agora"
+                    ToolTip.text: qsTr("Play now")
                 }
                 ToolButton {
                     text: "⋯"
@@ -132,7 +132,7 @@ Item {
                         }
                         
                         MenuItem {
-                            text: "Adicionar à fila"
+                            text: qsTr("Add to queue")
                             onTriggered: root.queueClicked()
                         }
                         MenuItem {

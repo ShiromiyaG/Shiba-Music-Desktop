@@ -207,49 +207,33 @@ void UpdateChecker::onDownloadFinished()
 void UpdateChecker::installUpdate(const QString &zipPath)
 {
 #ifdef Q_OS_WIN
-    QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/ShibaMusic-Update";
-    QDir().mkpath(tempDir);
-
-    // Create PowerShell script to extract and replace files
-    QString scriptPath = tempDir + "/update.ps1";
-    QFile scriptFile(scriptPath);
+    // Get application directory
+    QString appDir = QCoreApplication::applicationDirPath();
+    QString updaterPath = appDir + "/updater.exe";
     
-    if (scriptFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&scriptFile);
-        out << "# Wait for app to close\n";
-        out << "Start-Sleep -Seconds 2\n\n";
-        out << "# Extract update\n";
-        out << "$zipPath = '" << zipPath << "'\n";
-        out << "$extractPath = '" << tempDir << "/extracted'\n";
-        out << "$appDir = Split-Path -Parent $PSCommandPath\n";
-        out << "$appDir = Split-Path -Parent $appDir\n";
-        out << "$appDir = Split-Path -Parent $appDir\n\n";
-        out << "Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force\n\n";
-        out << "# Find the actual app folder inside extracted\n";
-        out << "$sourceFolder = Get-ChildItem -Path $extractPath -Directory | Select-Object -First 1\n\n";
-        out << "# Copy all files\n";
-        out << "Copy-Item -Path \"$($sourceFolder.FullName)\\*\" -Destination $appDir -Recurse -Force\n\n";
-        out << "# Cleanup\n";
-        out << "Remove-Item -Path $extractPath -Recurse -Force\n";
-        out << "Remove-Item -Path $zipPath -Force\n\n";
-        out << "# Restart app\n";
-        out << "Start-Process -FilePath \"$appDir\\shibamusic.exe\"\n\n";
-        out << "# Delete this script\n";
-        out << "Remove-Item -Path $PSCommandPath -Force\n";
-        scriptFile.close();
-
-        // Run script in background and exit app
-        QProcess::startDetached("powershell.exe", 
-            QStringList() << "-ExecutionPolicy" << "Bypass" 
-                         << "-WindowStyle" << "Hidden" 
-                         << "-File" << scriptPath);
-        
-        qDebug() << "Update script started. Exiting app...";
-        QCoreApplication::quit();
-    } else {
+    // Check if updater exists
+    if (!QFile::exists(updaterPath)) {
+        qWarning() << "UpdateChecker: updater.exe not found at" << updaterPath;
         m_isDownloading = false;
         emit isDownloadingChanged();
-        emit downloadFailed("Failed to create update script");
+        emit downloadFailed("Updater executable not found");
+        return;
+    }
+    
+    // Start updater process with arguments: updater.exe <zipPath> <appDir> <exeName>
+    QStringList args;
+    args << zipPath << appDir << "shibamusic.exe";
+    
+    qDebug() << "UpdateChecker: Starting updater:" << updaterPath << args;
+    
+    if (QProcess::startDetached(updaterPath, args)) {
+        qDebug() << "UpdateChecker: Updater started. Exiting app...";
+        QCoreApplication::quit();
+    } else {
+        qWarning() << "UpdateChecker: Failed to start updater";
+        m_isDownloading = false;
+        emit isDownloadingChanged();
+        emit downloadFailed("Failed to start updater");
     }
 #else
     m_isDownloading = false;

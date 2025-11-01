@@ -32,7 +32,7 @@ Error: Process completed with exit code 128.
 
 3. Re-run the failed workflow
 
-**This is the most common issue!** See [Token Setup Guide](./TOKEN-SETUP.md) for detailed instructions.
+**This is the most common issue!** See [Token Setup Guide](TOKEN-SETUP.md) for detailed instructions.
 
 ---
 

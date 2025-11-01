@@ -21,14 +21,14 @@ Page {
             Layout.fillWidth: true
             spacing: 6
             Label {
-                text: "Shiba Music"
+                text: qsTr("Shiba Music")
                 font.pixelSize: 28
                 font.weight: Font.DemiBold
                 horizontalAlignment: Text.AlignHCenter
                 Layout.alignment: Qt.AlignHCenter
             }
             Label {
-                text: "Conecte-se ao seu servidor Navidrome"
+                text: qsTr("Connect to your Navidrome server")
                 wrapMode: Text.WordWrap
                 color: "#9aa4af"
                 horizontalAlignment: Text.AlignHCenter
@@ -51,19 +51,19 @@ Page {
 
                 TextField {
                     id: url
-                    placeholderText: "URL do servidor (https://...)"
+                    placeholderText: qsTr("Server URL (https://...)")
                     Layout.fillWidth: true
                     selectByMouse: true
                 }
                 TextField {
                     id: user
-                    placeholderText: "Usuário"
+                    placeholderText: qsTr("Username")
                     Layout.fillWidth: true
                     selectByMouse: true
                 }
                 TextField {
                     id: pass
-                    placeholderText: "Senha"
+                    placeholderText: qsTr("Password")
                     echoMode: TextInput.Password
                     Layout.fillWidth: true
                     selectByMouse: true
@@ -72,12 +72,12 @@ Page {
 
                 CheckBox {
                     id: rememberCheck
-                    text: "Lembrar-se de mim"
+                    text: qsTr("Remember me")
                     checked: true
                 }
 
                 Button {
-                    text: "Entrar"
+                    text: qsTr("Login")
                     Layout.fillWidth: true
                     highlighted: true
                     onClicked: submit()

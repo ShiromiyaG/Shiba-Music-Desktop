@@ -19,7 +19,7 @@ Page {
         spacing: 18
 
         Label {
-            text: "Favoritos"
+            text: qsTr("Favorites")
             font.pixelSize: 26
             font.weight: Font.DemiBold
             color: "#f5f7ff"

@@ -197,7 +197,7 @@ If the workflow succeeds:
 
 - 📖 [GitHub Docs: Creating a personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 - 📖 [GitHub Docs: Using secrets in GitHub Actions](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
-- 🔧 [Troubleshooting Guide](./TROUBLESHOOTING.md)
+- 🔧 [Troubleshooting Guide](TROUBLESHOOTING.md)
 
 ---
 

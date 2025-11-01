@@ -123,7 +123,7 @@ Page {
                         visible: !searchLoading && searchArtistsResults.length > 0
                         
                         Label {
-                            text: "ARTISTAS"
+                            text: qsTr("Artists")
                             color: "#8da0c0"
                             font.pixelSize: 11
                             font.letterSpacing: 3
@@ -182,7 +182,7 @@ Page {
                         visible: !searchLoading && searchAlbumsResults.length > 0
                         
                         Label {
-                            text: "ÁLBUNS"
+                            text: qsTr("Albums")
                             color: "#8da0c0"
                             font.pixelSize: 11
                             font.letterSpacing: 3
@@ -242,7 +242,7 @@ Page {
                         visible: !searchLoading && searchResults.length > 0
                         
                         Label {
-                            text: "MÚSICAS"
+                            text: qsTr("SONGS")
                             color: "#8da0c0"
                             font.pixelSize: 11
                             font.letterSpacing: 3
@@ -267,7 +267,7 @@ Page {
             // Normal content - hidden when search is active
             Label {
                 visible: !searchActive
-                text: "Discover"
+                text: qsTr("Discover")
                 font.pixelSize: 30
                 font.weight: Font.DemiBold
                 color: "#f5f7ff"
@@ -275,7 +275,7 @@ Page {
 
             Label {
                 visible: !searchActive
-                text: "RECENTLY PLAYED"
+                text: qsTr("RECENTLY PLAYED")
                 color: "#8da0c0"
                 font.pixelSize: 12
                 font.letterSpacing: 4
@@ -285,12 +285,12 @@ Page {
             Loader {
                 visible: !searchActive
                 width: column.width - column.padding * 2
-                sourceComponent: api.recentlyPlayedAlbums.length > 0 ? recentlyPlayed : emptyState
+                sourceComponent: (api && api.recentlyPlayedAlbums && api.recentlyPlayedAlbums.length > 0) ? recentlyPlayed : emptyState
             }
 
             Label {
                 visible: !searchActive
-                text: "MADE FOR YOU"
+                text: qsTr("MADE FOR YOU")
                 color: "#8da0c0"
                 font.pixelSize: 12
                 font.letterSpacing: 4
@@ -300,7 +300,7 @@ Page {
             Loader {
                 visible: !searchActive
                 width: column.width - column.padding * 2
-                sourceComponent: api.randomSongs.length > 0 ? madeForYou : emptyState
+                sourceComponent: (api && api.randomSongs && api.randomSongs.length > 0) ? madeForYou : emptyState
             }
         }
     }
@@ -331,11 +331,11 @@ Page {
                         id: recentRow
                         spacing: 16
                         Repeater {
-                            model: api.recentlyPlayedAlbums
+                            model: (api && api.recentlyPlayedAlbums) ? api.recentlyPlayedAlbums : []
                             delegate: Components.AlbumCard {
                                 title: modelData.name || "Álbum Desconhecido"
                                 subtitle: modelData.artist || "Artista desconhecido"
-                                cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
+                                cover: (modelData.coverArt && api) ? api.coverArtUrl(modelData.coverArt, 256) : ""
                                 albumId: modelData.id
                                 artistId: modelData.artistId || ""
                                 onClicked: homePage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt, modelData.artistId || "")
@@ -472,14 +472,14 @@ Page {
                                     icon.source: "qrc:/qml/icons/add.svg"
                                     display: AbstractButton.IconOnly
                                     ToolTip.visible: hovered
-                                    ToolTip.text: "Adicionar à fila"
+                                    ToolTip.text: qsTr("Add to queue")
                                     onClicked: player.addToQueue(track)
                                 }
                                 ToolButton {
                                     icon.source: "qrc:/qml/icons/play_arrow.svg"
                                     display: AbstractButton.IconOnly
                                     ToolTip.visible: hovered
-                                    ToolTip.text: "Reproduzir agora"
+                                    ToolTip.text: qsTr("Play now")
                                     onClicked: player.playAlbum([track], 0)
                                 }
                             }
@@ -500,7 +500,7 @@ Page {
         Components.EmptyState {
             width: parent ? parent.width : 0
             emoji: "qrc:/qml/icons/search.svg"
-            title: "Nada encontrado"
+            title: qsTr("Nothing found")
             description: "Tente outro termo ou verifique a grafia."
         }
     }
@@ -517,7 +517,7 @@ Page {
                 clip: true
                 spacing: 8
                 interactive: false
-                model: api.randomSongs
+                model: (api && api.randomSongs) ? api.randomSongs : []
                 delegate: Rectangle {
                     property var track: modelData
                     width: madeList.width
@@ -557,7 +557,7 @@ Page {
                             clip: true
                             Image {
                                 anchors.fill: parent
-                                source: track.coverArt ? api.coverArtUrl(track.coverArt, 128) : ""
+                                source: (track.coverArt && api) ? api.coverArtUrl(track.coverArt, 128) : ""
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
                                 visible: track.coverArt && status !== Image.Error
@@ -657,15 +657,15 @@ Page {
                                     }
                                     
                                     MenuItem {
-                                        text: "Tocar agora"
+                                        text: qsTr("Play now")
                                         onTriggered: player.playAlbum([track], 0)
                                     }
                                     MenuItem {
-                                        text: "Adicionar à fila"
+                                        text: qsTr("Add to queue")
                                         onTriggered: player.addToQueue(track)
                                     }
                                     MenuItem {
-                                        text: "Ir para álbum"
+                                        text: qsTr("Go to album")
                                         onTriggered: homePage.albumClicked(track.albumId, track.album, track.artist, track.coverArt, track.artistId || "")
                                     }
                                 }
@@ -687,8 +687,9 @@ Page {
         Components.EmptyState {
             width: parent.width
             emoji: "🎧"
-            title: "Nada por aqui ainda"
+            title: qsTr("Nothing here yet")
             description: "Busque ou atualize sua biblioteca para preencher estas seções."
         }
     }
 }
+

@@ -99,7 +99,7 @@ Item {
                 spacing: 16
 
                 Label {
-                    text: "Fila de reprodução"
+                    text: qsTr("Playback Queue")
                     font.pixelSize: 32
                     font.weight: Font.Bold
                     color: "#ffffff"

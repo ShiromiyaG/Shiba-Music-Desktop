@@ -51,7 +51,7 @@ Rectangle {
         }
 
         Label {
-            text: "Tocando agora"
+            text: qsTr("Now Playing")
             font.pixelSize: 16
             font.weight: Font.DemiBold
         }
@@ -135,7 +135,7 @@ Rectangle {
         }
 
         Label {
-            text: "Próximas faixas"
+            text: qsTr("Next tracks")
             font.pixelSize: 14
             font.weight: Font.DemiBold
         }
@@ -213,3 +213,4 @@ Rectangle {
         }
     }
 }
+

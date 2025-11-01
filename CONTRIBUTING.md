@@ -191,7 +191,7 @@ ctest
 ### Documentation
 
 - Update README.md if adding features
-- Update relevant .md files in documentation
+- Update relevant .md files in `doc/` folder
 - Add inline comments for complex logic
 - Use clear, descriptive names
 

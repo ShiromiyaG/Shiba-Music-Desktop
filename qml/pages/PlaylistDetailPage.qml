@@ -94,7 +94,7 @@ Page {
                         Row {
                             spacing: 12
                             ToolButton {
-                                text: "Reproduzir"
+                                text: qsTr("Play")
                                 icon.source: "qrc:/qml/icons/play_arrow.svg"
                                 enabled: api.tracks.length > 0
                                 onClicked: {
@@ -103,7 +103,7 @@ Page {
                                 }
                             }
                             ToolButton {
-                                text: "Fila"
+                                text: qsTr("Queue")
                                 icon.source: "qrc:/qml/icons/add.svg"
                                 enabled: api.tracks.length > 0
                                 onClicked: {
@@ -118,7 +118,7 @@ Page {
 
             Components.SectionHeader {
                 width: contentCol.width - contentCol.padding * 2
-                title: "Faixas"
+                title: qsTr("Tracks")
                 subtitle: api.tracks.length > 0 ? (api.tracks.length + " músicas") : "Playlist vazia"
             }
 

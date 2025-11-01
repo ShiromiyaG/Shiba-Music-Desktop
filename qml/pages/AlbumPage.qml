@@ -186,7 +186,7 @@ Page {
                         Row {
                             spacing: 12
                             ToolButton {
-                                text: "Reproduzir"
+                                text: qsTr("Play")
                                 icon.source: "qrc:/qml/icons/play_arrow.svg"
                                 enabled: api.tracks.length > 0
                                 onClicked: {
@@ -195,7 +195,7 @@ Page {
                                 }
                             }
                             ToolButton {
-                                text: "Fila"
+                                text: qsTr("Queue")
                                 icon.source: "qrc:/qml/icons/add.svg"
                                 enabled: api.tracks.length > 0
                                 onClicked: {
@@ -204,7 +204,7 @@ Page {
                                 }
                             }
                             ToolButton {
-                                text: "Opções"
+                                text: qsTr("Options")
                                 icon.source: "qrc:/qml/icons/settings.svg"
                                 onClicked: albumMenu.open()
                                 
@@ -213,7 +213,7 @@ Page {
                                     y: parent.height
                                     
                                     MenuItem {
-                                        text: "Reproduzir Aleatório"
+                                        text: qsTr("Shuffle Play")
                                         icon.source: "qrc:/qml/icons/shuffle.svg"
                                         enabled: api.tracks.length > 0
                                         onTriggered: {
@@ -231,13 +231,13 @@ Page {
                                         }
                                     }
                                     MenuItem {
-                                        text: "Adicionar à Playlist"
+                                        text: qsTr("Add to Playlist")
                                         icon.source: "qrc:/qml/icons/add.svg"
                                         enabled: api.tracks.length > 0
                                         onTriggered: console.log("Adicionar à playlist")
                                     }
                                     MenuItem {
-                                        text: "Adicionar aos Favoritos"
+                                        text: qsTr("Add to Favorites")
                                         icon.source: "qrc:/qml/icons/favorite_border.svg"
                                         enabled: api.tracks.length > 0
                                         onTriggered: {
@@ -248,13 +248,13 @@ Page {
                                     }
                                     MenuSeparator { }
                                     MenuItem {
-                                        text: "Ir para Artista"
+                                        text: qsTr("Go to Artist")
                                         icon.source: "qrc:/qml/icons/mic.svg"
                                         enabled: artistName.length > 0 && api.tracks.length > 0
                                         onTriggered: requestArtistPage()
                                     }
                                     MenuItem {
-                                        text: "Informações do Álbum"
+                                        text: qsTr("Album Info")
                                         icon.source: "qrc:/qml/icons/album.svg"
                                         onTriggered: albumInfoDialog.open()
                                     }
@@ -267,7 +267,7 @@ Page {
 
                         Components.SectionHeader {
                 width: contentCol.width - contentCol.padding * 2
-                title: "Faixas"
+                title: qsTr("Tracks")
                 subtitle: api.tracks.length > 0 ? (api.tracks.length + " músicas") : "Álbum vazio"
             }
 
@@ -303,7 +303,7 @@ Page {
         Components.EmptyState {
             width: parent.width
             emoji: "qrc:/qml/icons/music_note.svg"
-            title: "Nenhuma faixa foi retornada"
+            title: qsTr("No tracks returned")
             description: "Tente atualizar o álbum ou verifique sua conexão."
         }
     }
@@ -328,7 +328,7 @@ Page {
         }
         
         header: Label {
-            text: "Informações do Álbum"
+            text: qsTr("Album Info")
             font.pixelSize: 18
             font.weight: Font.DemiBold
             padding: 20
@@ -366,7 +366,7 @@ Page {
             padding: 20
             topPadding: 10
             Button {
-                text: "Fechar"
+                text: qsTr("Close")
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
             }
         }

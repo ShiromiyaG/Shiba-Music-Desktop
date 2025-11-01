@@ -4,7 +4,7 @@ import QtQuick.Layouts
 
 Dialog {
     id: updateDialog
-    title: "Update Available"
+    title: qsTr(qsTr("Update Available"))
     modal: true
     anchors.centerIn: parent
     width: Math.min(500, parent.width - 40)
@@ -39,7 +39,7 @@ Dialog {
                 spacing: 4
 
                 Label {
-                    text: "New Version Available"
+                    text: qsTr(qsTr("New Version Available"))
                     font.pixelSize: 18
                     font.weight: Font.DemiBold
                 }
@@ -89,7 +89,7 @@ Dialog {
         Label {
             Layout.fillWidth: true
             visible: checker ? checker.isDownloading : false
-            text: "Downloading update..."
+            text: qsTr("Downloading update...")
             font.pixelSize: 12
             opacity: 0.7
             horizontalAlignment: Text.AlignHCenter
@@ -98,14 +98,14 @@ Dialog {
 
     footer: DialogButtonBox {
         Button {
-            text: "Later"
+            text: qsTr(qsTr("Later"))
             flat: true
             enabled: checker ? !checker.isDownloading : true
             DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
         }
 
         Button {
-            text: checker ? (checker.isDownloading ? "Downloading..." : "Download & Install") : "Download & Install"
+            text: checker ? (checker.isDownloading ? qsTr(qsTr("Downloading...")) : qsTr(qsTr("Download & Install"))) : qsTr(qsTr("Download & Install"))
             enabled: checker ? !checker.isDownloading : false
             Material.background: Material.Blue
             Material.foreground: "white"
@@ -141,7 +141,7 @@ Dialog {
 
     Dialog {
         id: errorDialog
-        title: "Update Failed"
+        title: qsTr("Update Failed")
         modal: true
         anchors.centerIn: parent
         width: Math.min(400, parent.width - 40)
@@ -163,10 +163,12 @@ Dialog {
 
         footer: DialogButtonBox {
             Button {
-                text: "OK"
+                text: qsTr("OK")
                 flat: true
                 DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
             }
         }
     }
 }
+
+

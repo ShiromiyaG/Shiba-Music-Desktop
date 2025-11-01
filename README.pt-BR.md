@@ -132,8 +132,10 @@ Veja [RELEASE.md](RELEASE.md) para detalhes.
 ## 📚 Documentação
 
 - 📖 [Guia de Release](RELEASE.md) - Como criar releases
+- 🎮 [Guia de Configuração do Discord](doc/DISCORD-SETUP.md) - Configure Rich Presence
+- 🌍 [Guia de Internacionalização](doc/I18N-README.md) - Adicione novos idiomas
 - 🔧 [Documentação dos Workflows](.github/workflows/README.md) - Setup CI/CD
-- 🐛 [Troubleshooting](.github/workflows/TROUBLESHOOTING.md) - Problemas comuns
+- 🐛 [Troubleshooting](doc/TROUBLESHOOTING.md) - Problemas comuns
 
 ---
 

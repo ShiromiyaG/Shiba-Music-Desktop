@@ -111,9 +111,10 @@ windeployqt shibamusic.exe
 ## 📚 Documentation
 
 - 📖 [Release Guide](RELEASE.md) - How to create releases
-- 🎮 [Discord Setup Guide](DISCORD-SETUP.md) - Configure Discord Rich Presence
+- 🎮 [Discord Setup Guide](doc/DISCORD-SETUP.md) - Configure Discord Rich Presence
+- 🌍 [Internationalization Guide](doc/I18N-README.md) - Add new languages
 - 🔧 [Workflow Documentation](.github/workflows/README.md) - CI/CD setup
-- 🐛 [Troubleshooting](.github/workflows/TROUBLESHOOTING.md) - Common issues
+- 🐛 [Troubleshooting](doc/TROUBLESHOOTING.md) - Common issues
 
 ---
 

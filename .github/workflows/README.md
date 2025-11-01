@@ -8,7 +8,7 @@ Fully automated CI/CD system for Shiba Music - **Single workflow handles everyth
 
 **If this is your first time using this workflow, you MUST:**
 
-1. 🔐 Create a Personal Access Token → [Instructions](./TOKEN-SETUP.md)
+1. 🔐 Create a Personal Access Token → [Instructions](../../doc/TOKEN-SETUP.md)
 2. 🔑 Add `RELEASE_TOKEN` secret to repository
 3. 🎮 Add `DISCORD_CLIENT_ID` secret to repository
 4. ⚙️ Enable workflow write permissions
@@ -119,7 +119,7 @@ Before the workflow can work, you MUST complete ALL these steps:
   - Same place: Settings → Secrets → Actions
   - New secret: Name = `DISCORD_CLIENT_ID`, Value = your Discord App ID
   - ⚠️ **Required for builds!**
-  - 📖 [How to get Discord App ID](./DISCORD-SETUP.md)
+  - 📖 [How to get Discord App ID](../../doc/DISCORD-SETUP.md)
 
 - [ ] **4. Enable Workflow Permissions**
   - Settings → Actions → General
@@ -141,14 +141,14 @@ Before the workflow can work, you MUST complete ALL these steps:
    - Name: **`RELEASE_TOKEN`** (exactly this, case-sensitive)
    - Value: Create a [Personal Access Token](https://github.com/settings/tokens/new) with **`repo`** scope
    - Click `Add secret`
-   - 📖 [Detailed Instructions](./TOKEN-SETUP.md)
+   - 📖 [Detailed Instructions](../../doc/TOKEN-SETUP.md)
 
 2. **DISCORD_CLIENT_ID** ⚠️ REQUIRED - For Discord Rich Presence
    - Click `New repository secret`
    - Name: **`DISCORD_CLIENT_ID`** (exactly this, case-sensitive)
    - Value: Your Discord Application ID
    - Click `Add secret`
-   - 📖 [How to get Discord ID](./SECRETS-SETUP.md)
+   - 📖 [How to get Discord ID](../../doc/SECRETS-SETUP.md)
    - ℹ️ **This ID is compiled into the executable** - users won't see it
 
 **Without these secrets, the workflow WILL FAIL with 403 errors!**
@@ -186,10 +186,10 @@ git push
 
 ## 📚 Additional Documentation
 
-- 🔐 [Token Setup Guide](./TOKEN-SETUP.md) - **Fix 403 errors! REQUIRED!**
-- 📖 [Workflow Diagram](./WORKFLOW-DIAGRAM.md)
-- 🔐 [Secrets Setup Guide](./SECRETS-SETUP.md) - Discord Client ID
-- 🔧 [Troubleshooting](./TROUBLESHOOTING.md)
+- 🔐 [Token Setup Guide](../../doc/TOKEN-SETUP.md) - **Fix 403 errors! REQUIRED!**
+- 📖 [Workflow Diagram](../../doc/WORKFLOW-DIAGRAM.md)
+- 🔐 [Secrets Setup Guide](../../doc/SECRETS-SETUP.md) - Discord Client ID
+- 🔧 [Troubleshooting](../../doc/TROUBLESHOOTING.md)
 - 📝 [Release Instructions](../../RELEASE.md)
 
 ---
@@ -208,7 +208,7 @@ git push
 
 ## 📞 Support
 
-Issues? Check [Troubleshooting](./TROUBLESHOOTING.md) or logs at:
+Issues? Check [Troubleshooting](../../doc/TROUBLESHOOTING.md) or logs at:
 ```
 https://github.com/ShiromiyaG/Shiba-Music-Desktop/actions
 ```

@@ -148,4 +148,4 @@ If you're contributing to the project and want to test Discord integration:
 
 ---
 
-**Need help?** Check the [Troubleshooting Guide](./TROUBLESHOOTING.md)
+**Need help?** Check the [Troubleshooting Guide](TROUBLESHOOTING.md)

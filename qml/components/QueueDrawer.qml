@@ -31,7 +31,7 @@ Drawer {
             Layout.fillWidth: true
             spacing: 12
             Label {
-                text: "Fila de Reprodução"
+                text: qsTr("Playback Queue")
                 font.pixelSize: 18
                 font.weight: Font.DemiBold
                 Layout.fillWidth: true
@@ -147,14 +147,14 @@ Drawer {
                 anchors.centerIn: parent
                 width: parent.width
                 emoji: "📜"
-                title: "Sua fila está vazia"
+                title: qsTr("Your queue is empty")
                 description: "Adicione músicas tocando no botão + nas faixas."
             }
         }
 
         Button {
             Layout.fillWidth: true
-            text: "Limpar Fila"
+            text: qsTr("Clear Queue")
             enabled: queueList.count > 0
             onClicked: root.requestClear()
             

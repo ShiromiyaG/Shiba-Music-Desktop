@@ -22,7 +22,7 @@ Page {
         spacing: 18
 
         Label {
-            text: "Álbuns"
+            text: qsTr("Albums")
             font.pixelSize: 26
             font.weight: Font.DemiBold
             color: "#f5f7ff"
@@ -48,3 +48,4 @@ Page {
         }
     }
 }
+

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components" as Components
 
 Page {
     id: settingsPage
@@ -19,9 +20,35 @@ Page {
             padding: 24
 
             Label {
-                text: "Configurações"
+                text: qsTr("Settings")
                 font.pixelSize: 32
                 font.weight: Font.Bold
+            }
+
+            // Seção Idioma
+            Rectangle {
+                width: parent.width - parent.padding * 2
+                height: languageSection.height + 32
+                radius: 16
+                color: "#1b2336"
+                border.color: "#252e42"
+
+                Column {
+                    id: languageSection
+                    anchors.centerIn: parent
+                    width: parent.width - 32
+                    spacing: 16
+
+                    Label {
+                        text: qsTr("Language")
+                        font.pixelSize: 18
+                        font.weight: Font.DemiBold
+                    }
+
+                    Components.LanguageSelector {
+                        width: parent.width
+                    }
+                }
             }
 
             // Seção Player
@@ -39,7 +66,7 @@ Page {
                     spacing: 16
 
                     Label {
-                        text: "Player"
+                        text: qsTr(qsTr(qsTr("Player")))
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
                     }
@@ -47,38 +74,38 @@ Page {
                     RowLayout {
                         width: parent.width
                         Label {
-                            text: "Crossfade"
+                            text: qsTr(qsTr(qsTr("Crossfade")))
                             Layout.fillWidth: true
                         }
                         Switch {
-                            checked: player.crossfade
-                            onToggled: player.crossfade = checked
+                            checked: player ? player.crossfade : false
+                            onToggled: if (player) player.crossfade = checked
                         }
                     }
 
                     RowLayout {
                         width: parent.width
                         Label {
-                            text: "ReplayGain"
+                            text: qsTr(qsTr(qsTr("ReplayGain")))
                             Layout.fillWidth: true
                         }
                         Switch {
-                            checked: player.replayGainEnabled
-                            onCheckedChanged: player.replayGainEnabled = checked
+                            checked: player ? player.replayGainEnabled : false
+                            onCheckedChanged: if (player) player.replayGainEnabled = checked
                         }
                     }
 
                     RowLayout {
                         width: parent.width
-                        visible: player.replayGainEnabled
+                        visible: player ? player.replayGainEnabled : false
                         Label {
-                            text: "Modo ReplayGain"
+                            text: qsTr("ReplayGain Mode")
                             Layout.fillWidth: true
                         }
                         ComboBox {
                             model: ["Track", "Album"]
-                            currentIndex: player.replayGainMode
-                            onActivated: player.replayGainMode = currentIndex
+                            currentIndex: player ? player.replayGainMode : 0
+                            onActivated: if (player) player.replayGainMode = currentIndex
                         }
                     }
                 }
@@ -99,7 +126,7 @@ Page {
                     spacing: 16
 
                     Label {
-                        text: "Discord"
+                        text: qsTr(qsTr(qsTr("Discord")))
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
                     }
@@ -107,17 +134,17 @@ Page {
                     RowLayout {
                         width: parent.width
                         Label {
-                            text: "Rich Presence"
+                            text: qsTr(qsTr(qsTr("Rich Presence")))
                             Layout.fillWidth: true
                         }
                         Switch {
-                            checked: discord.enabled
-                            onToggled: discord.enabled = checked
+                            checked: discord ? discord.enabled : false
+                            onToggled: if (discord) discord.enabled = checked
                         }
                     }
 
                     Label {
-                        text: "Exibe a música atual no seu perfil do Discord"
+                        text: qsTr("Shows current song in your Discord profile")
                         color: "#8b96a8"
                         font.pixelSize: 12
                         wrapMode: Text.WordWrap
@@ -127,12 +154,12 @@ Page {
                     RowLayout {
                         width: parent.width
                         Label {
-                            text: "Mostrar quando pausado"
+                            text: qsTr("Show when paused")
                             Layout.fillWidth: true
                         }
                         Switch {
-                            checked: discord.showPaused
-                            onToggled: discord.showPaused = checked
+                            checked: discord ? discord.showPaused : false
+                            onToggled: if (discord) discord.showPaused = checked
                         }
                     }
                 }
@@ -153,7 +180,7 @@ Page {
                     spacing: 16
 
                     Label {
-                        text: "Servidor"
+                        text: qsTr("Server")
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
                     }
@@ -161,11 +188,11 @@ Page {
                     RowLayout {
                         width: parent.width
                         Label {
-                            text: "URL"
+                            text: qsTr("URL")
                             Layout.fillWidth: true
                         }
                         Label {
-                            text: api.serverUrl || "-"
+                            text: api ? api.serverUrl : "" || "-"
                             color: "#8b96a8"
                             elide: Label.ElideRight
                             Layout.maximumWidth: 300
@@ -173,7 +200,7 @@ Page {
                     }
 
                     Button {
-                        text: "Desconectar"
+                        text: qsTr("Disconnect")
                         onClicked: {
                             api.logout()
                         }
@@ -196,24 +223,24 @@ Page {
                     spacing: 12
 
                     Label {
-                        text: "Sobre"
+                        text: qsTr("About")
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
                     }
 
                     Label {
-                        text: appInfo.appName
+                        text: appInfo ? appInfo.appName : "Shiba Music"
                         font.pixelSize: 16
                     }
 
                     Label {
-                        text: "Versão " + appInfo.version
+                        text: qsTr("Version") + " " + appInfo.version
                         color: "#8b96a8"
                         font.pixelSize: 12
                     }
 
                     Label {
-                        text: "Player Navidrome/Subsonic nativo em Qt"
+                        text: qsTr("Native Navidrome/Subsonic player in Qt")
                         color: "#8b96a8"
                         font.pixelSize: 13
                         wrapMode: Text.WordWrap
@@ -224,3 +251,5 @@ Page {
         }
     }
 }
+
+

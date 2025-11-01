@@ -84,7 +84,7 @@ Page {
                 Image {
                     id: bgImage
                     anchors.fill: parent
-                    source: api.coverArtUrl(coverArtId, 600)
+                    source: (api && coverArtId) ? api.coverArtUrl(coverArtId, 600) : ""
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     visible: false
@@ -123,7 +123,7 @@ Page {
                         clip: true
                         Image {
                             anchors.fill: parent
-                            source: api.coverArtUrl(coverArtId, 512)
+                            source: (api && coverArtId) ? api.coverArtUrl(coverArtId, 512) : ""
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
                             visible: !!coverArtId && status !== Image.Error
@@ -146,18 +146,18 @@ Page {
                             font.weight: Font.DemiBold
                         }
                         Label {
-                            text: api.albums.length + " álbuns disponíveis"
+                            text: (api && api.albums) ? (api.albums.length + " álbuns disponíveis") : "0 álbuns disponíveis"
                             color: "#8b96a8"
                             font.pixelSize: 14
                         }
                         Row {
                             spacing: 12
                             ToolButton {
-                                text: "Aleatório"
+                                text: qsTr("Shuffle")
                                 icon.source: "qrc:/qml/icons/shuffle.svg"
-                                enabled: api.albums.length > 0
+                                enabled: api && api.albums && api.albums.length > 0
                                 onClicked: {
-                                    if (api.albums.length === 0)
+                                    if (!api || !api.albums || api.albums.length === 0)
                                         return
                                     var idx = Math.floor(Math.random() * api.albums.length)
                                     var album = api.albums[idx]
@@ -169,7 +169,7 @@ Page {
                                 }
                             }
                             ToolButton {
-                                text: "Atualizar"
+                                text: qsTr("Refresh")
                                 icon.source: "qrc:/qml/icons/refresh.svg"
                                 onClicked: api.fetchArtist(artistId)
                             }
@@ -180,13 +180,13 @@ Page {
 
                         Components.SectionHeader {
                 width: contentCol.width - contentCol.padding * 2
-                title: "Álbuns"
-                subtitle: api.albums.length > 0 ? (api.albums.length + " encontrados") : ""
+                title: qsTr("Albums")
+                subtitle: (api && api.albums && api.albums.length > 0) ? (api.albums.length + " encontrados") : ""
             }
 
                         Loader {
                 width: contentCol.width - contentCol.padding * 2
-                sourceComponent: api.albums.length === 0 ? emptyAlbums : albumFlow
+                sourceComponent: (!api || !api.albums || api.albums.length === 0) ? emptyAlbums : albumFlow
             }
         }
     }
@@ -197,13 +197,13 @@ Page {
             width: parent.width
             spacing: 16
             Repeater {
-                model: api.albums
+                model: (api && api.albums) ? api.albums : []
                 delegate: Components.AlbumCard {
                     width: 190
                     height: 240
                     title: modelData.name
                     subtitle: modelData.year > 0 ? modelData.year : ""
-                    cover: api.coverArtUrl(modelData.coverArt, 300)
+                    cover: (api && modelData.coverArt) ? api.coverArtUrl(modelData.coverArt, 300) : ""
                     albumId: modelData.id
                     artistId: modelData.artistId || artistPage.artistId
                     onClicked: artistPage.albumClicked(modelData.id, modelData.name, modelData.artist || artistPage.artistName, modelData.coverArt, modelData.artistId || artistPage.artistId)
@@ -217,8 +217,9 @@ Page {
         Components.EmptyState {
             width: parent.width
             emoji: "qrc:/qml/icons/album.svg"
-            title: "Nenhum álbum encontrado"
+            title: qsTr("No albums found")
             description: "Talvez este artista ainda esteja sincronizando. Tente atualizar."
         }
     }
 }
+

@@ -8,7 +8,7 @@ Item {
     height: Math.max(implicitHeight, 160)
 
     property string emoji: "🎧"
-    property string title: "Nada por aqui ainda"
+    property string title: qsTr("Nothing here yet")
     property string description: ""
 
     ColumnLayout {

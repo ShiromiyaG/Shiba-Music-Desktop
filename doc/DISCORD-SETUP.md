@@ -213,8 +213,8 @@ You'll need to create a new one and update the Application ID in:
 
 - 📖 [Discord Developer Documentation](https://discord.com/developers/docs/intro)
 - 📖 [Rich Presence Documentation](https://discord.com/developers/docs/rich-presence/how-to)
-- 🔐 [GitHub Secrets Setup Guide](.github/workflows/SECRETS-SETUP.md)
+- 🔐 [GitHub Secrets Setup Guide](SECRETS-SETUP.md)
 
 ---
 
-**Need more help?** Open an issue on GitHub or check the [Troubleshooting Guide](.github/workflows/TROUBLESHOOTING.md)
+**Need more help?** Open an issue on GitHub or check the [Troubleshooting Guide](TROUBLESHOOTING.md)

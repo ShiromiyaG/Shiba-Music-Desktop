@@ -23,7 +23,7 @@ Page {
 
         Label {
             visible: !api.playlists || api.playlists.length === 0
-            text: "Nenhuma playlist encontrada"
+            text: qsTr("No playlists found")
             color: "#a0aac6"
             font.pixelSize: 14
         }

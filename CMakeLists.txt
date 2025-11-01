@@ -57,7 +57,7 @@ endif()
 qt_standard_project_setup()
 set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
 
-qt_add_executable(shibamusic WIN32
+qt_add_executable(shibamusic
     src/main.cpp
     src/core/SubsonicClient.h src/core/SubsonicClient.cpp
     src/playback/MpvPlayer.h src/playback/MpvPlayer.cpp
@@ -67,6 +67,7 @@ qt_add_executable(shibamusic WIN32
     src/core/AppInfo.h
     src/discord/DiscordRPC.h src/discord/DiscordRPC.cpp
     src/updater/UpdateChecker.h src/updater/UpdateChecker.cpp
+    src/i18n/TranslationManager.h src/i18n/TranslationManager.cpp
 )
 
 # Define APP_VERSION and DISCORD_CLIENT_ID as preprocessor macros
@@ -93,6 +94,7 @@ qt_add_resources(shibamusic "qml"
         qml/components/QueueDrawer.qml
         qml/components/NowPlayingPanel.qml
         qml/components/UpdateDialog.qml
+        qml/components/LanguageSelector.qml
         qml/pages/LoginPage.qml
         qml/pages/HomePage.qml
         qml/pages/ArtistPage.qml
@@ -132,6 +134,15 @@ qt_add_resources(shibamusic "qml"
         qml/icons/volume_up.svg
 )
 
+# Add translations as resources
+qt_add_resources(shibamusic "translations"
+    PREFIX "/i18n"
+    BASE "${CMAKE_SOURCE_DIR}/i18n"
+    FILES
+        i18n/shibamusic_en.qm
+        i18n/shibamusic_pt.qm
+)
+
 target_include_directories(shibamusic PRIVATE ${MPV_INCLUDE_DIR} ${RAPIDJSON_INCLUDE_DIR})
 
 if(TARGET PkgConfig::MPV)
@@ -156,4 +167,14 @@ else()
     else()
         message(WARNING "DLL do mpv não encontrada em libs/mpv/bin/")
     endif()
+endif()
+
+# Copy pre-built updater.exe to build directory
+if(EXISTS "${CMAKE_SOURCE_DIR}/updater/updater.exe")
+    add_custom_command(TARGET shibamusic POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_SOURCE_DIR}/updater/updater.exe"
+        "$<TARGET_FILE_DIR:shibamusic>/updater.exe"
+        COMMENT "Copying updater.exe to build directory"
+    )
 endif()

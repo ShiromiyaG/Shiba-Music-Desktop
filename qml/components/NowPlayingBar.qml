@@ -14,8 +14,8 @@ Rectangle {
         GradientStop { position: 1.0; color: "#0d1117" }
     }
     signal queueRequested()
-    readonly property bool hasQueue: !!player.queue && player.queue.length > 0
-    readonly property bool hasTrack: !!(player.currentTrack && player.currentTrack.id)
+    readonly property bool hasQueue: (player && player.queue) ? (player.queue.length > 0) : false
+    readonly property bool hasTrack: (player && player.currentTrack) ? (!!player.currentTrack.id) : false
 
     RowLayout {
         anchors.fill: parent
@@ -129,7 +129,7 @@ Rectangle {
                 spacing: 12
 
                 Label {
-                    text: Utils.durationToText(player.position)
+                    text: player ? Utils.durationToText(player.position) : "0:00"
                     color: "#8b949e"
                     font.pixelSize: 11
                     font.family: "monospace"
@@ -153,7 +153,7 @@ Rectangle {
                         
                         Rectangle {
                             id: seekBarBuffer
-                            width: parent.width * (player.duration > 0 ? player.position / player.duration : 0)
+                            width: parent.width * ((player && player.duration > 0) ? player.position / player.duration : 0)
                             height: parent.height
                             radius: parent.radius
                             color: "#30363d"
@@ -161,7 +161,7 @@ Rectangle {
                         
                         Rectangle {
                             id: seekBarProgress
-                            width: parent.width * (player.duration > 0 ? player.position / player.duration : 0)
+                            width: parent.width * ((player && player.duration > 0) ? player.position / player.duration : 0)
                             height: parent.height
                             radius: parent.radius
                             gradient: Gradient {
@@ -190,7 +190,7 @@ Rectangle {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        enabled: player.duration > 0
+                        enabled: player ? (player.duration > 0) : false
                         
                         onClicked: (mouse) => {
                             const pos = (mouse.x / width) * player.duration;
@@ -219,7 +219,7 @@ Rectangle {
                         Label {
                             id: timeTooltip
                             anchors.centerIn: parent
-                            text: Utils.durationToText((seekMouseArea.mouseX / seekMouseArea.width) * player.duration)
+                            text: player ? Utils.durationToText((seekMouseArea.mouseX / seekMouseArea.width) * player.duration) : "0:00"
                             color: "#e6edf3"
                             font.pixelSize: 11
                             font.family: "monospace"
@@ -228,7 +228,7 @@ Rectangle {
                 }
 
                 Label {
-                    text: Utils.durationToText(player.duration)
+                    text: player ? Utils.durationToText(player.duration) : "0:00"
                     color: "#8b949e"
                     font.pixelSize: 11
                     font.family: "monospace"
@@ -247,7 +247,7 @@ Rectangle {
                 width: 40
                 height: 40
                 anchors.verticalCenter: parent.verticalCenter
-                enabled: bar.hasQueue
+                enabled: player && bar.hasQueue
                 opacity: enabled ? 1.0 : 0.4
                 
                 background: Rectangle {
@@ -267,7 +267,7 @@ Rectangle {
                 onClicked: player.previous()
                 
                 ToolTip.visible: hovered
-                ToolTip.text: "Anterior (Shift+P)"
+                ToolTip.text: qsTr("Previous (Shift+P)")
                 ToolTip.delay: 500
             }
             
@@ -290,17 +290,17 @@ Rectangle {
                     border.width: 1
                 }
                 contentItem: Image {
-                    source: player.playing ? "../icons/pause.svg" : "../icons/play_arrow.svg"
+                    source: (player && player.playing) ? "../icons/pause.svg" : "../icons/play_arrow.svg"
                     width: 22
                     height: 22
                     anchors.centerIn: parent
                     fillMode: Image.PreserveAspectFit
                 }
                 
-                onClicked: player.toggle()
+                onClicked: if (player) player.toggle()
                 
                 ToolTip.visible: hovered
-                ToolTip.text: player.playing ? "Pausar (Space)" : "Reproduzir (Space)"
+                ToolTip.text: (player && player.playing) ? "Pausar (Space)" : "Reproduzir (Space)"
                 ToolTip.delay: 500
             }
             
@@ -309,7 +309,7 @@ Rectangle {
                 width: 40
                 height: 40
                 anchors.verticalCenter: parent.verticalCenter
-                enabled: bar.hasQueue
+                enabled: player && bar.hasQueue
                 opacity: enabled ? 1.0 : 0.4
                 
                 background: Rectangle {
@@ -329,7 +329,7 @@ Rectangle {
                 onClicked: player.next()
                 
                 ToolTip.visible: hovered
-                ToolTip.text: "Próxima (Shift+N)"
+                ToolTip.text: qsTr("Next (Shift+N)")
                 ToolTip.delay: 500
             }
         }
@@ -355,17 +355,17 @@ Rectangle {
                     }
                     
                     contentItem: Image {
-                        source: player.muted ? "../icons/volume_off.svg" : (player.volume > 0.5 ? "../icons/volume_up.svg" : (player.volume > 0 ? "../icons/volume_down.svg" : "../icons/volume_mute.svg"))
+                        source: (player && player.muted) ? "../icons/volume_off.svg" : (player && player.volume > 0.5 ? "../icons/volume_up.svg" : (player && player.volume > 0 ? "../icons/volume_down.svg" : "../icons/volume_mute.svg"))
                         width: 16
                         height: 16
                         anchors.centerIn: parent
                         fillMode: Image.PreserveAspectFit
                     }
                     
-                    onClicked: player.muted = !player.muted
+                    onClicked: if (player) player.muted = !player.muted
                     
                     ToolTip.visible: hovered
-                    ToolTip.text: player.muted ? "Desmutar (M)" : "Mutar (M)"
+                    ToolTip.text: (player && player.muted) ? "Desmutar (M)" : "Mutar (M)"
                     ToolTip.delay: 500
                 }
                 
@@ -384,7 +384,7 @@ Rectangle {
                         border.width: 1
                         
                         Rectangle {
-                            width: parent.width * player.volume
+                            width: player ? parent.width * player.volume : 0
                             height: parent.height
                             radius: parent.radius
                             gradient: Gradient {
@@ -455,7 +455,7 @@ Rectangle {
                         Label {
                             id: volumeTooltip
                             anchors.centerIn: parent
-                            text: Math.round(player.volume * 100) + "%"
+                            text: player ? (Math.round(player.volume * 100) + "%") : "0%"
                             color: "#e6edf3"
                             font.pixelSize: 11
                         }
