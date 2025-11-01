@@ -214,6 +214,8 @@ jobs:
             "Qt6Gui.dll",
             "Qt6Network.dll",
             "Qt6Qml.dll",
+            "Qt6QmlCore.dll",
+            "Qt6QmlLocalStorage.dll",
             "Qt6Quick.dll",
             "Qt6QuickControls2.dll",
             "Qt6QuickControls2Impl.dll",
@@ -226,7 +228,8 @@ jobs:
             "Qt6Svg.dll",
             "Qt6OpenGLWidgets.dll",
             "Qt6ShaderTools.dll",
-            "Qt6Core5Compat.dll"
+            "Qt6Core5Compat.dll",
+            "Qt6DBus.dll"
           )
           
           foreach ($dll in $essentialDlls) {
@@ -280,18 +283,26 @@ jobs:
           $qmlSrcDir = "$env:QT_ROOT_DIR\qml"
           $qmlDstDir = "$deployDir\qml"
           $qmlModules = @(
+            "QtCore",
             "QtQuick",
             "QtQuick.2",
             "QtQml",
+            "QtQml.Base",
             "QtQml.Models",
             "QtQml.WorkerScript",
+            "QtQml.XmlListModel",
             "QtQuick.Controls",
             "QtQuick.Controls.Basic",
             "QtQuick.Controls.Material",
             "QtQuick.Controls.Fusion",
             "QtQuick.Controls.Imagine",
             "QtQuick.Controls.Universal",
+            "QtQuick.Controls.impl",
+            "QtQuick.Dialogs",
             "QtQuick.Layouts",
+            "QtQuick.LocalStorage",
+            "QtQuick.NativeStyle",
+            "QtQuick.Particles",
             "QtQuick.Templates",
             "QtQuick.Window",
             "QtQuick.Shapes",
@@ -299,12 +310,24 @@ jobs:
           )
           
           foreach ($module in $qmlModules) {
-            $srcPath = Join-Path $qmlSrcDir $module
+            # Handle module paths with dots (e.g., QtQuick.Controls)
+            $modulePath = $module.Replace('.', '\')
+            $srcPath = Join-Path $qmlSrcDir $modulePath
+            
             if (Test-Path $srcPath) {
-              $dstPath = Join-Path $qmlDstDir $module
-              New-Item -ItemType Directory -Force -Path $dstPath | Out-Null
-              Copy-Item "$srcPath\*" -Destination $dstPath -Recurse -Force -ErrorAction SilentlyContinue
+              $dstPath = Join-Path $qmlDstDir $modulePath
+              $dstParent = Split-Path $dstPath -Parent
+              
+              # Create parent directories
+              if ($dstParent) {
+                New-Item -ItemType Directory -Force -Path $dstParent -ErrorAction SilentlyContinue | Out-Null
+              }
+              
+              # Copy entire module directory
+              Copy-Item $srcPath -Destination $dstPath -Recurse -Force -ErrorAction SilentlyContinue
               Write-Host "  ✅ $module"
+            } else {
+              Write-Host "  ⚠️  $module (not found)" -ForegroundColor DarkGray
             }
           }
           
