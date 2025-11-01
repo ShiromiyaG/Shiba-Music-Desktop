@@ -2,7 +2,41 @@
 
 ## Common Problems and Solutions
 
-### 1. Tag was not created automatically
+### 1. Error 403 - Write access to repository not granted
+
+**Symptom:** Workflow fails with:
+```
+remote: Write access to repository not granted.
+fatal: unable to access 'https://github.com/...': The requested URL returned error: 403
+Error: Process completed with exit code 128.
+```
+
+**Cause:** Missing or invalid `RELEASE_TOKEN` secret.
+
+**Solution:**
+
+1. Create a Personal Access Token:
+   - Go to [GitHub Settings → Tokens](https://github.com/settings/tokens/new)
+   - Name: "Shiba Music Release Token"
+   - Expiration: Your choice
+   - Scope: ✅ `repo` (Full control of private repositories)
+   - Click **"Generate token"**
+   - **COPY THE TOKEN IMMEDIATELY**
+
+2. Add token to repository:
+   - Go to repository: `Settings` → `Secrets and variables` → `Actions`
+   - Click **"New repository secret"**
+   - Name: `RELEASE_TOKEN`
+   - Value: Paste your token
+   - Click **"Add secret"**
+
+3. Re-run the failed workflow
+
+**This is the most common issue!** See [Token Setup Guide](./TOKEN-SETUP.md) for detailed instructions.
+
+---
+
+### 2. Tag was not created automatically
 
 **Symptom:** I pushed `version.txt` but no tag appeared.
 

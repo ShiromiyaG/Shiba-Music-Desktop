@@ -15,6 +15,9 @@ env:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
@@ -47,17 +50,22 @@ jobs:
     
     - name: Create and push tag
       if: steps.check_tag.outputs.exists == 'false'
+      env:
+        RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git tag -a "${{ steps.version.outputs.tag }}" -m "Release version ${{ steps.version.outputs.version }}"
-        git push origin "${{ steps.version.outputs.tag }}"
+        git push https://x-access-token:${RELEASE_TOKEN}@github.com/${{ github.repository }}.git "${{ steps.version.outputs.tag }}"
         echo "🏷️  Tag ${{ steps.version.outputs.tag }} created and pushed"
 
   build-windows:
     needs: create-release
     if: needs.create-release.outputs.tag_exists == 'false'
     runs-on: windows-latest
+    permissions:
+      contents: write
+      packages: write
     
     steps:
     - name: Checkout code

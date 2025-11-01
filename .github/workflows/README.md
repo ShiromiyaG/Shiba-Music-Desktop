@@ -88,20 +88,32 @@ version.txt updated
 
 ### GitHub Actions Permissions
 
+⚠️ **CRITICAL:** You must configure these permissions for the workflow to work!
+
 1. Go to: `Settings` → `Actions` → `General`
-2. Under "Workflow permissions":
-   - ☑️ Check "Read and write permissions"
-   - ☑️ Check "Allow GitHub Actions to create and approve pull requests"
+2. Scroll down to **"Workflow permissions"**
+3. Select: **"Read and write permissions"** (⚠️ REQUIRED!)
+4. Check: **"Allow GitHub Actions to create and approve pull requests"**
+5. Click **"Save"**
+
+**Without these permissions, the workflow cannot create tags or releases!**
 
 ### GitHub Secrets
 
-**DISCORD_CLIENT_ID** (Required)
+**Required Secrets:**
 
-1. Go to: `Settings` → `Secrets and variables` → `Actions`
-2. Click `New repository secret`
-3. Name: `DISCORD_CLIENT_ID`
-4. Value: Your Discord Application ID
-5. Click `Add secret`
+1. **RELEASE_TOKEN** (Required for creating tags and releases)
+   - Go to: `Settings` → `Secrets and variables` → `Actions`
+   - Click `New repository secret`
+   - Name: `RELEASE_TOKEN`
+   - Value: Create a [Personal Access Token](https://github.com/settings/tokens/new) with `repo` scope
+   - Click `Add secret`
+
+2. **DISCORD_CLIENT_ID** (Required for Discord Rich Presence)
+   - Click `New repository secret`
+   - Name: `DISCORD_CLIENT_ID`
+   - Value: Your Discord Application ID
+   - Click `Add secret`
 
 See [Secrets Setup Guide](./SECRETS-SETUP.md) for detailed instructions.
 
@@ -121,20 +133,21 @@ Modify `release.yml` to download libmpv from SourceForge.
 
 ---
 
-## 🔧 Environment Variables
+## 🔧 Environment Variables & Secrets
 
 | Variable | Value | Description |
 |----------|-------|-----------|
 | `QT_VERSION` | `6.9.3` | Qt version |
 | `DISCORD_CLIENT_ID` | Secret | Discord Application ID (from GitHub Secrets) |
-| `GITHUB_TOKEN` | Auto | Access token (automatic) |
+| `RELEASE_TOKEN` | Secret | Personal Access Token for creating releases |
 
 ---
 
 ## 📚 Additional Documentation
 
+- 🔐 [Token Setup Guide](./TOKEN-SETUP.md) - **Fix 403 errors! REQUIRED!**
 - 📖 [Workflow Diagram](./WORKFLOW-DIAGRAM.md)
-- 🔐 [Secrets Setup Guide](./SECRETS-SETUP.md)
+- 🔐 [Secrets Setup Guide](./SECRETS-SETUP.md) - Discord Client ID
 - 🔧 [Troubleshooting](./TROUBLESHOOTING.md)
 - 📝 [Release Instructions](../../RELEASE.md)
 
