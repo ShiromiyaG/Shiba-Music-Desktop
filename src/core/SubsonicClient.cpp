@@ -11,6 +11,7 @@
 
 static constexpr auto API_VERSION = "1.16.1";   // Navidrome alvo
 static constexpr auto CLIENT_NAME = "ShibaMusicQt";
+static constexpr int ALBUM_LIST_PAGE_SIZE = 200;
 static inline QString ensureNoTrailingSlash(QString s) {
     if (s.endsWith('/')) s.chop(1);
     return s;
@@ -114,6 +115,10 @@ void SubsonicClient::login(const QString& url, const QString& user, const QStrin
 void SubsonicClient::logout() {
     saveCredentials("", "", "");
     setAuthenticated(false);
+    if (!m_artistCover.isEmpty()) {
+        m_artistCover.clear();
+        emit artistCoverChanged();
+    }
 }
 
 void SubsonicClient::fetchArtists() {
@@ -159,8 +164,14 @@ void SubsonicClient::fetchArtist(const QString& artistId) {
 
     m_albums.clear();
     emit albumsChanged();
-    m_tracks.clear();
-    emit tracksChanged();
+    if (!m_tracks.isEmpty()) {
+        m_tracks.clear();
+        emit tracksChanged();
+    }
+    if (!m_artistCover.isEmpty()) {
+        m_artistCover.clear();
+        emit artistCoverChanged();
+    }
 
     QUrlQuery ex; ex.addQueryItem("id", artistId);
     QNetworkRequest req(buildUrl("getArtist", ex, true));
@@ -188,7 +199,13 @@ void SubsonicClient::fetchArtist(const QString& artistId) {
         if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
 
         auto root = doc.object().value("subsonic-response").toObject();
-        auto albums = root.value("artist").toObject().value("album").toArray();
+        auto artistObj = root.value("artist").toObject();
+        const QString newCover = artistObj.value("coverArt").toString();
+        if (m_artistCover != newCover) {
+            m_artistCover = newCover;
+            emit artistCoverChanged();
+        }
+        auto albums = artistObj.value("album").toArray();
         for (const auto &av : albums) {
             auto a = av.toObject();
             m_albums.push_back(QVariantMap{
@@ -198,7 +215,6 @@ void SubsonicClient::fetchArtist(const QString& artistId) {
                 {"year", a.value("year").toInt()},
                 {"coverArt", a.value("coverArt").toString()}
             });
-            fetchAlbumTracksAndAppend(a.value("id").toString());
         }
         emit albumsChanged();
     });
@@ -267,58 +283,17 @@ void SubsonicClient::fetchAlbumList(const QString& type) {
 
     if (m_albumListReply) {
         m_albumListReply->abort();
+        m_albumListReply->deleteLater();
+        m_albumListReply = nullptr;
     }
 
     m_albumList.clear();
     emit albumListChanged();
 
-    QUrlQuery ex;
-    ex.addQueryItem("type", type);
-    ex.addQueryItem("size", "500");
-    QNetworkRequest req(buildUrl("getAlbumList2", ex, true));
-    auto *reply = m_nam.get(req);
-    m_albumListReply = reply;
-
-    connect(reply, &QNetworkReply::finished, this, [this, reply]{
-        if (reply != m_albumListReply) {
-            reply->deleteLater();
-            return;
-        }
-        m_albumListReply = nullptr;
-
-        if (reply->error() != QNetworkReply::NoError) {
-            if (reply->error() != QNetworkReply::OperationCanceledError) {
-                emit errorOccurred(reply->errorString());
-            }
-            reply->deleteLater();
-            return;
-        }
-
-        const auto doc = QJsonDocument::fromJson(reply->readAll());
-        reply->deleteLater();
-        QString err;
-        if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
-
-        auto root = doc.object().value("subsonic-response").toObject();
-        auto albums = root.value("albumList2").toObject().value("album").toArray();
-        for (const auto &av : albums) {
-            auto a = av.toObject();
-            m_albumList.push_back(QVariantMap{
-                {"id", a.value("id").toString()},
-                {"name", a.value("name").toString()},
-                {"artistId", a.value("artistId").toString()},
-                {"artist", a.value("artist").toString()},
-                {"year", a.value("year").toInt()},
-                {"coverArt", a.value("coverArt").toString()}
-            });
-        }
-
-        std::sort(m_albumList.begin(), m_albumList.end(), [](const QVariant& v1, const QVariant& v2) {
-            return v1.toMap().value("name").toString().localeAwareCompare(v2.toMap().value("name").toString()) < 0;
-        });
-
-        emit albumListChanged();
-    });
+    m_pendingAlbumListType = type;
+    m_pendingAlbumListOffset = 0;
+    m_albumListPaging = true;
+    fetchAlbumListPage(type, 0);
 }
 
 void SubsonicClient::fetchRandomSongs() {
@@ -725,5 +700,77 @@ void SubsonicClient::fetchAlbumTracksAndAppend(const QString& albumId) {
         if (tracksAdded) {
             emit tracksChanged();
         }
+    });
+}
+
+void SubsonicClient::fetchAlbumListPage(const QString& type, int offset)
+{
+    if (!m_authenticated)
+        return;
+
+    QUrlQuery ex;
+    ex.addQueryItem("type", type);
+    ex.addQueryItem("size", QString::number(ALBUM_LIST_PAGE_SIZE));
+    if (offset > 0)
+        ex.addQueryItem("offset", QString::number(offset));
+
+    QNetworkRequest req(buildUrl("getAlbumList2", ex, true));
+    auto *reply = m_nam.get(req);
+    m_albumListReply = reply;
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, type, offset] {
+        if (reply != m_albumListReply) {
+            reply->deleteLater();
+            return;
+        }
+        m_albumListReply = nullptr;
+
+        if (reply->error() != QNetworkReply::NoError) {
+            if (reply->error() != QNetworkReply::OperationCanceledError) {
+                emit errorOccurred(reply->errorString());
+            }
+            m_albumListPaging = false;
+            reply->deleteLater();
+            return;
+        }
+
+        const auto doc = QJsonDocument::fromJson(reply->readAll());
+        QString err;
+        if (!checkOk(doc, &err)) {
+            emit errorOccurred(err);
+            m_albumListPaging = false;
+            reply->deleteLater();
+            return;
+        }
+
+        auto root = doc.object().value("subsonic-response").toObject();
+        auto albums = root.value("albumList2").toObject().value("album").toArray();
+        for (const auto &av : albums) {
+            auto a = av.toObject();
+            m_albumList.push_back(QVariantMap{
+                {"id", a.value("id").toString()},
+                {"name", a.value("name").toString()},
+                {"artistId", a.value("artistId").toString()},
+                {"artist", a.value("artist").toString()},
+                {"year", a.value("year").toInt()},
+                {"coverArt", a.value("coverArt").toString()}
+            });
+        }
+
+        emit albumListChanged();
+
+        if (albums.size() == ALBUM_LIST_PAGE_SIZE) {
+            m_pendingAlbumListOffset = offset + albums.size();
+            reply->deleteLater();
+            fetchAlbumListPage(type, m_pendingAlbumListOffset);
+            return;
+        }
+
+        m_albumListPaging = false;
+        std::sort(m_albumList.begin(), m_albumList.end(), [](const QVariant& v1, const QVariant& v2) {
+            return v1.toMap().value("name").toString().localeAwareCompare(v2.toMap().value("name").toString()) < 0;
+        });
+        emit albumListChanged();
+        reply->deleteLater();
     });
 }

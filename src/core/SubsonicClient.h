@@ -17,6 +17,7 @@ class SubsonicClient : public QObject {
     Q_PROPERTY(QVariantList randomSongs READ randomSongs NOTIFY randomSongsChanged)
     Q_PROPERTY(QVariantList favorites READ favorites NOTIFY favoritesChanged)
     Q_PROPERTY(QVariantList playlists READ playlists NOTIFY playlistsChanged)
+    Q_PROPERTY(QString artistCover READ artistCover NOTIFY artistCoverChanged)
 public:
     explicit SubsonicClient(QObject *parent=nullptr);
 
@@ -57,6 +58,7 @@ public:
     Q_INVOKABLE QVariantList randomSongs() const { return m_randomSongs; }
     Q_INVOKABLE QVariantList favorites() const { return m_favorites; }
     Q_INVOKABLE QVariantList playlists() const { return m_playlists; }
+    QString artistCover() const { return m_artistCover; }
     Q_INVOKABLE void clearTracks() { if (!m_tracks.isEmpty()) { m_tracks.clear(); emit tracksChanged(); } }
 
 signals:
@@ -73,6 +75,7 @@ signals:
     void randomSongsChanged();
     void favoritesChanged();
     void playlistsChanged();
+    void artistCoverChanged();
 
 private:
     QUrl buildUrl(const QString& method, const QUrlQuery& extra = {}, bool isJson = true) const;
@@ -85,6 +88,7 @@ private:
     void fetchAlbumTracksAndAppend(const QString& albumId);
 
     void setAuthenticated(bool ok);
+    void fetchAlbumListPage(const QString& type, int offset);
 
     QString m_server, m_user, m_token, m_salt;
     bool m_authenticated = false;
@@ -98,4 +102,8 @@ private:
     QNetworkReply* m_playlistReply = nullptr;
 
     QVariantList m_artists, m_albums, m_albumList, m_tracks, m_recentlyPlayedAlbums, m_randomSongs, m_favorites, m_playlists;
+    QString m_artistCover;
+    QString m_pendingAlbumListType;
+    int m_pendingAlbumListOffset = 0;
+    bool m_albumListPaging = false;
 };

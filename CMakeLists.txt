@@ -44,6 +44,10 @@ qt_add_executable(shibamusic
     src/discord/DiscordRPC.h src/discord/DiscordRPC.cpp
 )
 
+if(WIN32)
+    target_sources(shibamusic PRIVATE appicon.rc)
+endif()
+
 qt_add_resources(shibamusic "qml"
     PREFIX "/"
     FILES

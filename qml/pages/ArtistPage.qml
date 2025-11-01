@@ -11,17 +11,48 @@ Page {
     property string artistId: ""
     property string artistName: ""
     property string coverArtId: ""
+    property string pendingRandomAlbumId: ""
 
     background: Rectangle { color: "transparent" }
 
     Component.onCompleted: {
+        coverArtId = ""
         if (artistId.length > 0)
             api.fetchArtist(artistId)
     }
 
     onArtistIdChanged: {
+        coverArtId = ""
         if (artistId.length > 0)
             api.fetchArtist(artistId)
+    }
+
+    Connections {
+        target: api
+        function onArtistCoverChanged() {
+            if (!artistPage.artistId.length)
+                return
+            if (artistPage.coverArtId !== api.artistCover) {
+                artistPage.coverArtId = api.artistCover
+            }
+        }
+        function onTracksChanged() {
+            if (!artistPage.pendingRandomAlbumId.length)
+                return
+            if (!api.tracks || api.tracks.length === 0)
+                return
+            var first = api.tracks[0]
+            if (!first || !first.albumId)
+                return
+            var fetchedAlbumId = String(first.albumId)
+            if (fetchedAlbumId !== artistPage.pendingRandomAlbumId)
+                return
+            var index = Math.floor(Math.random() * api.tracks.length)
+            var track = api.tracks[index]
+            artistPage.pendingRandomAlbumId = ""
+            if (track)
+                player.playTrack(track)
+        }
     }
 
     Flickable {
@@ -124,10 +155,17 @@ Page {
                             ToolButton {
                                 text: "Aleatório"
                                 icon.source: "qrc:/qml/icons/shuffle.svg"
-                                enabled: api.tracks.length > 0
+                                enabled: api.albums.length > 0
                                 onClicked: {
-                                    if (api.tracks.length > 0)
-                                        player.playTrack(api.tracks[Math.floor(Math.random() * api.tracks.length)])
+                                    if (api.albums.length === 0)
+                                        return
+                                    var idx = Math.floor(Math.random() * api.albums.length)
+                                    var album = api.albums[idx]
+                                    if (!album || !album.id)
+                                        return
+                                    artistPage.pendingRandomAlbumId = String(album.id)
+                                    api.clearTracks()
+                                    api.fetchAlbum(album.id)
                                 }
                             }
                             ToolButton {

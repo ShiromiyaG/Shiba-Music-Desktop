@@ -1,0 +1,3 @@
+#define APPICON 101
+
+APPICON ICON "qml/icons/shiba_nobg_4k.ico"

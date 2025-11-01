@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import Qt5Compat.GraphicalEffects
 import "qrc:/qml/components" as Components
 
 Page {
@@ -71,29 +72,35 @@ Page {
             width: parent.width
             spacing: 8
             
-            Flickable {
-                id: recentScroll
+            Item {
+                id: recentWrapper
                 width: parent.width
                 height: 270
-                clip: true
-                contentWidth: recentRow.width
-                contentHeight: recentRow.height
-                boundsBehavior: Flickable.StopAtBounds
-                flickableDirection: Flickable.HorizontalFlick
-                interactive: false
-                
-                Row {
-                    id: recentRow
-                    spacing: 16
-                    Repeater {
-                        model: api.recentlyPlayedAlbums
-                        delegate: Components.AlbumCard {
-                            title: modelData.name || "Álbum Desconhecido"
-                            subtitle: modelData.artist || "Artista desconhecido"
-                            cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
-                            albumId: modelData.id
-                            artistId: modelData.artistId || ""
-                            onClicked: homePage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt, modelData.artistId || "")
+                clip: false
+
+                Flickable {
+                    id: recentScroll
+                    anchors.fill: parent
+                    clip: true
+                    contentWidth: recentRow.width
+                    contentHeight: recentRow.height
+                    boundsBehavior: Flickable.StopAtBounds
+                    flickableDirection: Flickable.HorizontalFlick
+                    interactive: false
+
+                    Row {
+                        id: recentRow
+                        spacing: 16
+                        Repeater {
+                            model: api.recentlyPlayedAlbums
+                            delegate: Components.AlbumCard {
+                                title: modelData.name || "Álbum Desconhecido"
+                                subtitle: modelData.artist || "Artista desconhecido"
+                                cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
+                                albumId: modelData.id
+                                artistId: modelData.artistId || ""
+                                onClicked: homePage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt, modelData.artistId || "")
+                            }
                         }
                     }
                 }
