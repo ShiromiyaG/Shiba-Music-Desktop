@@ -22,18 +22,27 @@ set(MPV_LIBRARY_DIR "${CMAKE_SOURCE_DIR}/libs/mpv/lib")
 set(RAPIDJSON_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/libs/rapidjson/include")
 
 if(EXISTS "${MPV_INCLUDE_DIR}/mpv/client.h")
-    message(STATUS "Usando libmpv do projeto: ${MPV_INCLUDE_DIR}")
+    message(STATUS "Using libmpv from project: ${MPV_INCLUDE_DIR}")
     if(MINGW)
         set(MPV_LIBRARY "${MPV_LIBRARY_DIR}/libmpv.dll.a")
     else()
         set(MPV_LIBRARY "${MPV_LIBRARY_DIR}/mpv.lib")
     endif()
 else()
-    # Fallback para pkg-config
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
-    set(MPV_INCLUDE_DIR ${MPV_INCLUDE_DIRS})
-    set(MPV_LIBRARY PkgConfig::MPV)
+    # Fallback to pkg-config (Linux/macOS only)
+    find_package(PkgConfig)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(MPV REQUIRED IMPORTED_TARGET mpv)
+        set(MPV_INCLUDE_DIR ${MPV_INCLUDE_DIRS})
+        set(MPV_LIBRARY PkgConfig::MPV)
+        message(STATUS "Using libmpv from system via pkg-config")
+    else()
+        message(FATAL_ERROR "libmpv not found! Please:\n"
+                           "  1. Download libmpv from: https://sourceforge.net/projects/mpv-player-windows/files/libmpv/\n"
+                           "  2. Extract to: ${CMAKE_SOURCE_DIR}/libs/mpv/\n"
+                           "  3. Structure: libs/mpv/include/ and libs/mpv/lib/\n"
+                           "  See LIBMPV_SETUP.md for details.")
+    endif()
 endif()
 
 qt_standard_project_setup()

@@ -153,17 +153,16 @@ Before the workflow can work, you MUST complete ALL these steps:
 
 ### libmpv
 
-⚠️ **IMPORTANT:** The workflow needs libmpv.
+✅ **Handled automatically!** The workflow downloads libmpv from SourceForge during build.
 
-**Option A - Include in repo (recommended):**
+**No action needed** - libmpv is downloaded and configured automatically.
+
+**Optional:** If you want to include libmpv in the repository to speed up builds:
 ```bash
 git add -f libs/mpv/
 git commit -m "Add libmpv for CI"
 git push
 ```
-
-**Option B - Download during build:**
-Modify `release.yml` to download libmpv from SourceForge.
 
 ---
 

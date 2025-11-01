@@ -87,6 +87,37 @@ jobs:
     - name: Setup Ninja
       uses: seanmiddleditch/gha-setup-ninja@master
     
+    - name: Download libmpv
+      run: |
+        Write-Host "Downloading libmpv..."
+        $mpvUrl = "https://sourceforge.net/projects/mpv-player-windows/files/libmpv/mpv-dev-x86_64-20241027-git-30c1342.7z/download"
+        $mpvArchive = "mpv-dev.7z"
+        
+        # Download
+        Invoke-WebRequest -Uri $mpvUrl -OutFile $mpvArchive -UserAgent "GitHub Actions"
+        
+        # Extract using 7zip (comes with Windows runner)
+        7z x $mpvArchive -o"mpv-temp"
+        
+        # Create libs structure
+        New-Item -ItemType Directory -Force -Path "libs/mpv/include"
+        New-Item -ItemType Directory -Force -Path "libs/mpv/lib"
+        New-Item -ItemType Directory -Force -Path "libs/mpv/bin"
+        
+        # Copy files to correct structure
+        Copy-Item -Recurse -Force "mpv-temp/include/*" "libs/mpv/include/"
+        Copy-Item -Force "mpv-temp/*.a" "libs/mpv/lib/" -ErrorAction SilentlyContinue
+        Copy-Item -Force "mpv-temp/*.dll.a" "libs/mpv/lib/" -ErrorAction SilentlyContinue
+        Copy-Item -Force "mpv-temp/*.dll" "libs/mpv/bin/" -ErrorAction SilentlyContinue
+        
+        # Cleanup
+        Remove-Item $mpvArchive
+        Remove-Item -Recurse mpv-temp
+        
+        Write-Host "✅ libmpv downloaded and extracted"
+        Write-Host "Include dir: $(Test-Path 'libs/mpv/include/mpv/client.h')"
+        Write-Host "Lib dir: $(Get-ChildItem 'libs/mpv/lib' -Name)"
+    
     - name: Configure CMake
       run: |
         $env:PATH = "$env:IQTA_TOOLS\mingw1310_64\bin;$env:PATH"
