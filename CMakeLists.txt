@@ -13,6 +13,15 @@ if(MSVC)
     add_compile_options(/Zc:__cplusplus /permissive-)
 endif()
 
+# Discord Client ID (can be set via environment variable or CMake option)
+if(DEFINED ENV{DISCORD_CLIENT_ID})
+    set(DISCORD_CLIENT_ID "$ENV{DISCORD_CLIENT_ID}" CACHE STRING "Discord Application ID")
+    message(STATUS "Discord Client ID: Set from environment (hidden)")
+else()
+    set(DISCORD_CLIENT_ID "" CACHE STRING "Discord Application ID")
+    message(STATUS "Discord Client ID: Not set (Discord RPC will be disabled)")
+endif()
+
 find_package(Qt6 6.9 REQUIRED COMPONENTS Quick QuickControls2 Network Core5Compat)
 
 # Tentar encontrar libmpv no projeto primeiro
@@ -59,8 +68,11 @@ qt_add_executable(shibamusic
     src/discord/DiscordRPC.h src/discord/DiscordRPC.cpp
 )
 
-# Define APP_VERSION as a preprocessor macro
-target_compile_definitions(shibamusic PRIVATE APP_VERSION="${APP_VERSION}")
+# Define APP_VERSION and DISCORD_CLIENT_ID as preprocessor macros
+target_compile_definitions(shibamusic PRIVATE 
+    APP_VERSION="${APP_VERSION}"
+    DISCORD_CLIENT_ID="${DISCORD_CLIENT_ID}"
+)
 
 if(WIN32)
     target_sources(shibamusic PRIVATE appicon.rc)

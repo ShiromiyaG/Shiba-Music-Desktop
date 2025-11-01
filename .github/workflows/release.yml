@@ -216,6 +216,7 @@ jobs:
             "Qt6Qml.dll",
             "Qt6Quick.dll",
             "Qt6QuickControls2.dll",
+            "Qt6QuickControls2Impl.dll",
             "Qt6QuickTemplates2.dll",
             "Qt6QmlMeta.dll",
             "Qt6QmlModels.dll",
@@ -223,7 +224,9 @@ jobs:
             "Qt6OpenGL.dll",
             "Qt6Widgets.dll",
             "Qt6Svg.dll",
-            "Qt6OpenGLWidgets.dll"
+            "Qt6OpenGLWidgets.dll",
+            "Qt6ShaderTools.dll",
+            "Qt6Core5Compat.dll"
           )
           
           foreach ($dll in $essentialDlls) {
@@ -237,10 +240,39 @@ jobs:
           # Copy plugins
           Write-Host "Copying Qt plugins..."
           $pluginsDir = "$env:QT_ROOT_DIR\plugins"
+          
+          # Platform plugin
           if (Test-Path "$pluginsDir\platforms") {
             New-Item -ItemType Directory -Force -Path "$deployDir\platforms" | Out-Null
             Copy-Item "$pluginsDir\platforms\qwindows.dll" -Destination "$deployDir\platforms\" -Force -ErrorAction SilentlyContinue
             Write-Host "  ✅ platforms/qwindows.dll"
+          }
+          
+          # Image formats
+          if (Test-Path "$pluginsDir\imageformats") {
+            New-Item -ItemType Directory -Force -Path "$deployDir\imageformats" | Out-Null
+            $imagePlugins = @("qgif.dll", "qicns.dll", "qico.dll", "qjpeg.dll", "qsvg.dll", "qwebp.dll")
+            foreach ($plugin in $imagePlugins) {
+              $pluginPath = "$pluginsDir\imageformats\$plugin"
+              if (Test-Path $pluginPath) {
+                Copy-Item $pluginPath -Destination "$deployDir\imageformats\" -Force -ErrorAction SilentlyContinue
+              }
+            }
+            Write-Host "  ✅ imageformats plugins"
+          }
+          
+          # Generic plugins
+          if (Test-Path "$pluginsDir\generic") {
+            New-Item -ItemType Directory -Force -Path "$deployDir\generic" | Out-Null
+            Copy-Item "$pluginsDir\generic\*" -Destination "$deployDir\generic\" -Force -ErrorAction SilentlyContinue
+            Write-Host "  ✅ generic plugins"
+          }
+          
+          # Styles
+          if (Test-Path "$pluginsDir\styles") {
+            New-Item -ItemType Directory -Force -Path "$deployDir\styles" | Out-Null
+            Copy-Item "$pluginsDir\styles\*" -Destination "$deployDir\styles\" -Force -ErrorAction SilentlyContinue
+            Write-Host "  ✅ styles plugins"
           }
           
           # Copy QML modules
@@ -255,9 +287,15 @@ jobs:
             "QtQml.WorkerScript",
             "QtQuick.Controls",
             "QtQuick.Controls.Basic",
+            "QtQuick.Controls.Material",
+            "QtQuick.Controls.Fusion",
+            "QtQuick.Controls.Imagine",
+            "QtQuick.Controls.Universal",
             "QtQuick.Layouts",
             "QtQuick.Templates",
-            "QtQuick.Window"
+            "QtQuick.Window",
+            "QtQuick.Shapes",
+            "QtQuick.Effects"
           )
           
           foreach ($module in $qmlModules) {

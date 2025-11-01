@@ -119,6 +119,7 @@ Before the workflow can work, you MUST complete ALL these steps:
   - Same place: Settings → Secrets → Actions
   - New secret: Name = `DISCORD_CLIENT_ID`, Value = your Discord App ID
   - ⚠️ **Required for builds!**
+  - 📖 [How to get Discord App ID](./DISCORD-SETUP.md)
 
 - [ ] **4. Enable Workflow Permissions**
   - Settings → Actions → General
@@ -148,8 +149,15 @@ Before the workflow can work, you MUST complete ALL these steps:
    - Value: Your Discord Application ID
    - Click `Add secret`
    - 📖 [How to get Discord ID](./SECRETS-SETUP.md)
+   - ℹ️ **This ID is compiled into the executable** - users won't see it
 
 **Without these secrets, the workflow WILL FAIL with 403 errors!**
+
+**Security Note:** The Discord Client ID is embedded in the compiled binary during build. This is secure because:
+- ✅ The ID is not visible in GitHub repository
+- ✅ Users can't extract it easily from the binary
+- ✅ It's stored as GitHub Secret (encrypted)
+- ✅ Only visible during GitHub Actions build process
 
 ### libmpv
 

@@ -78,15 +78,36 @@ namespace
 DiscordRPC::DiscordRPC(QObject *parent) : QObject(parent)
 
 {
-    // Get Discord Client ID from environment variable or use default
+    // Get Discord Client ID from environment variable, or use compiled-in default
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    m_clientId = env.value("DISCORD_CLIENT_ID", "");
+    
+    // Priority: 1. Environment variable, 2. Compiled-in ID
+    QString envClientId = env.value("DISCORD_CLIENT_ID", "");
+    QString compiledClientId = QString(DISCORD_CLIENT_ID);
+    
+    if (!envClientId.isEmpty())
+    {
+        // Use environment variable if set (for development/testing)
+        m_clientId = envClientId;
+        qDebug() << "Discord: Using Client ID from environment variable";
+    }
+    else if (!compiledClientId.isEmpty())
+    {
+        // Use compiled-in ID (for production builds)
+        m_clientId = compiledClientId;
+        qDebug() << "Discord: Using compiled-in Client ID";
+    }
+    else
+    {
+        // No ID available
+        m_clientId = "";
+    }
 
     // Disable Discord RPC if no Client ID is provided
     if (m_clientId.isEmpty())
     {
         qDebug() << "Discord Client ID not set. Discord Rich Presence disabled.";
-        qDebug() << "Set DISCORD_CLIENT_ID environment variable to enable it.";
+        qDebug() << "Set DISCORD_CLIENT_ID environment variable or compile with ID to enable it.";
         m_enabled = false;
     }
 
