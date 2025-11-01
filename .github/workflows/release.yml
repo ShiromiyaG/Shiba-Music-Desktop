@@ -162,19 +162,50 @@ jobs:
     
     - name: Deploy Qt dependencies
       run: |
+        $ErrorActionPreference = "Stop"
         $deployDir = "build\deploy"
-        New-Item -ItemType Directory -Force -Path $deployDir
-        Copy-Item "build\shibamusic.exe" -Destination $deployDir
         
-        # Copy libmpv if exists
+        Write-Host "Creating deploy directory..."
+        New-Item -ItemType Directory -Force -Path $deployDir | Out-Null
+        
+        Write-Host "Copying executable..."
+        Copy-Item "build\shibamusic.exe" -Destination $deployDir -Force
+        
+        Write-Host "Copying libmpv..."
         if (Test-Path "libs\mpv\bin\libmpv-2.dll") {
-          Copy-Item "libs\mpv\bin\libmpv-2.dll" -Destination $deployDir
+          Copy-Item "libs\mpv\bin\libmpv-2.dll" -Destination $deployDir -Force
+          Write-Host "✅ libmpv-2.dll copied"
+        } else {
+          Write-Host "⚠️  libmpv-2.dll not found"
         }
         
-        # Run windeployqt
-        & "$env:IQTA_TOOLS\..\${{ env.QT_VERSION }}\mingw_64\bin\windeployqt.exe" --qmldir qml --release --no-translations "$deployDir\shibamusic.exe"
+        Write-Host "Setting up environment for windeployqt..."
+        $env:PATH = "$env:QT_ROOT_DIR\bin;$env:IQTA_TOOLS\mingw1310_64\bin;$env:PATH"
         
-        # Copy MinGW DLLs
+        Write-Host "Running windeployqt..."
+        $windeployqt = "$env:QT_ROOT_DIR\bin\windeployqt.exe"
+        if (Test-Path $windeployqt) {
+          # Capture output and ignore non-critical errors
+          $output = & $windeployqt --qmldir qml --release --no-translations --compiler-runtime "$deployDir\shibamusic.exe" 2>&1
+          $exitCode = $LASTEXITCODE
+          
+          # Show output
+          $output | ForEach-Object { Write-Host $_ }
+          
+          # Check if deployment actually worked (exe and DLLs present)
+          $qtDlls = Get-ChildItem $deployDir -Filter "Qt*.dll" -ErrorAction SilentlyContinue
+          if ($qtDlls.Count -gt 0) {
+            Write-Host "✅ windeployqt completed (found $($qtDlls.Count) Qt DLLs)"
+          } elseif ($exitCode -ne 0) {
+            Write-Host "❌ windeployqt failed with exit code $exitCode"
+            throw "windeployqt failed"
+          }
+        } else {
+          Write-Host "❌ windeployqt not found at: $windeployqt"
+          throw "windeployqt not found"
+        }
+        
+        Write-Host "Copying MinGW runtime DLLs..."
         $mingwPath = "$env:IQTA_TOOLS\mingw1310_64\bin"
         $dllsToCheck = @(
           "libgcc_s_seh-1.dll",
@@ -185,9 +216,16 @@ jobs:
         foreach ($dll in $dllsToCheck) {
           $dllPath = Join-Path $mingwPath $dll
           if (Test-Path $dllPath) {
-            Copy-Item $dllPath -Destination $deployDir
+            Copy-Item $dllPath -Destination $deployDir -Force
+            Write-Host "  ✅ $dll"
+          } else {
+            Write-Host "  ⚠️  $dll not found"
           }
         }
+        
+        Write-Host "`n✅ Deployment complete!"
+        Write-Host "Deploy directory contents:"
+        Get-ChildItem $deployDir -Name | ForEach-Object { Write-Host "  - $_" }
     
     - name: Create archive
       run: |
