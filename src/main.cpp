@@ -8,6 +8,7 @@
 #include "core/AppInfo.h"
 #include "playback/PlayerController.h"
 #include "discord/DiscordRPC.h"
+#include "updater/UpdateChecker.h"
 
 int main(int argc, char *argv[]) {
     QQuickStyle::setStyle("Material");
@@ -19,6 +20,7 @@ int main(int argc, char *argv[]) {
     DiscordRPC discord;
     PlayerController player(&api, &discord);
     AppInfo appInfo;
+    UpdateChecker updateChecker;
 
     QQmlApplicationEngine engine;
     engine.setNetworkAccessManagerFactory(new SubsonicNetworkAccessManagerFactory);
@@ -26,6 +28,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("player", &player);
     engine.rootContext()->setContextProperty("discord", &discord);
     engine.rootContext()->setContextProperty("appInfo", &appInfo);
+    engine.rootContext()->setContextProperty("updateChecker", &updateChecker);
     engine.load(QUrl("qrc:/qml/main.qml"));
     if (engine.rootObjects().isEmpty()) return -1;
     return app.exec();

@@ -621,9 +621,31 @@ ApplicationWindow {
         }
     }
 
+    Components.UpdateDialog {
+        id: updateDialog
+        updateChecker: updateChecker
+    }
+
+    Connections {
+        target: updateChecker
+        function onUpdateAvailableChanged() {
+            if (updateChecker.updateAvailable) {
+                updateDialog.open()
+            }
+        }
+    }
+
+    Timer {
+        id: updateCheckTimer
+        interval: 3000
+        running: false
+        onTriggered: updateChecker.checkForUpdates()
+    }
+
     Component.onCompleted: {
         var credentials = api.loadCredentials();
         hasStoredCredentials = !!(credentials.serverUrl && credentials.username && credentials.password)
         autoLoginTimer.start()
+        updateCheckTimer.start()
     }
 }

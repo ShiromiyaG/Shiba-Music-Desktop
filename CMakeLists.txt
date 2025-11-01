@@ -66,6 +66,7 @@ qt_add_executable(shibamusic WIN32
     src/core/SubsonicNetworkAccessManagerFactory.cpp
     src/core/AppInfo.h
     src/discord/DiscordRPC.h src/discord/DiscordRPC.cpp
+    src/updater/UpdateChecker.h src/updater/UpdateChecker.cpp
 )
 
 # Define APP_VERSION and DISCORD_CLIENT_ID as preprocessor macros
@@ -91,6 +92,7 @@ qt_add_resources(shibamusic "qml"
         qml/components/EmptyState.qml
         qml/components/QueueDrawer.qml
         qml/components/NowPlayingPanel.qml
+        qml/components/UpdateDialog.qml
         qml/pages/LoginPage.qml
         qml/pages/HomePage.qml
         qml/pages/ArtistPage.qml
