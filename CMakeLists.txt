@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.21)
-project(ShibaMusic LANGUAGES CXX)
+
+# Read version from file
+file(READ "${CMAKE_SOURCE_DIR}/version.txt" APP_VERSION)
+string(STRIP "${APP_VERSION}" APP_VERSION)
+
+project(ShibaMusic VERSION ${APP_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -41,8 +46,12 @@ qt_add_executable(shibamusic
     src/playback/PlayerController.h src/playback/PlayerController.cpp
     src/core/SubsonicNetworkAccessManagerFactory.h
     src/core/SubsonicNetworkAccessManagerFactory.cpp
+    src/core/AppInfo.h
     src/discord/DiscordRPC.h src/discord/DiscordRPC.cpp
 )
+
+# Define APP_VERSION as a preprocessor macro
+target_compile_definitions(shibamusic PRIVATE APP_VERSION="${APP_VERSION}")
 
 if(WIN32)
     target_sources(shibamusic PRIVATE appicon.rc)

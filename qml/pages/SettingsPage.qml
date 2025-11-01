@@ -135,19 +135,6 @@ Page {
                             onToggled: discord.showPaused = checked
                         }
                     }
-
-                    RowLayout {
-                        width: parent.width
-                        Label {
-                            text: "Application ID"
-                            Layout.fillWidth: true
-                        }
-                        TextField {
-                            text: discord.clientId
-                            Layout.preferredWidth: 200
-                            onEditingFinished: discord.clientId = text
-                        }
-                    }
                 }
             }
 
@@ -215,8 +202,14 @@ Page {
                     }
 
                     Label {
-                        text: "Shiba Music"
+                        text: appInfo.appName
                         font.pixelSize: 16
+                    }
+
+                    Label {
+                        text: "Versão " + appInfo.version
+                        color: "#8b96a8"
+                        font.pixelSize: 12
                     }
 
                     Label {

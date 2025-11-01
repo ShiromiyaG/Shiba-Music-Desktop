@@ -1,0 +1,91 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  QT_VERSION: '6.9.3'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_mingw'
+        modules: 'qtmultimedia qt5compat'
+        tools: 'tools_mingw1310'
+    
+    - name: Setup Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    
+    - name: Configure CMake
+      run: |
+        $env:PATH = "$env:IQTA_TOOLS\mingw1310_64\bin;$env:PATH"
+        cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+    
+    - name: Build
+      run: |
+        $env:PATH = "$env:IQTA_TOOLS\mingw1310_64\bin;$env:PATH"
+        cmake --build build --config Release
+    
+    - name: Deploy Qt dependencies
+      run: |
+        $deployDir = "build\deploy"
+        New-Item -ItemType Directory -Force -Path $deployDir
+        Copy-Item "build\shibamusic.exe" -Destination $deployDir
+        
+        # Copy libmpv if exists
+        if (Test-Path "libs\mpv\bin\libmpv-2.dll") {
+          Copy-Item "libs\mpv\bin\libmpv-2.dll" -Destination $deployDir
+        }
+        
+        # Run windeployqt
+        & "$env:IQTA_TOOLS\..\6.9.3\mingw_64\bin\windeployqt.exe" --qmldir qml --release --no-translations "$deployDir\shibamusic.exe"
+        
+        # Copy MinGW DLLs
+        $mingwPath = "$env:IQTA_TOOLS\mingw1310_64\bin"
+        $dllsToCheck = @(
+          "libgcc_s_seh-1.dll",
+          "libstdc++-6.dll",
+          "libwinpthread-1.dll"
+        )
+        
+        foreach ($dll in $dllsToCheck) {
+          $dllPath = Join-Path $mingwPath $dll
+          if (Test-Path $dllPath) {
+            Copy-Item $dllPath -Destination $deployDir
+          }
+        }
+    
+    - name: Create archive
+      run: |
+        Compress-Archive -Path "build\deploy\*" -DestinationPath "ShibaMusic-Windows-x64.zip"
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ShibaMusic-Windows
+        path: ShibaMusic-Windows-x64.zip
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: ShibaMusic-Windows-x64.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
