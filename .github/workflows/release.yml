@@ -87,36 +87,66 @@ jobs:
     - name: Setup Ninja
       uses: seanmiddleditch/gha-setup-ninja@master
     
-    - name: Download libmpv
+    - name: Download and setup libmpv
       run: |
         Write-Host "Downloading libmpv..."
-        $mpvUrl = "https://sourceforge.net/projects/mpv-player-windows/files/libmpv/mpv-dev-x86_64-20241027-git-30c1342.7z/download"
+        
+        # Use GitHub Releases mirror (more reliable than SourceForge)
+        $mpvUrl = "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20251031/mpv-dev-x86_64-20251031-git-454d9eb.7z"
         $mpvArchive = "mpv-dev.7z"
         
-        # Download
-        Invoke-WebRequest -Uri $mpvUrl -OutFile $mpvArchive -UserAgent "GitHub Actions"
+        # Download with retry
+        $maxAttempts = 3
+        $attempt = 0
+        $downloaded = $false
         
-        # Extract using 7zip (comes with Windows runner)
-        7z x $mpvArchive -o"mpv-temp"
+        while (-not $downloaded -and $attempt -lt $maxAttempts) {
+            $attempt++
+            try {
+                Write-Host "Download attempt $attempt of $maxAttempts..."
+                Invoke-WebRequest -Uri $mpvUrl -OutFile $mpvArchive -MaximumRetryCount 3
+                $downloaded = $true
+                Write-Host "✅ Download successful"
+            } catch {
+                Write-Host "⚠️  Attempt $attempt failed: $_"
+                if ($attempt -eq $maxAttempts) {
+                    throw "Failed to download libmpv after $maxAttempts attempts"
+                }
+                Start-Sleep -Seconds 5
+            }
+        }
+        
+        # Extract using 7zip
+        Write-Host "Extracting libmpv..."
+        7z x $mpvArchive -o"mpv-temp" -y
         
         # Create libs structure
-        New-Item -ItemType Directory -Force -Path "libs/mpv/include"
-        New-Item -ItemType Directory -Force -Path "libs/mpv/lib"
-        New-Item -ItemType Directory -Force -Path "libs/mpv/bin"
+        Write-Host "Setting up directory structure..."
+        New-Item -ItemType Directory -Force -Path "libs/mpv/include" | Out-Null
+        New-Item -ItemType Directory -Force -Path "libs/mpv/lib" | Out-Null
+        New-Item -ItemType Directory -Force -Path "libs/mpv/bin" | Out-Null
         
         # Copy files to correct structure
+        Write-Host "Copying files..."
         Copy-Item -Recurse -Force "mpv-temp/include/*" "libs/mpv/include/"
         Copy-Item -Force "mpv-temp/*.a" "libs/mpv/lib/" -ErrorAction SilentlyContinue
         Copy-Item -Force "mpv-temp/*.dll.a" "libs/mpv/lib/" -ErrorAction SilentlyContinue
         Copy-Item -Force "mpv-temp/*.dll" "libs/mpv/bin/" -ErrorAction SilentlyContinue
         
         # Cleanup
-        Remove-Item $mpvArchive
-        Remove-Item -Recurse mpv-temp
+        Write-Host "Cleaning up..."
+        Remove-Item $mpvArchive -Force
+        Remove-Item -Recurse -Force mpv-temp
         
-        Write-Host "✅ libmpv downloaded and extracted"
-        Write-Host "Include dir: $(Test-Path 'libs/mpv/include/mpv/client.h')"
-        Write-Host "Lib dir: $(Get-ChildItem 'libs/mpv/lib' -Name)"
+        # Verify
+        Write-Host "`n✅ libmpv setup complete!"
+        Write-Host "Include dir exists: $(Test-Path 'libs/mpv/include/mpv/client.h')"
+        if (Test-Path 'libs/mpv/lib') {
+            Write-Host "Lib files: $(Get-ChildItem 'libs/mpv/lib' -Name | Out-String)"
+        }
+        if (Test-Path 'libs/mpv/bin') {
+            Write-Host "Bin files: $(Get-ChildItem 'libs/mpv/bin' -Name | Out-String)"
+        }
     
     - name: Configure CMake
       run: |
