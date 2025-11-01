@@ -623,13 +623,13 @@ ApplicationWindow {
 
     Components.UpdateDialog {
         id: updateDialog
-        updateChecker: updateChecker
+        checker: updateChecker
     }
 
     Connections {
         target: updateChecker
         function onUpdateAvailableChanged() {
-            if (updateChecker.updateAvailable) {
+            if (updateChecker.updateAvailable && api.authenticated) {
                 updateDialog.open()
             }
         }

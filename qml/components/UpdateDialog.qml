@@ -11,7 +11,7 @@ Dialog {
     
     Material.roundedScale: Material.MediumScale
 
-    required property var updateChecker
+    property var checker: null
 
     ColumnLayout {
         width: parent.width
@@ -45,7 +45,7 @@ Dialog {
                 }
 
                 Label {
-                    text: "Version " + updateChecker.latestVersion
+                    text: checker ? "Version " + checker.latestVersion : ""
                     font.pixelSize: 14
                     opacity: 0.7
                 }
@@ -65,7 +65,7 @@ Dialog {
 
             Label {
                 width: updateDialog.width - 48
-                text: updateChecker.releaseNotes || "No release notes available."
+                text: checker ? (checker.releaseNotes || "No release notes available.") : ""
                 wrapMode: Text.Wrap
                 font.pixelSize: 13
                 lineHeight: 1.4
@@ -74,12 +74,12 @@ Dialog {
 
         ProgressBar {
             Layout.fillWidth: true
-            visible: updateChecker.isDownloading
-            value: updateChecker.downloadProgress / 100
+            visible: checker ? checker.isDownloading : false
+            value: checker ? checker.downloadProgress / 100 : 0
             
             Label {
                 anchors.centerIn: parent
-                text: updateChecker.downloadProgress + "%"
+                text: checker ? checker.downloadProgress + "%" : ""
                 font.pixelSize: 11
                 font.weight: Font.DemiBold
                 color: Material.foreground
@@ -88,7 +88,7 @@ Dialog {
 
         Label {
             Layout.fillWidth: true
-            visible: updateChecker.isDownloading
+            visible: checker ? checker.isDownloading : false
             text: "Downloading update..."
             font.pixelSize: 12
             opacity: 0.7
@@ -100,13 +100,13 @@ Dialog {
         Button {
             text: "Later"
             flat: true
-            enabled: !updateChecker.isDownloading
+            enabled: checker ? !checker.isDownloading : true
             DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
         }
 
         Button {
-            text: updateChecker.isDownloading ? "Downloading..." : "Download & Install"
-            enabled: !updateChecker.isDownloading
+            text: checker ? (checker.isDownloading ? "Downloading..." : "Download & Install") : "Download & Install"
+            enabled: checker ? !checker.isDownloading : false
             Material.background: Material.Blue
             Material.foreground: "white"
             DialogButtonBox.buttonRole: DialogButtonBox.AcceptRole
@@ -114,15 +114,19 @@ Dialog {
     }
 
     onAccepted: {
-        updateChecker.downloadAndInstall()
+        if (checker) {
+            checker.downloadAndInstall()
+        }
     }
 
     onRejected: {
-        updateChecker.ignoreUpdate()
+        if (checker) {
+            checker.ignoreUpdate()
+        }
     }
 
     Connections {
-        target: updateChecker
+        target: checker
 
         function onUpdateCheckFailed(error) {
             console.log("Update check failed:", error)

@@ -125,10 +125,18 @@ bool UpdateChecker::compareVersions(const QString &currentVersion, const QString
 
 void UpdateChecker::downloadAndInstall()
 {
-    if (m_downloadUrl.isEmpty() || m_isDownloading) {
+    if (m_downloadUrl.isEmpty()) {
+        qWarning() << "UpdateChecker: Download URL is empty";
+        emit downloadFailed("No download URL available");
+        return;
+    }
+    
+    if (m_isDownloading) {
+        qWarning() << "UpdateChecker: Already downloading";
         return;
     }
 
+    qDebug() << "UpdateChecker: Starting download from" << m_downloadUrl;
     m_isDownloading = true;
     m_downloadProgress = 0;
     emit isDownloadingChanged();
@@ -155,15 +163,20 @@ void UpdateChecker::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
 
 void UpdateChecker::onDownloadFinished()
 {
-    m_isDownloading = false;
-    emit isDownloadingChanged();
-
+    qDebug() << "UpdateChecker: Download finished";
+    
     if (!m_currentReply) {
+        qWarning() << "UpdateChecker: No reply object";
+        m_isDownloading = false;
+        emit isDownloadingChanged();
+        emit downloadFailed("Internal error: no reply object");
         return;
     }
 
     if (m_currentReply->error() != QNetworkReply::NoError) {
-        qWarning() << "Download failed:" << m_currentReply->errorString();
+        qWarning() << "UpdateChecker: Download failed:" << m_currentReply->errorString();
+        m_isDownloading = false;
+        emit isDownloadingChanged();
         emit downloadFailed(m_currentReply->errorString());
         m_currentReply->deleteLater();
         m_currentReply = nullptr;
@@ -171,11 +184,15 @@ void UpdateChecker::onDownloadFinished()
     }
 
     QByteArray data = m_currentReply->readAll();
+    qDebug() << "UpdateChecker: Downloaded" << data.size() << "bytes";
     m_currentReply->deleteLater();
     m_currentReply = nullptr;
 
     QFile file(m_downloadPath);
     if (!file.open(QIODevice::WriteOnly)) {
+        qWarning() << "UpdateChecker: Failed to open file for writing:" << m_downloadPath;
+        m_isDownloading = false;
+        emit isDownloadingChanged();
         emit downloadFailed("Failed to save update file");
         return;
     }
@@ -183,7 +200,7 @@ void UpdateChecker::onDownloadFinished()
     file.write(data);
     file.close();
 
-    qDebug() << "Update downloaded to:" << m_downloadPath;
+    qDebug() << "UpdateChecker: Update downloaded to:" << m_downloadPath;
     installUpdate(m_downloadPath);
 }
 
@@ -230,9 +247,13 @@ void UpdateChecker::installUpdate(const QString &zipPath)
         qDebug() << "Update script started. Exiting app...";
         QCoreApplication::quit();
     } else {
+        m_isDownloading = false;
+        emit isDownloadingChanged();
         emit downloadFailed("Failed to create update script");
     }
 #else
+    m_isDownloading = false;
+    emit isDownloadingChanged();
     emit downloadFailed("Auto-update not supported on this platform");
 #endif
 }
