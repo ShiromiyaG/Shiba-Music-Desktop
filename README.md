@@ -63,6 +63,7 @@
 - **CMake 3.21+**
 - **Ninja** build system
 - **libmpv** for audio playback
+- **Discord Client ID** (optional - uses default if not set)
 
 ### Setup libmpv
 
@@ -84,6 +85,9 @@ See `LIBMPV_SETUP.md` for detailed instructions.
 git clone https://github.com/ShiromiyaG/Shiba-Music-Desktop.git
 cd Shiba-Music-Desktop
 
+# (Optional) Set Discord Client ID
+$env:DISCORD_CLIENT_ID = "your_discord_app_id"
+
 # Configure with CMake
 mkdir build && cd build
 cmake -G Ninja -DCMAKE_BUILD_TYPE=Release ..
@@ -94,6 +98,8 @@ cmake --build .
 # Deploy Qt dependencies
 windeployqt shibamusic.exe
 ```
+
+**Note:** If you don't set `DISCORD_CLIENT_ID`, Discord Rich Presence will be disabled. The app will work normally otherwise.
 
 ### Running
 
@@ -106,6 +112,7 @@ windeployqt shibamusic.exe
 ## 📚 Documentation
 
 - 📖 [Release Guide](RELEASE.md) - How to create releases
+- 🎮 [Discord Setup Guide](DISCORD-SETUP.md) - Configure Discord Rich Presence
 - 🔧 [Workflow Documentation](.github/workflows/README.md) - CI/CD setup
 - 🐛 [Troubleshooting](.github/workflows/TROUBLESHOOTING.md) - Common issues
 

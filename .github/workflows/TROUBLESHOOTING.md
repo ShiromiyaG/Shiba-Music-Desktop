@@ -34,7 +34,7 @@
 **Symptom:** The tag was created but the build failed.
 
 **How to investigate:**
-1. Visit: `https://github.com/<user>/<repo>/actions`
+1. Visit: `https://github.com/ShiromiyaG/Shiba-Music-Desktop/actions`
 2. Click on the failed workflow
 3. View the logs of the step that failed
 
@@ -125,7 +125,7 @@ gh release list
    ```bash
    ls -la .github/workflows/
    ```
-   Should contain: `version-bump.yml` and `build-release.yml`
+   Should contain: `release.yml`
 
 2. **Correct path in trigger?**
    ```yaml
@@ -168,7 +168,7 @@ Error: Version must be in format X.Y.Z
 
 ### Via GitHub Web
 ```
-https://github.com/<user>/<repo>/actions
+https://github.com/ShiromiyaG/Shiba-Music-Desktop/actions
 ```
 
 ### Via GitHub CLI
@@ -200,18 +200,20 @@ gh run view <run-id>
 ## 📝 Example of Successful Workflow
 
 ```
-✓ version-bump.yml
-  └─ Read version: 1.0.1
-  └─ Check if tag exists: false
-  └─ Create tag: v1.0.1 ✓
-  └─ Push tag ✓
-
-✓ build-release.yml (triggered by tag)
-  └─ Checkout code ✓
-  └─ Install Qt ✓
-  └─ Build project ✓
-  └─ Create archive ✓
-  └─ Create release ✓
+✓ release.yml
+  Job: create-release
+    └─ Read version: 1.0.1 ✓
+    └─ Check if tag exists: false ✓
+    └─ Create tag: v1.0.1 ✓
+    └─ Push tag ✓
+  
+  Job: build-windows
+    └─ Checkout code ✓
+    └─ Install Qt ✓
+    └─ Build project ✓
+    └─ Deploy dependencies ✓
+    └─ Create archive ✓
+    └─ Create release ✓
 
 ✓ Release v1.0.1 published!
   └─ ShibaMusic-Windows-x64.zip (45MB)

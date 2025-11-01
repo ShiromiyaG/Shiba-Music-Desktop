@@ -1,0 +1,162 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'version.txt'
+
+env:
+  QT_VERSION: '6.9.3'
+  DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      tag_exists: ${{ steps.check_tag.outputs.exists }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Read version
+      id: version
+      run: |
+        VERSION=$(cat version.txt | tr -d '\n' | tr -d '\r')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+        echo "📦 Version: $VERSION"
+    
+    - name: Check if tag exists
+      id: check_tag
+      run: |
+        if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+          echo "⚠️  Tag v${{ steps.version.outputs.version }} already exists"
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "✅ Tag v${{ steps.version.outputs.version }} is new"
+        fi
+    
+    - name: Create and push tag
+      if: steps.check_tag.outputs.exists == 'false'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git tag -a "${{ steps.version.outputs.tag }}" -m "Release version ${{ steps.version.outputs.version }}"
+        git push origin "${{ steps.version.outputs.tag }}"
+        echo "🏷️  Tag ${{ steps.version.outputs.tag }} created and pushed"
+
+  build-windows:
+    needs: create-release
+    if: needs.create-release.outputs.tag_exists == 'false'
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        ref: ${{ needs.create-release.outputs.tag }}
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_mingw'
+        modules: 'qtmultimedia qt5compat'
+        tools: 'tools_mingw1310'
+    
+    - name: Setup Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+    
+    - name: Configure CMake
+      run: |
+        $env:PATH = "$env:IQTA_TOOLS\mingw1310_64\bin;$env:PATH"
+        $env:DISCORD_CLIENT_ID = "${{ secrets.DISCORD_CLIENT_ID }}"
+        cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+    
+    - name: Build
+      run: |
+        $env:PATH = "$env:IQTA_TOOLS\mingw1310_64\bin;$env:PATH"
+        $env:DISCORD_CLIENT_ID = "${{ secrets.DISCORD_CLIENT_ID }}"
+        cmake --build build --config Release
+    
+    - name: Deploy Qt dependencies
+      run: |
+        $deployDir = "build\deploy"
+        New-Item -ItemType Directory -Force -Path $deployDir
+        Copy-Item "build\shibamusic.exe" -Destination $deployDir
+        
+        # Copy libmpv if exists
+        if (Test-Path "libs\mpv\bin\libmpv-2.dll") {
+          Copy-Item "libs\mpv\bin\libmpv-2.dll" -Destination $deployDir
+        }
+        
+        # Run windeployqt
+        & "$env:IQTA_TOOLS\..\${{ env.QT_VERSION }}\mingw_64\bin\windeployqt.exe" --qmldir qml --release --no-translations "$deployDir\shibamusic.exe"
+        
+        # Copy MinGW DLLs
+        $mingwPath = "$env:IQTA_TOOLS\mingw1310_64\bin"
+        $dllsToCheck = @(
+          "libgcc_s_seh-1.dll",
+          "libstdc++-6.dll",
+          "libwinpthread-1.dll"
+        )
+        
+        foreach ($dll in $dllsToCheck) {
+          $dllPath = Join-Path $mingwPath $dll
+          if (Test-Path $dllPath) {
+            Copy-Item $dllPath -Destination $deployDir
+          }
+        }
+    
+    - name: Create archive
+      run: |
+        Compress-Archive -Path "build\deploy\*" -DestinationPath "ShibaMusic-Windows-x64.zip"
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ShibaMusic-Windows
+        path: ShibaMusic-Windows-x64.zip
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ needs.create-release.outputs.tag }}
+        name: Release ${{ needs.create-release.outputs.version }}
+        body: |
+          ## Shiba Music ${{ needs.create-release.outputs.version }}
+          
+          ### 📦 Downloads
+          
+          - **Windows (x64)**: ShibaMusic-Windows-x64.zip
+          
+          ### 📝 Installation
+          
+          1. Download the ZIP file
+          2. Extract to a folder
+          3. Run `shibamusic.exe`
+          
+          ### ✨ What's New
+          
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+          
+          ---
+          
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/v${{ needs.create-release.outputs.version }}...HEAD
+        files: ShibaMusic-Windows-x64.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}

@@ -30,8 +30,8 @@
                               │ 4. Detects change in version.txt
                               ▼
                     ╔═══════════════════╗
-                    ║  version-bump.yml ║
-                    ║  (Auto Tag)       ║
+                    ║   release.yml     ║
+                    ║ (Single Workflow) ║
                     ╚═══════════════════╝
                               │
                               │ 5. Reads version and creates tag
@@ -41,11 +41,11 @@
                     ║   (created auto)  ║
                     ╚═══════════════════╝
                               │
-                              │ 6. Tag push triggers another workflow
+                              │ 6. Same workflow continues
                               ▼
                     ╔═══════════════════╗
-                    ║ build-release.yml ║
-                    ║ (Build & Deploy)  ║
+                    ║  Build & Deploy   ║
+                    ║  (same workflow)  ║
                     ╚═══════════════════╝
                               │
                               │ 7. Installs Qt, compiles project
@@ -103,9 +103,8 @@
 
 ## 🔧 Configuration
 
-Both workflows are already configured in `.github/workflows/`:
-- `version-bump.yml` - Creates tags automatically
-- `build-release.yml` - Compiles and publishes releases
+Single workflow configured in `.github/workflows/`:
+- `release.yml` - Creates tags, builds, and publishes releases (all-in-one)
 
 **No additional configuration needed!** 🎉
 
@@ -122,7 +121,7 @@ cat version.txt
 gh release list  # (requires GitHub CLI)
 
 # Monitor workflow
-# Visit: https://github.com/<user>/<repo>/actions
+# Visit: https://github.com/ShiromiyaG/Shiba-Music-Desktop/actions
 ```
 
 ## ⚠️ Important Notes
