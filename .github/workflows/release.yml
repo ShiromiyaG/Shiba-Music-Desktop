@@ -160,6 +160,16 @@ jobs:
         $env:DISCORD_CLIENT_ID = "${{ secrets.DISCORD_CLIENT_ID }}"
         cmake --build build --config Release
     
+    - name: Install Dependencies.exe
+      run: |
+        Write-Host "📥 Downloading Dependencies.exe..." -ForegroundColor Cyan
+        $url = "https://github.com/lucasg/Dependencies/releases/download/v1.11.1/Dependencies_x64_Release.zip"
+        $zipFile = "Dependencies.zip"
+        Invoke-WebRequest -Uri $url -OutFile $zipFile
+        Expand-Archive -Path $zipFile -DestinationPath "Dependencies" -Force
+        Remove-Item $zipFile
+        Write-Host "✅ Dependencies.exe installed" -ForegroundColor Green
+    
     - name: Deploy Qt dependencies
       run: |
         $ErrorActionPreference = "Continue"
@@ -237,6 +247,15 @@ jobs:
             if (Test-Path $dllPath) {
               Copy-Item $dllPath -Destination $deployDir -Force
               Write-Host "  ✅ $dll"
+            } else {
+              # Try alternative location for some DLLs
+              $altPath = "$env:QT_ROOT_DIR\lib\$dll"
+              if (Test-Path $altPath) {
+                Copy-Item $altPath -Destination $deployDir -Force
+                Write-Host "  ✅ $dll (from lib folder)"
+              } else {
+                Write-Host "  ⚠️  $dll (not found - may not be needed)" -ForegroundColor DarkYellow
+              }
             }
           }
           
@@ -287,7 +306,6 @@ jobs:
             "QtQuick",
             "QtQuick.2",
             "QtQml",
-            "QtQml.Base",
             "QtQml.Models",
             "QtQml.WorkerScript",
             "QtQml.XmlListModel",
@@ -363,6 +381,95 @@ jobs:
         # Ensure success
         exit 0
     
+    - name: Verify dependencies with Dependencies.exe
+      run: |
+        Write-Host "`n🔍 Verifying DLL dependencies..." -ForegroundColor Cyan
+        Write-Host "=" * 70
+        
+        $deployDir = "build\deploy"
+        $exePath = "$deployDir\shibamusic.exe"
+        $depsExe = "Dependencies\DependenciesGui.exe"
+        $depsCli = "Dependencies\Dependencies.exe"
+        
+        # Check if CLI version exists
+        if (Test-Path $depsCli) {
+          Write-Host "✅ Using Dependencies CLI" -ForegroundColor Green
+          
+          # Run dependency check
+          & $depsCli -imports $exePath | Out-File "dependency-report.txt"
+          
+          # Parse output to find missing DLLs
+          $report = Get-Content "dependency-report.txt" -Raw
+          
+          if ($report -match "missing|not found") {
+            Write-Host "⚠️  Some dependencies may be missing!" -ForegroundColor Yellow
+            Write-Host $report
+          } else {
+            Write-Host "✅ All dependencies appear to be satisfied" -ForegroundColor Green
+          }
+          
+          # Show key Qt DLLs
+          Write-Host "`n📦 Qt DLLs in deployment:" -ForegroundColor Cyan
+          Get-ChildItem $deployDir -Filter "Qt6*.dll" | ForEach-Object {
+            Write-Host "  ✅ $($_.Name)" -ForegroundColor Green
+          }
+          
+        } else {
+          Write-Host "⚠️  Dependencies CLI not available, using manual check" -ForegroundColor Yellow
+          
+          # Manual check of essential DLLs
+          $essentialChecks = @(
+            "Qt6Core.dll",
+            "Qt6Gui.dll",
+            "Qt6Qml.dll",
+            "Qt6QmlCore.dll",
+            "Qt6Quick.dll",
+            "Qt6QuickControls2.dll",
+            "Qt6QuickControls2Impl.dll",
+            "Qt6QuickTemplates2.dll",
+            "libmpv-2.dll"
+          )
+          
+          Write-Host "`n📦 Checking essential DLLs:" -ForegroundColor Cyan
+          $allPresent = $true
+          foreach ($dll in $essentialChecks) {
+            $dllPath = Join-Path $deployDir $dll
+            if (Test-Path $dllPath) {
+              Write-Host "  ✅ $dll" -ForegroundColor Green
+            } else {
+              Write-Host "  ❌ $dll - MISSING!" -ForegroundColor Red
+              $allPresent = $false
+            }
+          }
+          
+          # Check QML modules
+          Write-Host "`n📦 Checking essential QML modules:" -ForegroundColor Cyan
+          $qmlDir = "$deployDir\qml"
+          $essentialModules = @(
+            "QtQuick\Controls\Material",
+            "QtQuick\Controls\impl"
+          )
+          
+          foreach ($module in $essentialModules) {
+            $modulePath = Join-Path $qmlDir $module
+            if (Test-Path $modulePath) {
+              Write-Host "  ✅ $module" -ForegroundColor Green
+            } else {
+              Write-Host "  ❌ $module - MISSING!" -ForegroundColor Red
+              $allPresent = $false
+            }
+          }
+          
+          if ($allPresent) {
+            Write-Host "`n✅ All essential dependencies present!" -ForegroundColor Green
+          } else {
+            Write-Host "`n⚠️  Some dependencies are missing!" -ForegroundColor Yellow
+            Write-Host "The app may not work correctly." -ForegroundColor Yellow
+          }
+        }
+        
+        Write-Host "=" * 70
+    
     - name: Create archive
       run: |
         Compress-Archive -Path "build\deploy\*" -DestinationPath "ShibaMusic-Windows-x64.zip"
@@ -372,6 +479,16 @@ jobs:
       with:
         name: ShibaMusic-Windows
         path: ShibaMusic-Windows-x64.zip
+    
+    - name: Upload dependency report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: Dependency-Report
+        path: |
+          dependency-report.txt
+          check-dlls.ps1
+        if-no-files-found: ignore
     
     - name: Create Release
       uses: softprops/action-gh-release@v1
