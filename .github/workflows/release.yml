@@ -239,7 +239,18 @@ jobs:
             "Qt6OpenGLWidgets.dll",
             "Qt6ShaderTools.dll",
             "Qt6Core5Compat.dll",
-            "Qt6DBus.dll"
+            "Qt6DBus.dll",
+            "Qt6QuickLayouts.dll",
+            "Qt6QuickEffects.dll",
+            "Qt6QuickDialogs2.dll",
+            "Qt6QuickDialogs2QuickImpl.dll",
+            "Qt6QuickDialogs2Utils.dll",
+            "Qt6LabsAnimation.dll",
+            "Qt6LabsFolderListModel.dll",
+            "Qt6LabsQmlModels.dll",
+            "Qt6LabsSettings.dll",
+            "Qt6LabsSharedImage.dll",
+            "Qt6QmlXmlListModel.dll"
           )
           
           foreach ($dll in $essentialDlls) {
