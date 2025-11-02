@@ -82,7 +82,7 @@ jobs:
         target: 'desktop'
         arch: 'win64_mingw'
         modules: 'qtmultimedia qt5compat'
-        tools: 'tools_mingw1310'
+        tools: 'tools_mingw1310,tools_openssl_x64'
     
     - name: Setup Ninja
       uses: seanmiddleditch/gha-setup-ninja@master
@@ -191,6 +191,15 @@ jobs:
         
         Write-Host "Setting up environment for windeployqt..."
         $env:PATH = "$env:QT_ROOT_DIR\bin;$env:IQTA_TOOLS\mingw1310_64\bin;$env:PATH"
+        $qtBinDir = "$env:QT_ROOT_DIR\bin"
+        $qtRootFullPath = [System.IO.Path]::GetFullPath($env:QT_ROOT_DIR)
+        $qtParentPath = Split-Path $qtRootFullPath -Parent
+        $qtGrandParentPath = Split-Path $qtParentPath -Parent
+        $toolOpenSslDir = if ($qtGrandParentPath) { Join-Path $qtGrandParentPath "Tools\OpenSSL\Win_x64\bin" } else { "" }
+        $openSslCandidates = @(
+          (Join-Path $env:IQTA_TOOLS "OpenSSL\Win_x64\bin"),
+          $toolOpenSslDir
+        ) | Where-Object { $_ -and (Test-Path $_) }
         
         Write-Host "Running windeployqt..."
         $windeployqt = "$env:QT_ROOT_DIR\bin\windeployqt.exe"
@@ -201,7 +210,7 @@ jobs:
         
         # Try windeployqt without --compiler-runtime first (simpler, less prone to errors)
         Write-Host "Attempting windeployqt without --compiler-runtime..."
-        $output = & $windeployqt --qmldir qml --release --no-translations --sql sqlite "$deployDir\shibamusic.exe" 2>&1
+        $output = & $windeployqt --qmldir qml --qmldir qml/components --qmldir qml/pages --release --no-translations --sql sqlite "$deployDir\shibamusic.exe" 2>&1
         $exitCode = $LASTEXITCODE
         
         # Show output
@@ -217,67 +226,36 @@ jobs:
           Write-Host "⚠️  windeployqt didn't copy Qt DLLs (exit code: $exitCode)"
           Write-Host "Trying alternative method: manual DLL copy..."
           
-          # Manual copy of essential Qt DLLs
-          $qtBinDir = "$env:QT_ROOT_DIR\bin"
-          $essentialDlls = @(
-            "Qt6Core.dll",
-            "Qt6Gui.dll",
-            "Qt6Network.dll",
-            "Qt6Sql.dll",
-            "Qt6Qml.dll",
-            "Qt6QmlCore.dll",
-            "Qt6QmlLocalStorage.dll",
-            "Qt6Quick.dll",
-            "Qt6QuickControls2.dll",
-            "Qt6QuickControls2Impl.dll",
-            "Qt6QuickControls2Material.dll",
-            "Qt6QuickControls2MaterialStyleImpl.dll",
-            "Qt6QuickControls2Basic.dll",
-            "Qt6QuickControls2BasicStyleImpl.dll",
-            "Qt6QuickControls2Fusion.dll",
-            "Qt6QuickControls2FusionStyleImpl.dll",
-            "Qt6QuickControls2Imagine.dll",
-            "Qt6QuickControls2ImagineStyleImpl.dll",
-            "Qt6QuickControls2Universal.dll",
-            "Qt6QuickControls2UniversalStyleImpl.dll",
-            "Qt6QuickTemplates2.dll",
-            "Qt6QmlMeta.dll",
-            "Qt6QmlModels.dll",
-            "Qt6QmlWorkerScript.dll",
-            "Qt6OpenGL.dll",
-            "Qt6Widgets.dll",
-            "Qt6Svg.dll",
-            "Qt6OpenGLWidgets.dll",
-            "Qt6ShaderTools.dll",
-            "Qt6Core5Compat.dll",
-            "Qt6DBus.dll",
-            "Qt6QuickLayouts.dll",
-            "Qt6QuickEffects.dll",
-            "Qt6QuickDialogs2.dll",
-            "Qt6QuickDialogs2QuickImpl.dll",
-            "Qt6QuickDialogs2Utils.dll",
-            "Qt6LabsAnimation.dll",
-            "Qt6LabsFolderListModel.dll",
-            "Qt6LabsQmlModels.dll",
-            "Qt6LabsSettings.dll",
-            "Qt6LabsSharedImage.dll",
-            "Qt6QmlXmlListModel.dll"
+          # Manual copy of essential Qt DLLs (fallback)
+          Write-Host "Copying Qt6 DLLs from $qtBinDir ..."
+          $qtDllFiles = Get-ChildItem $qtBinDir -Filter "Qt6*.dll" -File -ErrorAction SilentlyContinue
+          foreach ($file in $qtDllFiles) {
+            Copy-Item $file.FullName -Destination $deployDir -Force
+            Write-Host "  ✅ $($file.Name)"
+          }
+
+          # Additional runtime libraries that may not follow Qt6* pattern
+          $additionalDlls = @(
+            "libEGL.dll",
+            "libGLESv2.dll",
+            "d3dcompiler_47.dll",
+            "libssl-3-x64.dll",
+            "libcrypto-3-x64.dll"
           )
-          
-          foreach ($dll in $essentialDlls) {
-            $dllPath = Join-Path $qtBinDir $dll
-            if (Test-Path $dllPath) {
-              Copy-Item $dllPath -Destination $deployDir -Force
+
+          foreach ($dll in $additionalDlls) {
+            $candidatePaths = @(
+              (Join-Path $qtBinDir $dll),
+              (Join-Path $env:IQTA_TOOLS "OpenSSL\Win_x64\bin\$dll"),
+              (Join-Path $env:QT_ROOT_DIR "lib\$dll"),
+              (Join-Path $toolOpenSslDir $dll)
+            ) | Where-Object { $_ -and (Test-Path $_) }
+
+            if ($candidatePaths.Count -gt 0) {
+              Copy-Item $candidatePaths[0] -Destination $deployDir -Force
               Write-Host "  ✅ $dll"
             } else {
-              # Try alternative location for some DLLs
-              $altPath = "$env:QT_ROOT_DIR\lib\$dll"
-              if (Test-Path $altPath) {
-                Copy-Item $altPath -Destination $deployDir -Force
-                Write-Host "  ✅ $dll (from lib folder)"
-              } else {
-                Write-Host "  ⚠️  $dll (not found - may not be needed)" -ForegroundColor DarkYellow
-              }
+              Write-Host "  ⚠️  $dll (not found - may not be required)" -ForegroundColor DarkYellow
             }
           }
           
@@ -290,6 +268,13 @@ jobs:
             New-Item -ItemType Directory -Force -Path "$deployDir\platforms" | Out-Null
             Copy-Item "$pluginsDir\platforms\qwindows.dll" -Destination "$deployDir\platforms\" -Force -ErrorAction SilentlyContinue
             Write-Host "  ✅ platforms/qwindows.dll"
+          }
+          
+          # TLS backend
+          if (Test-Path "$pluginsDir\tls") {
+            New-Item -ItemType Directory -Force -Path "$deployDir\tls" | Out-Null
+            Copy-Item "$pluginsDir\tls\*" -Destination "$deployDir\tls\" -Force -ErrorAction SilentlyContinue
+            Write-Host "  ✅ tls plugins"
           }
           
           # Image formats
@@ -374,6 +359,43 @@ jobs:
           Write-Host "✅ Manual deployment completed"
         }
         
+        Write-Host "`nEnsuring TLS/OpenSSL runtime libraries..."
+        $opensslLibs = @("libssl-3-x64.dll", "libcrypto-3-x64.dll")
+        $opensslSearchDirs = @($qtBinDir) + $openSslCandidates
+        foreach ($lib in $opensslLibs) {
+          $targetPath = Join-Path $deployDir $lib
+          if (-not (Test-Path $targetPath)) {
+            $copied = $false
+            foreach ($dir in $opensslSearchDirs) {
+              if (-not $dir) { continue }
+              $sourcePath = Join-Path $dir $lib
+              if (Test-Path $sourcePath) {
+                Copy-Item $sourcePath -Destination $targetPath -Force
+                Write-Host "  ✅ $lib copied from $dir"
+                $copied = $true
+                break
+              }
+            }
+            if (-not $copied) {
+              Write-Host "  ⚠️  $lib not found in configured OpenSSL directories" -ForegroundColor DarkYellow
+            }
+          } else {
+            Write-Host "  ✅ $lib already present"
+          }
+        }
+
+        $tlsPluginSource = Join-Path "$env:QT_ROOT_DIR\plugins" "tls"
+        $tlsPluginDest = Join-Path $deployDir "tls"
+        if (Test-Path $tlsPluginSource) {
+          if (-not (Test-Path $tlsPluginDest)) {
+            New-Item -ItemType Directory -Force -Path $tlsPluginDest | Out-Null
+          }
+          Copy-Item "$tlsPluginSource\*" -Destination $tlsPluginDest -Force -ErrorAction SilentlyContinue
+          Write-Host "  ✅ TLS plugins ensured"
+        } else {
+          Write-Host "  ⚠️  TLS plugins directory not found at $tlsPluginSource" -ForegroundColor DarkYellow
+        }
+
         Write-Host "Copying MinGW runtime DLLs..."
         $mingwPath = "$env:IQTA_TOOLS\mingw1310_64\bin"
         $dllsToCheck = @(
@@ -450,7 +472,10 @@ jobs:
             "Qt6QuickControls2.dll",
             "Qt6QuickControls2Impl.dll",
             "Qt6QuickTemplates2.dll",
-            "libmpv-2.dll"
+            "libmpv-2.dll",
+            "libssl-3-x64.dll",
+            "libcrypto-3-x64.dll",
+            "tls\opensslbackend.dll"
           )
           
           Write-Host "`n📦 Checking essential DLLs:" -ForegroundColor Cyan
