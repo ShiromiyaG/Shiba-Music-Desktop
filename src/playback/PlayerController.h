@@ -15,7 +15,6 @@ class PlayerController : public QObject {
     Q_PROPERTY(bool playing READ playing NOTIFY playingChanged)
     Q_PROPERTY(qint64 position READ position NOTIFY positionChanged)
     Q_PROPERTY(qint64 duration READ duration NOTIFY durationChanged)
-
     Q_PROPERTY(qreal volume READ volume WRITE setVolume NOTIFY volumeChanged)
     Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged)
     Q_PROPERTY(bool replayGainEnabled READ replayGainEnabled WRITE setReplayGainEnabled NOTIFY replayGainEnabledChanged)
@@ -28,7 +27,6 @@ public:
     bool playing() const { return !m_mpv->isPaused(); }
     qint64 position() const { return m_mpv->position(); }
     qint64 duration() const { return m_mpv->duration(); }
-
     qreal volume() const { return m_volume; }
     void setVolume(qreal v);
     bool muted() const { return m_muted; }
@@ -56,7 +54,6 @@ signals:
     void playingChanged();
     void positionChanged();
     void durationChanged();
-
     void volumeChanged();
     void mutedChanged();
     void replayGainEnabledChanged();
@@ -76,7 +73,6 @@ private:
     DiscordRPC *m_discord;
     MediaControls *m_mediaControls;
     
-
     int m_index = -1;
     QVariantList m_queue;
     QVariantMap m_current;

@@ -245,7 +245,7 @@ Page {
                                         text: qsTr("Add to Playlist")
                                         icon.source: "qrc:/qml/icons/add.svg"
                                         enabled: api.tracks.length > 0
-                                        onTriggered: console.log("Adicionar à playlist")
+                                        onTriggered: { /* TODO: Implement add to playlist */ }
                                     }
                                     MenuItem {
                                         text: qsTr("Add to Favorites")

@@ -14,13 +14,18 @@
 #include <QUrl>
 #include <QDir>
 #include <QDebug>
+#include <QTimer>
+#include <functional>
+#include <memory>
 #include <algorithm>
 
-static constexpr auto API_VERSION = "1.16.1";   // Navidrome alvo
+static constexpr auto API_VERSION = "1.16.1"; // Navidrome alvo
 static constexpr auto CLIENT_NAME = "ShibaMusicQt";
 static constexpr int ALBUM_LIST_PAGE_SIZE = 200;
-static inline QString ensureNoTrailingSlash(QString s) {
-    if (s.endsWith('/')) s.chop(1);
+static inline QString ensureNoTrailingSlash(QString s)
+{
+    if (s.endsWith('/'))
+        s.chop(1);
     return s;
 }
 
@@ -38,7 +43,8 @@ static QString credentialKeyFor(const QString &serverUrl, const QString &usernam
 {
     const QString normalizedUrl = normalizedCredentialUrl(serverUrl);
     const QString normalizedUser = normalizedCredentialUsername(username);
-    if (normalizedUrl.isEmpty() || normalizedUser.isEmpty()) {
+    if (normalizedUrl.isEmpty() || normalizedUser.isEmpty())
+    {
         return {};
     }
     return normalizedUrl.toLower() + '|' + normalizedUser.toLower();
@@ -49,24 +55,56 @@ static QString credentialDisplayName(const QString &serverUrl, const QString &us
     const QString trimmedUser = normalizedCredentialUsername(username);
     QUrl parsed = QUrl::fromUserInput(serverUrl);
     QString location = parsed.host();
-    if (parsed.port() != -1) {
+    if (parsed.port() != -1)
+    {
         location += ':' + QString::number(parsed.port());
     }
     const QString path = parsed.path();
-    if (!path.isEmpty() && path != "/") {
-        if (!location.isEmpty()) {
+    if (!path.isEmpty() && path != "/")
+    {
+        if (!location.isEmpty())
+        {
             location += path;
-        } else {
+        }
+        else
+        {
             location = path;
         }
     }
-    if (location.isEmpty()) {
+    if (location.isEmpty())
+    {
         location = normalizedCredentialUrl(serverUrl);
     }
-    if (trimmedUser.isEmpty()) {
+    if (trimmedUser.isEmpty())
+    {
         return location;
     }
     return QStringLiteral("%1 @ %2").arg(trimmedUser, location);
+}
+
+static bool isTransientNetworkError(QNetworkReply::NetworkError error)
+{
+    switch (error)
+    {
+    case QNetworkReply::ConnectionRefusedError:
+    case QNetworkReply::RemoteHostClosedError:
+    case QNetworkReply::HostNotFoundError:
+    case QNetworkReply::TimeoutError:
+    case QNetworkReply::TemporaryNetworkFailureError:
+    case QNetworkReply::ProxyTimeoutError:
+    case QNetworkReply::ProxyConnectionRefusedError:
+    case QNetworkReply::ProxyNotFoundError:
+    case QNetworkReply::UnknownNetworkError:
+    case QNetworkReply::NetworkSessionFailedError:
+        return true;
+    default:
+        return false;
+    }
+}
+
+static bool shouldFallbackForError(int code)
+{
+    return code == 0 || code == 10;
 }
 
 static QVariantMap sanitizeCredentialEntry(const QVariantMap &entry)
@@ -78,12 +116,14 @@ static QVariantMap sanitizeCredentialEntry(const QVariantMap &entry)
     sanitized.insert("username", user);
 
     QString key = sanitized.value("key").toString();
-    if (key.isEmpty()) {
+    if (key.isEmpty())
+    {
         key = credentialKeyFor(url, user);
         sanitized.insert("key", key);
     }
 
-    if (sanitized.value("displayName").toString().isEmpty()) {
+    if (sanitized.value("displayName").toString().isEmpty())
+    {
         sanitized.insert("displayName", credentialDisplayName(url, user));
     }
 
@@ -93,20 +133,25 @@ static QVariantMap sanitizeCredentialEntry(const QVariantMap &entry)
 static bool sanitizeCredentialList(QVariantList &list)
 {
     bool changed = false;
-    for (int i = list.size() - 1; i >= 0; --i) {
+    for (int i = list.size() - 1; i >= 0; --i)
+    {
         QVariantMap rawEntry = list.at(i).toMap();
         QVariantMap sanitized = sanitizeCredentialEntry(rawEntry);
         const QString url = sanitized.value("serverUrl").toString();
         const QString user = sanitized.value("username").toString();
-        if (url.isEmpty() || user.isEmpty()) {
+        if (url.isEmpty() || user.isEmpty())
+        {
             list.removeAt(i);
             changed = true;
             continue;
         }
-        if (sanitized != rawEntry) {
+        if (sanitized != rawEntry)
+        {
             list[i] = sanitized;
             changed = true;
-        } else {
+        }
+        else
+        {
             list[i] = sanitized;
         }
     }
@@ -115,7 +160,8 @@ static bool sanitizeCredentialList(QVariantList &list)
 
 static void sortCredentialList(QVariantList &list)
 {
-    std::sort(list.begin(), list.end(), [](const QVariant &first, const QVariant &second) {
+    std::sort(list.begin(), list.end(), [](const QVariant &first, const QVariant &second)
+              {
         const QVariantMap a = first.toMap();
         const QVariantMap b = second.toMap();
         const QString aTime = a.value("lastUsed").toString();
@@ -125,8 +171,7 @@ static void sortCredentialList(QVariantList &list)
             const QString bName = b.value("displayName").toString();
             return aName.compare(bName, Qt::CaseInsensitive) < 0;
         }
-        return aTime > bTime;
-    });
+        return aTime > bTime; });
 }
 
 static void migrateLegacyCredentials(QSettings &settings)
@@ -135,7 +180,8 @@ static void migrateLegacyCredentials(QSettings &settings)
     const QString legacyUsername = settings.value("username").toString();
     const QString legacyPassword = settings.value("password").toString();
 
-    if (legacyUrl.isEmpty() && legacyUsername.isEmpty() && legacyPassword.isEmpty()) {
+    if (legacyUrl.isEmpty() && legacyUsername.isEmpty() && legacyPassword.isEmpty())
+    {
         return;
     }
 
@@ -143,7 +189,8 @@ static void migrateLegacyCredentials(QSettings &settings)
     const QString user = normalizedCredentialUsername(legacyUsername);
     const QString key = credentialKeyFor(url, user);
 
-    if (url.isEmpty() || user.isEmpty() || key.isEmpty()) {
+    if (url.isEmpty() || user.isEmpty() || key.isEmpty())
+    {
         settings.remove("serverUrl");
         settings.remove("username");
         settings.remove("password");
@@ -154,16 +201,20 @@ static void migrateLegacyCredentials(QSettings &settings)
     QVariantList profiles = settings.value("profiles").toList();
     bool updated = false;
     const auto now = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
-    for (int i = 0; i < profiles.size(); ++i) {
+    for (int i = 0; i < profiles.size(); ++i)
+    {
         QVariantMap entry = profiles.at(i).toMap();
-        if (entry.value("key").toString() == key) {
+        if (entry.value("key").toString() == key)
+        {
             entry.insert("serverUrl", url);
             entry.insert("username", user);
-            if (!legacyPassword.isEmpty()) {
+            if (!legacyPassword.isEmpty())
+            {
                 entry.insert("password", legacyPassword);
             }
             entry.insert("displayName", credentialDisplayName(url, user));
-            if (entry.value("lastUsed").toString().isEmpty()) {
+            if (entry.value("lastUsed").toString().isEmpty())
+            {
                 entry.insert("lastUsed", now);
             }
             profiles[i] = entry;
@@ -172,7 +223,8 @@ static void migrateLegacyCredentials(QSettings &settings)
         }
     }
 
-    if (!updated) {
+    if (!updated)
+    {
         QVariantMap entry;
         entry.insert("serverUrl", url);
         entry.insert("username", user);
@@ -208,15 +260,19 @@ SubsonicClient::SubsonicClient(QObject *parent) : QObject(parent)
     m_nam.setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
 }
 
-void SubsonicClient::setServerUrl(const QString& url) {
+void SubsonicClient::setServerUrl(const QString &url)
+{
     auto norm = ensureNoTrailingSlash(url.trimmed());
-    if (norm == m_server) return;
+    if (norm == m_server)
+        return;
     m_server = norm;
     emit serverUrlChanged();
 }
 
-void SubsonicClient::setUsername(const QString& u) {
-    if (u == m_user) return;
+void SubsonicClient::setUsername(const QString &u)
+{
+    if (u == m_user)
+        return;
     m_user = u;
     emit usernameChanged();
 }
@@ -228,27 +284,49 @@ void SubsonicClient::setCacheManager(CacheManager *cache)
     m_cacheManager = cache;
 }
 
-QString SubsonicClient::md5(const QString& s) const {
+QString SubsonicClient::md5(const QString &s) const
+{
     return QString::fromLatin1(QCryptographicHash::hash(s.toUtf8(), QCryptographicHash::Md5).toHex());
 }
-QString SubsonicClient::randomSalt() const {
-    QByteArray bytes(8, Qt::Uninitialized);
-    for (char &c : bytes) c = char(QRandomGenerator::global()->bounded(33, 127));
+QString SubsonicClient::randomSalt() const
+{
+    static constexpr char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    constexpr int charsetSize = static_cast<int>(sizeof(charset) - 1);
+    QByteArray bytes(12, Qt::Uninitialized);
+    for (int i = 0; i < bytes.size(); ++i)
+    {
+        bytes[i] = charset[QRandomGenerator::global()->bounded(charsetSize)];
+    }
     return QString::fromLatin1(bytes);
 }
 
-QUrl SubsonicClient::buildUrl(const QString& method, const QUrlQuery& extra, bool isJson) const {
+QUrl SubsonicClient::buildUrl(const QString &method, const QUrlQuery &extra, bool isJson) const
+{
     QUrl url(m_server + "/rest/" + method + ".view");
     QUrlQuery q;
     q.addQueryItem("u", m_user);
     q.addQueryItem("v", API_VERSION);
     q.addQueryItem("c", CLIENT_NAME);
-    if (isJson) {
+    if (isJson)
+    {
         q.addQueryItem("f", "json");
     }
-    // auth via token (t/s)
-    q.addQueryItem("t", m_token);
-    q.addQueryItem("s", m_salt);
+    if (m_authMode == AuthMode::Legacy)
+    {
+        if (!m_passwordHex.isEmpty())
+        {
+            q.addQueryItem("p", QStringLiteral("enc:%1").arg(m_passwordHex));
+        }
+        else
+        {
+            q.addQueryItem("p", QString());
+        }
+    }
+    else
+    {
+        q.addQueryItem("t", m_token);
+        q.addQueryItem("s", m_salt);
+    }
     // add extras
     for (auto &item : extra.queryItems())
         q.addQueryItem(item.first, item.second);
@@ -256,72 +334,209 @@ QUrl SubsonicClient::buildUrl(const QString& method, const QUrlQuery& extra, boo
     return url;
 }
 
-bool SubsonicClient::checkOk(const QJsonDocument& doc, QString *err) const {
-    auto root = doc.object().value("subsonic-response").toObject();
-    if (root.value("status").toString() == "ok") return true;
-    if (err) {
-        auto e = root.value("error").toObject();
-        *err = QString("%1 (code %2)")
-                 .arg(e.value("message").toString())
-                 .arg(e.value("code").toInt());
+bool SubsonicClient::checkOk(const QJsonDocument &doc, QString *err, int *code) const
+{
+    if (doc.isNull())
+    {
+        if (code)
+            *code = -1;
+        if (err)
+            *err = tr("Resposta inválida do servidor");
+        return false;
     }
+
+    const QJsonObject root = doc.object().value(QStringLiteral("subsonic-response")).toObject();
+    if (root.value(QStringLiteral("status")).toString() == QLatin1String("ok"))
+    {
+        if (code)
+            *code = 0;
+        if (err)
+            err->clear();
+        return true;
+    }
+
+    const QJsonObject errorObj = root.value(QStringLiteral("error")).toObject();
+    const int errorCode = errorObj.value(QStringLiteral("code")).toInt();
+    if (code)
+        *code = errorCode;
+
+    if (err)
+    {
+        const QString message = errorObj.value(QStringLiteral("message")).toString();
+        if (!message.isEmpty())
+        {
+            *err = QStringLiteral("%1 (code %2)").arg(message, QString::number(errorCode));
+        }
+        else
+        {
+            *err = QStringLiteral("code %1").arg(errorCode);
+        }
+    }
+
     return false;
 }
 
-void SubsonicClient::setAuthenticated(bool ok) {
-    if (m_authenticated == ok) return;
+void SubsonicClient::setAuthenticated(bool ok)
+{
+    if (m_authenticated == ok)
+        return;
     m_authenticated = ok;
     emit authenticatedChanged();
 }
 
-void SubsonicClient::login(const QString& url, const QString& user, const QString& password) {
-    setServerUrl(url);
-    setUsername(user);
-    m_salt = randomSalt();
-    m_token = md5(password + m_salt);
+void SubsonicClient::login(const QString &url, const QString &user, const QString &password)
+{
+    const QString normalizedUrl = normalizedCredentialUrl(url);
+    const QString normalizedUser = normalizedCredentialUsername(user);
 
-    // ping
-    QNetworkRequest req(buildUrl("ping", {}, true));
-    auto *reply = m_nam.get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply] {
-        if (reply->error() != QNetworkReply::NoError) {
-            const QString message = reply->errorString();
-            reply->deleteLater();
-            setAuthenticated(false);
-            emit loginFailed(message);
-            emit errorOccurred(message);
-            return;
-        }
-        const auto all = reply->readAll();
-        reply->deleteLater();
-    const auto doc = QJsonDocument::fromJson(all);
-    QString err;
-    const bool ok = checkOk(doc, &err);
-    setAuthenticated(ok);
-    if (!ok) {
-        const QString message = "Falha no login: " + err;
+    if (normalizedUrl.isEmpty() || normalizedUser.isEmpty())
+    {
+        const QString message = tr("Falha no login: servidor ou usuário inválido.");
+        setAuthenticated(false);
         emit loginFailed(message);
         emit errorOccurred(message);
         return;
     }
-    fetchArtists();
-});
+    if (password.isEmpty())
+    {
+        const QString message = tr("Falha no login: senha vazia.");
+        setAuthenticated(false);
+        emit loginFailed(message);
+        emit errorOccurred(message);
+        return;
+    }
+
+    setServerUrl(normalizedUrl);
+    setUsername(normalizedUser);
+    setAuthenticated(false);
+
+    struct LoginContext
+    {
+        QString password;
+        int retries = 0;
+        bool legacyFallbackAttempted = false;
+    };
+
+    auto context = std::make_shared<LoginContext>();
+    context->password = password;
+
+    using AuthMode = SubsonicClient::AuthMode;
+
+    auto attempt = std::make_shared<std::function<void(AuthMode)>>();
+
+    *attempt = [this, context, attempt](AuthMode mode)
+    {
+        auto issueRequest = [this, context, attempt, mode]()
+        {
+            if (mode == AuthMode::Legacy)
+            {
+                m_authMode = AuthMode::Legacy;
+                m_salt.clear();
+                m_token.clear();
+                m_passwordHex = QString::fromLatin1(context->password.toUtf8().toHex());
+            }
+            else
+            {
+                m_authMode = AuthMode::Token;
+                m_salt = randomSalt();
+                m_token = md5(context->password + m_salt);
+                m_passwordHex.clear();
+            }
+
+            QNetworkRequest req(buildUrl("ping", {}, true));
+            auto *reply = m_nam.get(req);
+            connect(reply, &QNetworkReply::finished, this, [this, reply, context, attempt, mode]()
+                    {
+                const auto networkError = reply->error();
+                if (networkError != QNetworkReply::NoError) {
+                    const QString message = reply->errorString();
+                    reply->deleteLater();
+
+                    if (isTransientNetworkError(networkError) && context->retries < 2) {
+                        ++context->retries;
+                        const int backoffMs = 250 * context->retries;
+                        QTimer::singleShot(backoffMs, this, [attempt, mode]() { (*attempt)(mode); });
+                        return;
+                    }
+
+                    context->password.clear();
+                    m_token.clear();
+                    m_salt.clear();
+                    if (mode == AuthMode::Legacy)
+                        m_passwordHex.clear();
+                    m_authMode = AuthMode::Token;
+                    setAuthenticated(false);
+                    emit loginFailed(message);
+                    emit errorOccurred(message);
+                    return;
+                }
+
+                const QByteArray payload = reply->readAll();
+                reply->deleteLater();
+
+                const QJsonDocument doc = QJsonDocument::fromJson(payload);
+                QString err;
+                int errCode = 0;
+                const bool ok = checkOk(doc, &err, &errCode);
+                if (!ok) {
+                    if (mode == AuthMode::Token && !context->legacyFallbackAttempted && shouldFallbackForError(errCode)) {
+                        context->legacyFallbackAttempted = true;
+                        context->retries = 0;
+                        QTimer::singleShot(0, this, [attempt]() { (*attempt)(AuthMode::Legacy); });
+                        return;
+                    }
+
+                    context->password.clear();
+                    m_token.clear();
+                    m_salt.clear();
+                    if (mode == AuthMode::Legacy)
+                        m_passwordHex.clear();
+                    m_authMode = AuthMode::Token;
+                    setAuthenticated(false);
+                    const QString message = err.isEmpty()
+                        ? tr("Falha no login: resposta inválida do servidor")
+                        : tr("Falha no login: %1").arg(err);
+                    emit loginFailed(message);
+                    emit errorOccurred(message);
+                    return;
+                }
+
+                context->password.clear();
+                context->retries = 0;
+                setAuthenticated(true);
+                fetchArtists(); });
+        };
+
+        issueRequest();
+    };
+
+    (*attempt)(AuthMode::Token);
 }
 
-void SubsonicClient::logout() {
+void SubsonicClient::logout()
+{
     setAuthenticated(false);
-    if (!m_artistCover.isEmpty()) {
+    m_token.clear();
+    m_salt.clear();
+    m_passwordHex.clear();
+    m_authMode = AuthMode::Token;
+    if (!m_artistCover.isEmpty())
+    {
         m_artistCover.clear();
         emit artistCoverChanged();
     }
 }
 
-void SubsonicClient::fetchArtists() {
-    if (!m_authenticated) return;
+void SubsonicClient::fetchArtists()
+{
+    if (!m_authenticated)
+        return;
 
-    if (m_cacheManager && m_artists.isEmpty()) {
+    if (m_cacheManager && m_artists.isEmpty())
+    {
         const auto cached = m_cacheManager->getList(cacheKey("artists"));
-        if (!cached.isEmpty()) {
+        if (!cached.isEmpty())
+        {
             m_artists = cached;
             emit artistsChanged();
         }
@@ -329,7 +544,8 @@ void SubsonicClient::fetchArtists() {
 
     QNetworkRequest req(buildUrl("getArtists", {}, true));
     auto *reply = m_nam.get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+            {
         if (reply->error() != QNetworkReply::NoError) {
             emit errorOccurred(reply->errorString());
             reply->deleteLater();
@@ -358,34 +574,40 @@ void SubsonicClient::fetchArtists() {
         emit artistsChanged();
         if (m_cacheManager) {
             m_cacheManager->saveList(cacheKey("artists"), m_artists);
-        }
-    });
+        } });
 }
 
-void SubsonicClient::fetchArtist(const QString& artistId) {
-    if (!m_authenticated) return;
+void SubsonicClient::fetchArtist(const QString &artistId)
+{
+    if (!m_authenticated)
+        return;
 
-    if (m_artistReply) {
+    if (m_artistReply)
+    {
         m_artistReply->abort();
     }
 
     m_albums.clear();
     emit albumsChanged();
-    if (!m_tracks.isEmpty()) {
+    if (!m_tracks.isEmpty())
+    {
         m_tracks.clear();
         emit tracksChanged();
     }
-    if (!m_artistCover.isEmpty()) {
+    if (!m_artistCover.isEmpty())
+    {
         m_artistCover.clear();
         emit artistCoverChanged();
     }
 
-    QUrlQuery ex; ex.addQueryItem("id", artistId);
+    QUrlQuery ex;
+    ex.addQueryItem("id", artistId);
     QNetworkRequest req(buildUrl("getArtist", ex, true));
     auto *reply = m_nam.get(req);
     m_artistReply = reply;
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+            {
         if (reply != m_artistReply) {
             reply->deleteLater();
             return;
@@ -423,26 +645,30 @@ void SubsonicClient::fetchArtist(const QString& artistId) {
                 {"coverArt", a.value("coverArt").toString()}
             });
         }
-        emit albumsChanged();
-    });
+        emit albumsChanged(); });
 }
 
-void SubsonicClient::fetchAlbum(const QString& albumId) {
-    if (!m_authenticated) return;
+void SubsonicClient::fetchAlbum(const QString &albumId)
+{
+    if (!m_authenticated)
+        return;
 
-    if (m_albumReply) {
+    if (m_albumReply)
+    {
         m_albumReply->abort();
     }
 
     m_tracks.clear();
     emit tracksChanged();
 
-    QUrlQuery ex; ex.addQueryItem("id", albumId);
+    QUrlQuery ex;
+    ex.addQueryItem("id", albumId);
     QNetworkRequest req(buildUrl("getAlbum", ex, true));
     auto *reply = m_nam.get(req);
     m_albumReply = reply;
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+            {
         if (reply != m_albumReply) {
             reply->deleteLater();
             return;
@@ -481,22 +707,26 @@ void SubsonicClient::fetchAlbum(const QString& albumId) {
                 {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
             });
         }
-        emit tracksChanged();
-    });
+        emit tracksChanged(); });
 }
 
-void SubsonicClient::fetchAlbumList(const QString& type) {
-    if (!m_authenticated) return;
+void SubsonicClient::fetchAlbumList(const QString &type)
+{
+    if (!m_authenticated)
+        return;
 
-    if (m_cacheManager && m_albumList.isEmpty()) {
+    if (m_cacheManager && m_albumList.isEmpty())
+    {
         const auto cached = m_cacheManager->getList(cacheKey(QStringLiteral("albumList:%1").arg(type)));
-        if (!cached.isEmpty()) {
+        if (!cached.isEmpty())
+        {
             m_albumList = cached;
             emit albumListChanged();
         }
     }
 
-    if (m_albumListReply) {
+    if (m_albumListReply)
+    {
         m_albumListReply->abort();
         m_albumListReply->deleteLater();
         m_albumListReply = nullptr;
@@ -508,18 +738,23 @@ void SubsonicClient::fetchAlbumList(const QString& type) {
     fetchAlbumListPage(type, 0);
 }
 
-void SubsonicClient::fetchRandomSongs() {
-    if (!m_authenticated) return;
+void SubsonicClient::fetchRandomSongs()
+{
+    if (!m_authenticated)
+        return;
 
-    if (m_cacheManager && m_randomSongs.isEmpty()) {
+    if (m_cacheManager && m_randomSongs.isEmpty())
+    {
         const auto cached = m_cacheManager->getList(cacheKey("randomSongs"));
-        if (!cached.isEmpty()) {
+        if (!cached.isEmpty())
+        {
             m_randomSongs = cached;
             emit randomSongsChanged();
         }
     }
 
-    if (m_randomSongsReply) {
+    if (m_randomSongsReply)
+    {
         m_randomSongsReply->abort();
     }
 
@@ -529,7 +764,8 @@ void SubsonicClient::fetchRandomSongs() {
     auto *reply = m_nam.get(req);
     m_randomSongsReply = reply;
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+            {
         if (reply != m_randomSongsReply) {
             reply->deleteLater();
             return;
@@ -571,22 +807,26 @@ void SubsonicClient::fetchRandomSongs() {
         emit randomSongsChanged();
         if (m_cacheManager) {
             m_cacheManager->saveList(cacheKey("randomSongs"), m_randomSongs);
-        }
-    });
+        } });
 }
 
-void SubsonicClient::fetchPlaylists() {
-    if (!m_authenticated) return;
+void SubsonicClient::fetchPlaylists()
+{
+    if (!m_authenticated)
+        return;
 
-    if (m_cacheManager && m_playlists.isEmpty()) {
+    if (m_cacheManager && m_playlists.isEmpty())
+    {
         const auto cached = m_cacheManager->getList(cacheKey("playlists"));
-        if (!cached.isEmpty()) {
+        if (!cached.isEmpty())
+        {
             m_playlists = cached;
             emit playlistsChanged();
         }
     }
 
-    if (m_playlistsReply) {
+    if (m_playlistsReply)
+    {
         m_playlistsReply->abort();
     }
 
@@ -594,7 +834,8 @@ void SubsonicClient::fetchPlaylists() {
     auto *reply = m_nam.get(req);
     m_playlistsReply = reply;
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+            {
         if (reply != m_playlistsReply) {
             reply->deleteLater();
             return;
@@ -630,26 +871,30 @@ void SubsonicClient::fetchPlaylists() {
         emit playlistsChanged();
         if (m_cacheManager) {
             m_cacheManager->saveList(cacheKey("playlists"), m_playlists);
-        }
-    });
+        } });
 }
 
-void SubsonicClient::fetchPlaylist(const QString& playlistId) {
-    if (!m_authenticated) return;
+void SubsonicClient::fetchPlaylist(const QString &playlistId)
+{
+    if (!m_authenticated)
+        return;
 
-    if (m_playlistReply) {
+    if (m_playlistReply)
+    {
         m_playlistReply->abort();
     }
 
     m_tracks.clear();
     emit tracksChanged();
 
-    QUrlQuery ex; ex.addQueryItem("id", playlistId);
+    QUrlQuery ex;
+    ex.addQueryItem("id", playlistId);
     QNetworkRequest req(buildUrl("getPlaylist", ex, true));
     auto *reply = m_nam.get(req);
     m_playlistReply = reply;
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+            {
         if (reply != m_playlistReply) {
             reply->deleteLater();
             return;
@@ -687,22 +932,26 @@ void SubsonicClient::fetchPlaylist(const QString& playlistId) {
                 {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
             });
         }
-        emit tracksChanged();
-    });
+        emit tracksChanged(); });
 }
 
-void SubsonicClient::fetchFavorites() {
-    if (!m_authenticated) return;
+void SubsonicClient::fetchFavorites()
+{
+    if (!m_authenticated)
+        return;
 
-    if (m_cacheManager && m_favorites.isEmpty()) {
+    if (m_cacheManager && m_favorites.isEmpty())
+    {
         const auto cached = m_cacheManager->getList(cacheKey("favorites"));
-        if (!cached.isEmpty()) {
+        if (!cached.isEmpty())
+        {
             m_favorites = cached;
             emit favoritesChanged();
         }
     }
 
-    if (m_favoritesReply) {
+    if (m_favoritesReply)
+    {
         m_favoritesReply->abort();
     }
 
@@ -710,7 +959,8 @@ void SubsonicClient::fetchFavorites() {
     auto *reply = m_nam.get(req);
     m_favoritesReply = reply;
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+            {
         if (reply != m_favoritesReply) {
             reply->deleteLater();
             return;
@@ -753,19 +1003,22 @@ void SubsonicClient::fetchFavorites() {
         emit favoritesChanged();
         if (m_cacheManager) {
             m_cacheManager->saveList(cacheKey("favorites"), m_favorites);
-        }
-    });
+        } });
 }
 
-void SubsonicClient::search(const QString& term) {
-    if (!m_authenticated) return;
-    QUrlQuery ex; ex.addQueryItem("query", term);
+void SubsonicClient::search(const QString &term)
+{
+    if (!m_authenticated)
+        return;
+    QUrlQuery ex;
+    ex.addQueryItem("query", term);
     ex.addQueryItem("artistCount", "20");
     ex.addQueryItem("albumCount", "40");
     ex.addQueryItem("songCount", "100");
     QNetworkRequest req(buildUrl("search3", ex, true));
     auto *reply = m_nam.get(req);
-    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+            {
         if (reply->error() != QNetworkReply::NoError) {
             emit errorOccurred(reply->errorString());
             reply->deleteLater();
@@ -831,18 +1084,22 @@ void SubsonicClient::search(const QString& term) {
         
         emit searchArtistsChanged();
         emit searchAlbumsChanged();
-        emit tracksChanged();
-    });
+        emit tracksChanged(); });
 }
 
-QUrl SubsonicClient::streamUrl(const QString& songId, int maxBitrateKbps) const {
-    QUrlQuery ex; ex.addQueryItem("id", songId);
-    if (maxBitrateKbps > 0) ex.addQueryItem("maxBitRate", QString::number(maxBitrateKbps));
+QUrl SubsonicClient::streamUrl(const QString &songId, int maxBitrateKbps) const
+{
+    QUrlQuery ex;
+    ex.addQueryItem("id", songId);
+    if (maxBitrateKbps > 0)
+        ex.addQueryItem("maxBitRate", QString::number(maxBitrateKbps));
     return buildUrl("stream", ex, false);
 }
 
-QUrl SubsonicClient::coverArtUrl(const QString& artId, int size) const {
-    if (artId.isEmpty()) return {};
+QUrl SubsonicClient::coverArtUrl(const QString &artId, int size) const
+{
+    if (artId.isEmpty())
+        return {};
     QUrlQuery ex;
     ex.addQueryItem("id", artId);
     ex.addQueryItem("size", QString::number(size));
@@ -850,12 +1107,15 @@ QUrl SubsonicClient::coverArtUrl(const QString& artId, int size) const {
     return buildUrl("getCoverArt", ex, false);
 }
 
-void SubsonicClient::scrobble(const QString& songId, bool submission, qint64 timeMs) {
-    if (!m_authenticated || songId.isEmpty()) return;
+void SubsonicClient::scrobble(const QString &songId, bool submission, qint64 timeMs)
+{
+    if (!m_authenticated || songId.isEmpty())
+        return;
     QUrlQuery ex;
     ex.addQueryItem("id", songId);
     ex.addQueryItem("submission", submission ? "true" : "false");
-    if (timeMs > 0) {
+    if (timeMs > 0)
+    {
         const qint64 secs = timeMs / 1000;
         ex.addQueryItem("time", QString::number(secs));
     }
@@ -864,8 +1124,10 @@ void SubsonicClient::scrobble(const QString& songId, bool submission, qint64 tim
     connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
 }
 
-void SubsonicClient::star(const QString& id) {
-    if (!m_authenticated || id.isEmpty()) return;
+void SubsonicClient::star(const QString &id)
+{
+    if (!m_authenticated || id.isEmpty())
+        return;
     QUrlQuery ex;
     ex.addQueryItem("id", id);
     QNetworkRequest req(buildUrl("star", ex, true));
@@ -873,8 +1135,10 @@ void SubsonicClient::star(const QString& id) {
     connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
 }
 
-void SubsonicClient::unstar(const QString& id) {
-    if (!m_authenticated || id.isEmpty()) return;
+void SubsonicClient::unstar(const QString &id)
+{
+    if (!m_authenticated || id.isEmpty())
+        return;
     QUrlQuery ex;
     ex.addQueryItem("id", id);
     QNetworkRequest req(buildUrl("unstar", ex, true));
@@ -882,15 +1146,18 @@ void SubsonicClient::unstar(const QString& id) {
     connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
 }
 
-void SubsonicClient::saveCredentials(const QString& url, const QString& user, const QString& password, bool remember) {
+void SubsonicClient::saveCredentials(const QString &url, const QString &user, const QString &password, bool remember)
+{
     QSettings settings;
     migrateLegacyCredentials(settings);
 
     const QString normalizedUrl = normalizedCredentialUrl(url);
     const QString normalizedUser = normalizedCredentialUsername(user);
 
-    if (normalizedUrl.isEmpty() || normalizedUser.isEmpty()) {
-        if (!remember) {
+    if (normalizedUrl.isEmpty() || normalizedUser.isEmpty())
+    {
+        if (!remember)
+        {
             settings.beginGroup("credentials");
             settings.remove("lastUsedKey");
             settings.endGroup();
@@ -899,7 +1166,8 @@ void SubsonicClient::saveCredentials(const QString& url, const QString& user, co
     }
 
     const QString key = credentialKeyFor(normalizedUrl, normalizedUser);
-    if (key.isEmpty()) {
+    if (key.isEmpty())
+    {
         return;
     }
 
@@ -909,11 +1177,14 @@ void SubsonicClient::saveCredentials(const QString& url, const QString& user, co
     bool sanitized = sanitizeCredentialList(profiles);
     const QString now = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
 
-    if (remember) {
+    if (remember)
+    {
         bool updated = false;
-        for (int i = 0; i < profiles.size(); ++i) {
+        for (int i = 0; i < profiles.size(); ++i)
+        {
             QVariantMap entry = profiles.at(i).toMap();
-            if (entry.value("key").toString() == key) {
+            if (entry.value("key").toString() == key)
+            {
                 entry.insert("serverUrl", normalizedUrl);
                 entry.insert("username", normalizedUser);
                 entry.insert("password", password);
@@ -924,7 +1195,8 @@ void SubsonicClient::saveCredentials(const QString& url, const QString& user, co
                 break;
             }
         }
-        if (!updated) {
+        if (!updated)
+        {
             QVariantMap entry;
             entry.insert("serverUrl", normalizedUrl);
             entry.insert("username", normalizedUser);
@@ -935,33 +1207,43 @@ void SubsonicClient::saveCredentials(const QString& url, const QString& user, co
             profiles.append(entry);
         }
         sortCredentialList(profiles);
-        if (sanitized || profiles != originalProfiles) {
+        if (sanitized || profiles != originalProfiles)
+        {
             settings.setValue("profiles", profiles);
         }
         settings.setValue("lastUsedKey", key);
-    } else {
+    }
+    else
+    {
         bool removed = false;
-        for (int i = profiles.size() - 1; i >= 0; --i) {
-            if (profiles.at(i).toMap().value("key").toString() == key) {
+        for (int i = profiles.size() - 1; i >= 0; --i)
+        {
+            if (profiles.at(i).toMap().value("key").toString() == key)
+            {
                 profiles.removeAt(i);
                 removed = true;
             }
         }
-        if (removed || sanitized) {
-            sortCredentialList(profiles);
-            settings.setValue("profiles", profiles);
-        } else if (profiles != originalProfiles) {
+        if (removed || sanitized)
+        {
             sortCredentialList(profiles);
             settings.setValue("profiles", profiles);
         }
-        if (settings.value("lastUsedKey").toString() == key) {
+        else if (profiles != originalProfiles)
+        {
+            sortCredentialList(profiles);
+            settings.setValue("profiles", profiles);
+        }
+        if (settings.value("lastUsedKey").toString() == key)
+        {
             settings.remove("lastUsedKey");
         }
     }
     settings.endGroup();
 }
 
-QVariantMap SubsonicClient::loadCredentials() {
+QVariantMap SubsonicClient::loadCredentials()
+{
     QSettings settings;
     migrateLegacyCredentials(settings);
 
@@ -970,27 +1252,33 @@ QVariantMap SubsonicClient::loadCredentials() {
     QVariantList profiles = originalProfiles;
     bool sanitized = sanitizeCredentialList(profiles);
     sortCredentialList(profiles);
-    if (sanitized || profiles != originalProfiles) {
+    if (sanitized || profiles != originalProfiles)
+    {
         settings.setValue("profiles", profiles);
     }
     const QString lastUsedKey = settings.value("lastUsedKey").toString();
     settings.endGroup();
 
     QVariantMap credentials;
-    if (!lastUsedKey.isEmpty()) {
-        for (const QVariant& variant : profiles) {
+    if (!lastUsedKey.isEmpty())
+    {
+        for (const QVariant &variant : profiles)
+        {
             const QVariantMap entry = variant.toMap();
-            if (entry.value("key").toString() == lastUsedKey) {
+            if (entry.value("key").toString() == lastUsedKey)
+            {
                 credentials = entry;
                 break;
             }
         }
     }
 
-    if (credentials.isEmpty() && !profiles.isEmpty()) {
+    if (credentials.isEmpty() && !profiles.isEmpty())
+    {
         credentials = profiles.first().toMap();
         const QString key = credentials.value("key").toString();
-        if (!key.isEmpty() && key != lastUsedKey) {
+        if (!key.isEmpty() && key != lastUsedKey)
+        {
             settings.beginGroup("credentials");
             settings.setValue("lastUsedKey", key);
             settings.endGroup();
@@ -1000,7 +1288,8 @@ QVariantMap SubsonicClient::loadCredentials() {
     return credentials;
 }
 
-QVariantList SubsonicClient::savedCredentials() {
+QVariantList SubsonicClient::savedCredentials()
+{
     QSettings settings;
     migrateLegacyCredentials(settings);
 
@@ -1009,7 +1298,8 @@ QVariantList SubsonicClient::savedCredentials() {
     QVariantList profiles = originalProfiles;
     bool sanitized = sanitizeCredentialList(profiles);
     sortCredentialList(profiles);
-    if (sanitized || profiles != originalProfiles) {
+    if (sanitized || profiles != originalProfiles)
+    {
         settings.setValue("profiles", profiles);
     }
     settings.endGroup();
@@ -1017,8 +1307,10 @@ QVariantList SubsonicClient::savedCredentials() {
     return profiles;
 }
 
-void SubsonicClient::removeCredentials(const QString& credentialKey) {
-    if (credentialKey.isEmpty()) {
+void SubsonicClient::removeCredentials(const QString &credentialKey)
+{
+    if (credentialKey.isEmpty())
+    {
         return;
     }
 
@@ -1031,29 +1323,37 @@ void SubsonicClient::removeCredentials(const QString& credentialKey) {
     bool sanitized = sanitizeCredentialList(profiles);
 
     bool removed = false;
-    for (int i = profiles.size() - 1; i >= 0; --i) {
-        if (profiles.at(i).toMap().value("key").toString() == credentialKey) {
+    for (int i = profiles.size() - 1; i >= 0; --i)
+    {
+        if (profiles.at(i).toMap().value("key").toString() == credentialKey)
+        {
             profiles.removeAt(i);
             removed = true;
         }
     }
 
-    if (sanitized || removed) {
+    if (sanitized || removed)
+    {
         sortCredentialList(profiles);
         settings.setValue("profiles", profiles);
-    } else if (profiles != originalProfiles) {
+    }
+    else if (profiles != originalProfiles)
+    {
         sortCredentialList(profiles);
         settings.setValue("profiles", profiles);
     }
 
-    if (settings.value("lastUsedKey").toString() == credentialKey) {
+    if (settings.value("lastUsedKey").toString() == credentialKey)
+    {
         settings.remove("lastUsedKey");
     }
     settings.endGroup();
 }
 
-void SubsonicClient::addToRecentlyPlayed(const QVariantMap& track) {
-    if (!track.contains("albumId")) return;
+void SubsonicClient::addToRecentlyPlayed(const QVariantMap &track)
+{
+    if (!track.contains("albumId"))
+        return;
 
     QVariantMap album;
     album.insert("id", track.value("albumId"));
@@ -1063,8 +1363,10 @@ void SubsonicClient::addToRecentlyPlayed(const QVariantMap& track) {
     album.insert("coverArt", track.value("coverArt"));
 
     // Remove if already present
-    for (int i = 0; i < m_recentlyPlayedAlbums.size(); ++i) {
-        if (m_recentlyPlayedAlbums[i].toMap().value("id") == album.value("id")) {
+    for (int i = 0; i < m_recentlyPlayedAlbums.size(); ++i)
+    {
+        if (m_recentlyPlayedAlbums[i].toMap().value("id") == album.value("id"))
+        {
             m_recentlyPlayedAlbums.removeAt(i);
             break;
         }
@@ -1072,19 +1374,22 @@ void SubsonicClient::addToRecentlyPlayed(const QVariantMap& track) {
     // Add to the front
     m_recentlyPlayedAlbums.prepend(album);
     // Limit the list size
-    if (m_recentlyPlayedAlbums.size() > 20) {
+    if (m_recentlyPlayedAlbums.size() > 20)
+    {
         m_recentlyPlayedAlbums.removeLast();
     }
     saveRecentlyPlayed();
     emit recentlyPlayedAlbumsChanged();
 }
 
-void SubsonicClient::saveRecentlyPlayed() {
+void SubsonicClient::saveRecentlyPlayed()
+{
     QSettings settings;
     settings.setValue("recentlyPlayedAlbums", m_recentlyPlayedAlbums);
 }
 
-void SubsonicClient::loadRecentlyPlayed() {
+void SubsonicClient::loadRecentlyPlayed()
+{
     QSettings settings;
     m_recentlyPlayedAlbums = settings.value("recentlyPlayedAlbums").toList();
     emit recentlyPlayedAlbumsChanged();
@@ -1095,14 +1400,18 @@ QString SubsonicClient::cacheKey(const QString &base) const
     return QStringLiteral("%1|%2|%3").arg(base, m_server, m_user);
 }
 
-void SubsonicClient::fetchAlbumTracksAndAppend(const QString& albumId) {
-    if (!m_authenticated) return;
+void SubsonicClient::fetchAlbumTracksAndAppend(const QString &albumId)
+{
+    if (!m_authenticated)
+        return;
 
-    QUrlQuery ex; ex.addQueryItem("id", albumId);
+    QUrlQuery ex;
+    ex.addQueryItem("id", albumId);
     QNetworkRequest req(buildUrl("getAlbum", ex, true));
     auto *reply = m_nam.get(req);
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply]{
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+            {
         if (reply->error() != QNetworkReply::NoError) {
             reply->deleteLater();
             return;
@@ -1136,11 +1445,10 @@ void SubsonicClient::fetchAlbumTracksAndAppend(const QString& albumId) {
         }
         if (tracksAdded) {
             emit tracksChanged();
-        }
-    });
+        } });
 }
 
-void SubsonicClient::fetchAlbumListPage(const QString& type, int offset)
+void SubsonicClient::fetchAlbumListPage(const QString &type, int offset)
 {
     if (!m_authenticated)
         return;
@@ -1155,7 +1463,8 @@ void SubsonicClient::fetchAlbumListPage(const QString& type, int offset)
     auto *reply = m_nam.get(req);
     m_albumListReply = reply;
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply, type, offset] {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, type, offset]
+            {
         if (reply != m_albumListReply) {
             reply->deleteLater();
             return;
@@ -1214,6 +1523,5 @@ void SubsonicClient::fetchAlbumListPage(const QString& type, int offset)
             m_cacheManager->saveList(cacheKey(QStringLiteral("albumList:%1").arg(type)), m_albumList);
         }
         emit albumListChanged();
-        reply->deleteLater();
-    });
+        reply->deleteLater(); });
 }

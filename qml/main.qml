@@ -3,6 +3,8 @@ import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
 import QtQuick.Window 2.15
+import QtQuick.Shapes
+import QtQuick.Shapes
 import "components" as Components
 
 ApplicationWindow {
@@ -40,100 +42,22 @@ ApplicationWindow {
         ]
     }
 
-    function normalizeGeometry(x, y, width, height) {
-        const rawScreens = Qt.application.screens || [];
-        const screenAreas = [];
-        for (let i = 0; i < rawScreens.length; ++i) {
-            const screen = rawScreens[i];
-            if (screen && screen.availableGeometry)
-                screenAreas.push(screen.availableGeometry);
-        }
-
-        let clampedWidth = Math.max(width, win.minimumWidth);
-        let clampedHeight = Math.max(height, win.minimumHeight);
-        const fallback = { x: x, y: y, width: clampedWidth, height: clampedHeight };
-
-        if (screenAreas.length === 0)
-            return fallback;
-
-        function isValidGeometry(area) {
-            return area
-                && typeof area.x === "number"
-                && typeof area.y === "number"
-                && typeof area.width === "number"
-                && typeof area.height === "number"
-                && area.width > 0
-                && area.height > 0;
-        }
-
-        function contains(area, pointX, pointY) {
-            return isValidGeometry(area)
-                && pointX >= area.x && pointX <= area.x + area.width
-                && pointY >= area.y && pointY <= area.y + area.height;
-        }
-
-        const primary = screenAreas.find(isValidGeometry);
-        if (!primary)
-            return fallback;
-
-        // Prefer the screen that contains the saved top-left corner.
-        let targetArea = primary;
-        for (let i = 0; i < screenAreas.length; ++i) {
-            const area = screenAreas[i];
-            if (contains(area, x, y)) {
-                targetArea = area;
-                break;
-            }
-        }
-
-        if (!isValidGeometry(targetArea))
-            return fallback;
-
-        // If the top-left corner was outside of any screen, fall back to centering on the primary screen.
-        if (!contains(targetArea, x, y)) {
-            return {
-                x: primary.x + Math.max(0, (primary.width - clampedWidth) / 2),
-                y: primary.y + Math.max(0, (primary.height - clampedHeight) / 2),
-                width: Math.min(clampedWidth, primary.width),
-                height: Math.min(clampedHeight, primary.height)
-            };
-        }
-
-        const maxX = typeof targetArea.x === "number" && typeof targetArea.width === "number"
-            ? targetArea.x + targetArea.width - clampedWidth
-            : x;
-        const maxY = typeof targetArea.y === "number" && typeof targetArea.height === "number"
-            ? targetArea.y + targetArea.height - clampedHeight
-            : y;
-
-        const targetX = typeof targetArea.x === "number" ? targetArea.x : x;
-        const targetY = typeof targetArea.y === "number" ? targetArea.y : y;
-        const targetWidth = typeof targetArea.width === "number" ? targetArea.width : clampedWidth;
-        const targetHeight = typeof targetArea.height === "number" ? targetArea.height : clampedHeight;
-
-        return {
-            x: Math.min(Math.max(x, targetX), Math.max(targetX, maxX)),
-            y: Math.min(Math.max(y, targetY), Math.max(targetY, maxY)),
-            width: Math.min(clampedWidth, targetWidth),
-            height: Math.min(clampedHeight, targetHeight)
-        };
-    }
-
     function restoreWindowState() {
         if (!windowStateManager || windowStateRestored)
             return
         const defaults = { x: win.x, y: win.y, width: win.width, height: win.height }
-        const state = windowStateManager.loadState(defaults.x, defaults.y, defaults.width, defaults.height, win.visibility === Window.Maximized)
+        const state = windowStateManager.loadState(
+                    defaults.x, defaults.y, defaults.width, defaults.height,
+                    win.visibility === Window.Maximized, win.minimumWidth, win.minimumHeight)
 
         if (state && state.stored) {
             if (state.maximized) {
                 win.visibility = Window.Maximized
             } else {
-                const geometry = normalizeGeometry(state.x, state.y, state.width, state.height)
-                win.width = geometry.width
-                win.height = geometry.height
-                win.x = geometry.x
-                win.y = geometry.y
+                win.width = state.width
+                win.height = state.height
+                win.x = state.x
+                win.y = state.y
             }
         }
 
@@ -382,15 +306,22 @@ ApplicationWindow {
                             id: sidebarBackButton
                             implicitWidth: 40
                             implicitHeight: 36
-                            display: AbstractButton.IconOnly
-                            icon.source: "qrc:/qml/icons/chevron_left.svg"
-                            icon.width: 18
-                            icon.height: 18
                             background: Rectangle {
                                 anchors.fill: parent
                                 radius: 12
                                 color: sidebarBackButton.hovered ? "#242c40" : "transparent"
                                 border.color: sidebarBackButton.hovered ? "#3b4764" : "transparent"
+                            }
+                            padding: 0
+                            opacity: enabled ? 1.0 : 0.35
+                            hoverEnabled: true
+                            contentItem: Image {
+                                anchors.centerIn: parent
+                                source: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M14.5 6L8.5 12L14.5 18' stroke='%23FFFFFF' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>"
+                                width: 18
+                                height: 18
+                                smooth: true
+                                opacity: sidebarBackButton.enabled ? 1.0 : 0.35
                             }
                             ToolTip.visible: hovered
                             ToolTip.text: qsTr("Go back")
@@ -402,15 +333,22 @@ ApplicationWindow {
                             id: sidebarForwardButton
                             implicitWidth: 40
                             implicitHeight: 36
-                            display: AbstractButton.IconOnly
-                            icon.source: "qrc:/qml/icons/chevron_right.svg"
-                            icon.width: 18
-                            icon.height: 18
                             background: Rectangle {
                                 anchors.fill: parent
                                 radius: 12
                                 color: sidebarForwardButton.hovered ? "#242c40" : "transparent"
                                 border.color: sidebarForwardButton.hovered ? "#3b4764" : "transparent"
+                            }
+                            padding: 0
+                            opacity: enabled ? 1.0 : 0.35
+                            hoverEnabled: true
+                            contentItem: Image {
+                                anchors.centerIn: parent
+                                source: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9.5 6L15.5 12L9.5 18' stroke='%23FFFFFF' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>"
+                                width: 18
+                                height: 18
+                                smooth: true
+                                opacity: sidebarForwardButton.enabled ? 1.0 : 0.35
                             }
                             ToolTip.visible: hovered
                             ToolTip.text: qsTr("Go forward")

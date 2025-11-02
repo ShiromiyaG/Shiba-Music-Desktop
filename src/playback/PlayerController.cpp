@@ -2,9 +2,7 @@
 #include "../core/SubsonicClient.h"
 #include "../discord/DiscordRPC.h"
 #include "MediaControls.h"
-#include <set>
 #include <QDebug>
-#include <QtGlobal>
 #include <QtMath>
 
 PlayerController::PlayerController(SubsonicClient *api, DiscordRPC *discord, QObject *parent)

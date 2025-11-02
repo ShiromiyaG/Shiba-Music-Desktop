@@ -66,7 +66,7 @@ Page {
                     spacing: 16
 
                     Label {
-                        text: qsTr(qsTr(qsTr("Player")))
+                        text: qsTr("Player")
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
                     }
@@ -74,7 +74,7 @@ Page {
                     RowLayout {
                         width: parent.width
                         Label {
-                            text: qsTr(qsTr(qsTr("ReplayGain")))
+                            text: qsTr("ReplayGain")
                             Layout.fillWidth: true
                         }
                         Switch {
@@ -114,7 +114,7 @@ Page {
                     spacing: 16
 
                     Label {
-                        text: qsTr(qsTr(qsTr("Discord")))
+                        text: qsTr("Discord")
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
                     }
@@ -122,7 +122,7 @@ Page {
                     RowLayout {
                         width: parent.width
                         Label {
-                            text: qsTr(qsTr(qsTr("Rich Presence")))
+                            text: qsTr("Rich Presence")
                             Layout.fillWidth: true
                         }
                         Switch {

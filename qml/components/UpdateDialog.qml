@@ -129,7 +129,7 @@ Dialog {
         target: checker
 
         function onUpdateCheckFailed(error) {
-            console.log("Update check failed:", error)
+
         }
 
         function onDownloadFailed(error) {

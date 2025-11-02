@@ -1,5 +1,4 @@
 #include "MpvPlayer.h"
-#include <set>
 #include <QDebug>
 #include <QVariantList>
 #include <cstring>
