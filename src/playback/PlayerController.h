@@ -6,6 +6,7 @@
 
 class SubsonicClient;
 class DiscordRPC;
+class MediaControls;
 
 class PlayerController : public QObject {
     Q_OBJECT
@@ -74,6 +75,7 @@ private:
     SubsonicClient *m_api;
     MpvPlayer *m_mpv;
     DiscordRPC *m_discord;
+    MediaControls *m_mediaControls;
     
     bool m_crossfade = true;
     int m_index = -1;

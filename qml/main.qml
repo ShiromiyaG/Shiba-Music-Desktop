@@ -951,6 +951,37 @@ ApplicationWindow {
         sequences: [StandardKey.Find, StandardKey.Search]
         onActivated: if (api && api.authenticated) searchBox.forceActiveFocus()
     }
+    
+    // Media control shortcuts
+    Shortcut {
+        sequence: "Space"
+        onActivated: if (player && player.queue.length > 0) player.toggle()
+    }
+    
+    Shortcut {
+        sequence: "Shift+N"
+        onActivated: if (player && player.queue.length > 0) player.next()
+    }
+    
+    Shortcut {
+        sequence: "Shift+P"
+        onActivated: if (player && player.queue.length > 0) player.previous()
+    }
+    
+    Shortcut {
+        sequence: "M"
+        onActivated: if (player) player.muted = !player.muted
+    }
+    
+    Shortcut {
+        sequence: "Up"
+        onActivated: if (player) player.volume = Math.min(1.0, player.volume + 0.05)
+    }
+    
+    Shortcut {
+        sequence: "Down"
+        onActivated: if (player) player.volume = Math.max(0.0, player.volume - 0.05)
+    }
 
     Timer {
         id: windowStateSaveTimer

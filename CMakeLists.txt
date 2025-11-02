@@ -63,6 +63,8 @@ qt_add_executable(shibamusic WIN32
     src/core/CacheManager.h src/core/CacheManager.cpp
     src/playback/MpvPlayer.h src/playback/MpvPlayer.cpp
     src/playback/PlayerController.h src/playback/PlayerController.cpp
+    src/playback/MediaControls.h src/playback/MediaControls.cpp
+    src/playback/WindowsThumbnailToolbar.h src/playback/WindowsThumbnailToolbar.cpp
     src/core/SubsonicNetworkAccessManagerFactory.h
     src/core/SubsonicNetworkAccessManagerFactory.cpp
     src/core/WindowStateManager.h src/core/WindowStateManager.cpp
@@ -154,6 +156,26 @@ if(TARGET PkgConfig::MPV)
     target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Core5Compat Qt6::Sql PkgConfig::MPV)
 else()
     target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Core5Compat Qt6::Sql ${MPV_LIBRARY})
+endif()
+
+# Windows-specific libraries for SMTC
+if(WIN32)
+    if(MSVC)
+        # MSVC: Full WinRT support
+        target_link_libraries(shibamusic PRIVATE runtimeobject windowsapp)
+        target_compile_definitions(shibamusic PRIVATE WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP)
+        set_target_properties(shibamusic PROPERTIES
+            VS_WINDOWS_TARGET_PLATFORM_MIN_VERSION "10.0.17763.0"
+        )
+        message(STATUS "Building with MSVC - Full Windows SMTC support enabled")
+    else()
+        # MinGW: Limited support
+        target_link_libraries(shibamusic PRIVATE runtimeobject)
+        message(STATUS "Building with MinGW - Limited SMTC support (keyboard shortcuts only)")
+    endif()
+endif()
+
+if(NOT TARGET PkgConfig::MPV)
     # Copiar DLL do mpv para a pasta de build
     if(EXISTS "${CMAKE_SOURCE_DIR}/libs/mpv/bin/libmpv-2.dll")
         add_custom_command(TARGET shibamusic POST_BUILD

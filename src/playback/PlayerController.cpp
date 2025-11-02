@@ -1,15 +1,19 @@
 #include "PlayerController.h"
 #include "../core/SubsonicClient.h"
 #include "../discord/DiscordRPC.h"
+#include "MediaControls.h"
 #include <set>
 #include <QDebug>
 #include <QtGlobal>
 #include <QtMath>
 
 PlayerController::PlayerController(SubsonicClient *api, DiscordRPC *discord, QObject *parent)
-    : QObject(parent), m_api(api), m_mpv(new MpvPlayer(this)), m_discord(discord)
+    : QObject(parent), m_api(api), m_mpv(new MpvPlayer(this)), m_discord(discord), m_mediaControls(nullptr)
 {
     Q_ASSERT(m_discord);
+    
+    m_mediaControls = new MediaControls(this, this);
+    
     connect(m_mpv, &MpvPlayer::positionChanged, this, &PlayerController::positionChanged);
     connect(m_mpv, &MpvPlayer::durationChanged, this, [this](qint64) {
         emit durationChanged();
@@ -17,6 +21,9 @@ PlayerController::PlayerController(SubsonicClient *api, DiscordRPC *discord, QOb
     });
     connect(m_mpv, &MpvPlayer::playbackStateChanged, this, [this]() {
         emit playingChanged();
+        if (m_mediaControls) {
+            m_mediaControls->updatePlaybackState(playing());
+        }
         updateDiscordPresence();
     });
     connect(m_mpv, &MpvPlayer::endOfFile, this, &PlayerController::onEndOfFile);
@@ -36,6 +43,9 @@ void PlayerController::playAlbum(const QVariantList& tracks, int index) {
     m_index = index;
     m_current = tracks.at(index).toMap();
     emit currentTrackChanged();
+    if (m_mediaControls) {
+        m_mediaControls->updateMetadata(m_current);
+    }
     rebuildPlaylist();
     updateDiscordPresence();
 }
@@ -86,6 +96,9 @@ void PlayerController::next() {
         m_index++;
         m_current = m_queue[m_index].toMap();
         emit currentTrackChanged();
+        if (m_mediaControls) {
+            m_mediaControls->updateMetadata(m_current);
+        }
         m_mpv->command(QVariantList{"playlist-next"});
         
         m_api->addToRecentlyPlayed(m_current);
@@ -102,6 +115,9 @@ void PlayerController::previous() {
         m_index--;
         m_current = m_queue[m_index].toMap();
         emit currentTrackChanged();
+        if (m_mediaControls) {
+            m_mediaControls->updateMetadata(m_current);
+        }
         m_mpv->command(QVariantList{"playlist-prev"});
         
         m_api->addToRecentlyPlayed(m_current);
@@ -166,6 +182,9 @@ void PlayerController::clearQueue() {
     m_index = -1;
     m_current.clear();
     m_mpv->command(QVariantList{"stop"});
+    if (m_mediaControls) {
+        m_mediaControls->updatePlaybackState(false);
+    }
     emit queueChanged();
     emit currentTrackChanged();
     emit playingChanged();
@@ -273,6 +292,9 @@ void PlayerController::onPlaylistPosChanged(int pos) {
     m_index = pos;
     m_current = m_queue[m_index].toMap();
     emit currentTrackChanged();
+    if (m_mediaControls) {
+        m_mediaControls->updateMetadata(m_current);
+    }
     
     m_api->addToRecentlyPlayed(m_current);
     m_api->scrobble(m_current.value("id").toString(), true, 0);
