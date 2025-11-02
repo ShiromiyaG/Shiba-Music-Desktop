@@ -17,69 +17,84 @@ Item {
     Rectangle {
         id: frame
         anchors.fill: parent
+        anchors.margins: 0
         radius: 16
         color: hoverArea.containsMouse ? "#273040" : "#1d222c"
         border.color: hoverArea.containsMouse ? "#3b465f" : "#2a303c"
         Behavior on color { ColorAnimation { duration: 120 } }
 
-                ColumnLayout {
+        ColumnLayout {
             anchors.fill: parent
             anchors.margins: 12
-            spacing: 10
+            spacing: 8
 
-            Rectangle {
-                Layout.preferredWidth: 176
-                Layout.preferredHeight: 176
-                radius: 0
-                color: "#111"
-                border.color: "#2a313f"
-                clip: true
-                Image {
-                    id: coverImage
-                    anchors.fill: parent
-                    source: root.cover
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    cache: true
-                    visible: status === Image.Ready
-                }
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: width
+                Layout.alignment: Qt.AlignHCenter | Qt.AlignTop
+                
                 Rectangle {
-                    id: fallback
                     anchors.fill: parent
-                    color: "#1f2530"
-                    visible: coverImage.status !== Image.Ready
+                    radius: 8
+                    color: "#111"
+                    border.color: "#2a313f"
+                    clip: true
+                    
                     Image {
-                        anchors.centerIn: parent
-                        source: "qrc:/qml/icons/album.svg"
-                        sourceSize.width: 42
-                        sourceSize.height: 42
-                        antialiasing: true
+                        id: coverImage
+                        anchors.fill: parent
+                        anchors.margins: 0
+                        source: root.cover
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        cache: true
+                        visible: status === Image.Ready
+                    }
+                    Rectangle {
+                        id: fallback
+                        anchors.fill: parent
+                        color: "#1f2530"
+                        visible: coverImage.status !== Image.Ready
+                        Image {
+                            anchors.centerIn: parent
+                            source: "qrc:/qml/icons/album.svg"
+                            sourceSize.width: 42
+                            sourceSize.height: 42
+                            antialiasing: true
+                        }
                     }
                 }
             }
 
-            Label {
+            ColumnLayout {
                 Layout.fillWidth: true
-                text: root.title
-                font.pixelSize: 14
-                font.weight: Font.Medium
-                color: "#f5f7ff"
-                elide: Text.ElideRight
-                maximumLineCount: 1
-                wrapMode: Text.NoWrap
-            }
-            Label {
-                Layout.fillWidth: true
-                text: root.subtitle
-                font.pixelSize: 12
-                color: "#8b96a8"
-                elide: Text.ElideRight
-                maximumLineCount: 1
-                visible: text.length > 0
+                Layout.alignment: Qt.AlignLeft | Qt.AlignTop
+                spacing: 4
+
+                Label {
+                    Layout.fillWidth: true
+                    text: root.title
+                    font.pixelSize: 14
+                    font.weight: Font.Medium
+                    color: "#f5f7ff"
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                    wrapMode: Text.NoWrap
+                }
+                Label {
+                    Layout.fillWidth: true
+                    text: root.subtitle
+                    font.pixelSize: 12
+                    color: "#8b96a8"
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                    visible: text.length > 0
+                }
             }
 
             Item {
                 Layout.fillHeight: true
+                Layout.minimumHeight: 0
             }
         }
 

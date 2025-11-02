@@ -205,13 +205,14 @@ Page {
         Component {
         id: albumFlow
         Flow {
-            width: parent.width
+            width: parent ? parent.width : 0
             spacing: 16
+            
             Repeater {
                 model: (api && api.albums) ? api.albums : []
                 delegate: Components.AlbumCard {
-                    width: 190
-                    height: 240
+                    width: 180
+                    height: 250
                     title: modelData.name
                     subtitle: modelData.year > 0 ? modelData.year : ""
                     cover: (api && modelData.coverArt) ? api.coverArtUrl(modelData.coverArt, 300) : ""
