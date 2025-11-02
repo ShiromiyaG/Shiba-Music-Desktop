@@ -118,7 +118,7 @@ jobs:
         host: 'windows'
         target: 'desktop'
         arch: 'win64_mingw'
-        modules: 'qtmultimedia qt5compat qtsql'
+        modules: 'qtmultimedia qt5compat'
         tools: |
           tools_mingw1310
           tools_openssl_x64
