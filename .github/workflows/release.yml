@@ -118,7 +118,7 @@ jobs:
         host: 'windows'
         target: 'desktop'
         arch: 'win64_mingw'
-        modules: 'qtmultimedia qt5compat'
+        modules: 'qtmultimedia qt5compat qtshadertools'
         tools: 'tools_mingw1310'
     
     - name: Setup Ninja
@@ -219,6 +219,11 @@ jobs:
         $windeployqt = Join-Path $qtBin "windeployqt.exe"
         if (-not (Test-Path $windeployqt)) {
           throw "windeployqt not found at $windeployqt"
+        }
+
+        $shaderToolsCandidate = Join-Path $qtRoot "lib\Qt6ShaderTools.dll"
+        if (Test-Path $shaderToolsCandidate -and -not (Test-Path (Join-Path $qtBin "Qt6ShaderTools.dll"))) {
+          Copy-Item $shaderToolsCandidate -Destination $qtBin -Force
         }
 
         $env:PATH = "$qtBin;$(Join-Path $env:IQTA_TOOLS 'mingw1310_64\bin');$env:PATH"
