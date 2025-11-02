@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
+import QtQuick.Window 2.15
 import "components" as Components
 
 ApplicationWindow {
@@ -10,7 +11,6 @@ ApplicationWindow {
     height: 840
     minimumWidth: 1080
     minimumHeight: 720
-    visible: true
     color: "#11141a"
     title: qsTr("Shiba Music")
     Material.theme: Material.Dark
@@ -39,11 +39,136 @@ ApplicationWindow {
             { label: qsTr("Settings"), icon: "qrc:/qml/icons/settings.svg", target: "settings" }
         ]
     }
+
+    function normalizeGeometry(x, y, width, height) {
+        const rawScreens = Qt.application.screens || [];
+        const screenAreas = [];
+        for (let i = 0; i < rawScreens.length; ++i) {
+            const screen = rawScreens[i];
+            if (screen && screen.availableGeometry)
+                screenAreas.push(screen.availableGeometry);
+        }
+
+        let clampedWidth = Math.max(width, win.minimumWidth);
+        let clampedHeight = Math.max(height, win.minimumHeight);
+        const fallback = { x: x, y: y, width: clampedWidth, height: clampedHeight };
+
+        if (screenAreas.length === 0)
+            return fallback;
+
+        function isValidGeometry(area) {
+            return area
+                && typeof area.x === "number"
+                && typeof area.y === "number"
+                && typeof area.width === "number"
+                && typeof area.height === "number"
+                && area.width > 0
+                && area.height > 0;
+        }
+
+        function contains(area, pointX, pointY) {
+            return isValidGeometry(area)
+                && pointX >= area.x && pointX <= area.x + area.width
+                && pointY >= area.y && pointY <= area.y + area.height;
+        }
+
+        const primary = screenAreas.find(isValidGeometry);
+        if (!primary)
+            return fallback;
+
+        // Prefer the screen that contains the saved top-left corner.
+        let targetArea = primary;
+        for (let i = 0; i < screenAreas.length; ++i) {
+            const area = screenAreas[i];
+            if (contains(area, x, y)) {
+                targetArea = area;
+                break;
+            }
+        }
+
+        if (!isValidGeometry(targetArea))
+            return fallback;
+
+        // If the top-left corner was outside of any screen, fall back to centering on the primary screen.
+        if (!contains(targetArea, x, y)) {
+            return {
+                x: primary.x + Math.max(0, (primary.width - clampedWidth) / 2),
+                y: primary.y + Math.max(0, (primary.height - clampedHeight) / 2),
+                width: Math.min(clampedWidth, primary.width),
+                height: Math.min(clampedHeight, primary.height)
+            };
+        }
+
+        const maxX = typeof targetArea.x === "number" && typeof targetArea.width === "number"
+            ? targetArea.x + targetArea.width - clampedWidth
+            : x;
+        const maxY = typeof targetArea.y === "number" && typeof targetArea.height === "number"
+            ? targetArea.y + targetArea.height - clampedHeight
+            : y;
+
+        const targetX = typeof targetArea.x === "number" ? targetArea.x : x;
+        const targetY = typeof targetArea.y === "number" ? targetArea.y : y;
+        const targetWidth = typeof targetArea.width === "number" ? targetArea.width : clampedWidth;
+        const targetHeight = typeof targetArea.height === "number" ? targetArea.height : clampedHeight;
+
+        return {
+            x: Math.min(Math.max(x, targetX), Math.max(targetX, maxX)),
+            y: Math.min(Math.max(y, targetY), Math.max(targetY, maxY)),
+            width: Math.min(clampedWidth, targetWidth),
+            height: Math.min(clampedHeight, targetHeight)
+        };
+    }
+
+    function restoreWindowState() {
+        if (!windowStateManager || windowStateRestored)
+            return
+        const defaults = { x: win.x, y: win.y, width: win.width, height: win.height }
+        const state = windowStateManager.loadState(defaults.x, defaults.y, defaults.width, defaults.height, win.visibility === Window.Maximized)
+
+        if (state && state.stored) {
+            if (state.maximized) {
+                win.visibility = Window.Maximized
+            } else {
+                const geometry = normalizeGeometry(state.x, state.y, state.width, state.height)
+                win.width = geometry.width
+                win.height = geometry.height
+                win.x = geometry.x
+                win.y = geometry.y
+            }
+        }
+
+        windowStateRestored = true
+    }
+
+    function saveWindowState() {
+        if (!windowStateManager)
+            return
+        var isMaximized = win.visibility === Window.Maximized || win.visibility === Window.FullScreen
+        var geom = null
+        if (isMaximized) {
+            geom = win.normalGeometry
+            if (!geom || typeof geom.x !== "number" || typeof geom.y !== "number" ||
+                    typeof geom.width !== "number" || typeof geom.height !== "number") {
+                geom = Qt.rect(win.x, win.y, win.width, win.height)
+            }
+        } else {
+            geom = Qt.rect(win.x, win.y, win.width, win.height)
+        }
+        if (!isMaximized && (geom.width <= 0 || geom.height <= 0)) {
+            geom = Qt.rect(win.x, win.y, Math.max(win.width, 1), Math.max(win.height, 1))
+        }
+        if (!geom || typeof geom.x !== "number" || typeof geom.y !== "number") {
+            // As a last resort store the current window rect
+            geom = { x: win.x, y: win.y, width: win.width, height: win.height }
+        }
+        windowStateManager.saveState(geom.x, geom.y, geom.width, geom.height, isMaximized)
+    }
     
     property var navigationItems: getNavigationItems()
     property string currentSection: "home"
     property bool initialLibraryLoaded: false
     property bool hasStoredCredentials: false
+    property bool windowStateRestored: false
 
     Connections {
         target: translationManager
@@ -67,7 +192,7 @@ ApplicationWindow {
         id: loginLoader
         anchors.fill: parent
         source: win.loginPageUrl
-        active: !api.authenticated && !hasStoredCredentials
+        active: (!api || !api.authenticated) && !hasStoredCredentials
         visible: active
     }
 
@@ -98,24 +223,28 @@ ApplicationWindow {
                     spacing: 24
 
                     ColumnLayout {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: implicitHeight
                         spacing: 4
                         Label {
                             text: qsTr("Shiba")
                             font.pixelSize: 24
                             font.weight: Font.DemiBold
                             color: "#f5f7ff"
+                            Layout.fillWidth: true
                         }
                         Label {
                             text: qsTr("Music Player")
                             color: "#a0aac6"
                             font.pixelSize: 12
+                            Layout.fillWidth: true
                         }
                     }
 
                     ListView {
                         id: sidebarList
                         Layout.fillWidth: true
-                        Layout.preferredHeight: contentHeight
+                        Layout.fillHeight: true
                         spacing: 6
                         interactive: false
                         clip: true
@@ -140,34 +269,44 @@ ApplicationWindow {
                                        : navItem.hovered ? "#242c40" : "transparent"
                                 border.color: navItem.highlighted ? "#3b4764" : "transparent"
                             }
-                            contentItem: RowLayout {
+                            contentItem: Item {
                                 anchors.fill: parent
-                                anchors.leftMargin: 12
-                                anchors.rightMargin: 12
-                                spacing: 12
-                                Image {
-                                    source: modelData.icon
-                                    sourceSize.width: 18
-                                    sourceSize.height: 18
-                                    antialiasing: true
-                                }
-                                Label {
-                                    text: modelData.label
-                                    color: "#d9e0f2"
-                                    font.pixelSize: 15
-                                    Layout.fillWidth: true
+                                Row {
+                                    id: navRow
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.leftMargin: 12
+                                    anchors.rightMargin: 12
+                                    spacing: 12
+                                    Image {
+                                        source: modelData.icon
+                                        sourceSize.width: 18
+                                        sourceSize.height: 18
+                                        antialiasing: true
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                    Label {
+                                        text: modelData.label
+                                        color: "#d9e0f2"
+                                        font.pixelSize: 15
+                                        verticalAlignment: Text.AlignVCenter
+                                        maximumLineCount: 1
+                                        elide: Text.ElideRight
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        Layout.fillWidth: true
+                                    }
                                 }
                             }
                             onClicked: win.handleNavigation(modelData.target)
                         }
                     }
 
-                    Item { Layout.fillHeight: true }
-
                     Button {
                         text: qsTr("Logout")
                         visible: api ? api.authenticated : false
                         Layout.fillWidth: true
+                        Layout.preferredHeight: implicitHeight
                         onClicked: {
                             api.logout()
                             win.currentSection = "home"
@@ -266,7 +405,7 @@ ApplicationWindow {
                             NumberAnimation { property: "x"; from: 0; to: width * 0.08; duration: 180; easing.type: Easing.InCubic }
                         }
                                           Component.onCompleted: {
-                            if (api.authenticated && depth === 0) {
+                            if (api && api.authenticated && depth === 0) {
                                 var page = push(win.homePageUrl)
                                 if (page && page.albumClicked)
                                     page.albumClicked.connect(win.showAlbumPage)
@@ -482,7 +621,7 @@ ApplicationWindow {
     }
 
     function performSearch(text) {
-        if (!api.authenticated)
+        if (!api || !api.authenticated)
             return
 
         const query = text ? text.trim() : ""
@@ -504,9 +643,10 @@ ApplicationWindow {
                 page.searchQuery = query
                 page.searchLoading = true
                 page.searchResults = []
-                api.search(query)
+                if (api)
+                    api.search(query)
             }
-        } else if (query.length) {
+        } else if (query.length && api) {
             api.search(query)
         }
 
@@ -514,7 +654,7 @@ ApplicationWindow {
     }
 
     function handleNavigation(target) {
-        if (!api.authenticated)
+        if (!api || !api.authenticated)
             return
         win.currentSection = target
 
@@ -623,7 +763,14 @@ ApplicationWindow {
 
     Shortcut {
         sequences: [StandardKey.Find, StandardKey.Search]
-        onActivated: if (api.authenticated) searchBox.forceActiveFocus()
+        onActivated: if (api && api.authenticated) searchBox.forceActiveFocus()
+    }
+
+    Timer {
+        id: windowStateSaveTimer
+        interval: 500
+        repeat: false
+        onTriggered: saveWindowState()
     }
 
     Timer {
@@ -631,6 +778,10 @@ ApplicationWindow {
         interval: 100
         running: false
         onTriggered: {
+            if (!api) {
+                hasStoredCredentials = false
+                return
+            }
             var credentials = api.loadCredentials();
             if (credentials.serverUrl && credentials.username && credentials.password) {
                 api.login(credentials.serverUrl, credentials.username, credentials.password);
@@ -648,7 +799,7 @@ ApplicationWindow {
     Connections {
         target: updateChecker
         function onUpdateAvailableChanged() {
-            if (updateChecker.updateAvailable && api.authenticated) {
+            if (updateChecker.updateAvailable && api && api.authenticated) {
                 updateDialog.open()
             }
         }
@@ -662,9 +813,50 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        var credentials = api.loadCredentials();
-        hasStoredCredentials = !!(credentials.serverUrl && credentials.username && credentials.password)
+        restoreWindowState()
+        win.visible = true
+        win.requestActivate()
+        
+        if (api) {
+            var credentials = api.loadCredentials();
+            hasStoredCredentials = !!(credentials.serverUrl && credentials.username && credentials.password)
+        } else {
+            hasStoredCredentials = false
+        }
         autoLoginTimer.start()
         updateCheckTimer.start()
+    }
+
+    onXChanged: {
+        if (windowStateRestored && visible)
+            windowStateSaveTimer.restart()
+    }
+
+    onYChanged: {
+        if (windowStateRestored && visible)
+            windowStateSaveTimer.restart()
+    }
+
+    onWidthChanged: {
+        if (windowStateRestored && visible && win.visibility !== Window.Maximized)
+            windowStateSaveTimer.restart()
+    }
+
+    onHeightChanged: {
+        if (windowStateRestored && visible && win.visibility !== Window.Maximized)
+            windowStateSaveTimer.restart()
+    }
+
+    onVisibilityChanged: function(newVisibility) {
+        if (!windowStateRestored)
+            return
+        if (newVisibility === Window.Maximized || newVisibility === Window.Windowed)
+            windowStateSaveTimer.restart()
+    }
+
+    onClosing: function(event) {
+        windowStateSaveTimer.stop()
+        saveWindowState()
+        event.accepted = true
     }
 }

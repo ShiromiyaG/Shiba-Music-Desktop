@@ -57,13 +57,14 @@ endif()
 qt_standard_project_setup()
 set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
 
-qt_add_executable(shibamusic
+qt_add_executable(shibamusic WIN32
     src/main.cpp
     src/core/SubsonicClient.h src/core/SubsonicClient.cpp
     src/playback/MpvPlayer.h src/playback/MpvPlayer.cpp
     src/playback/PlayerController.h src/playback/PlayerController.cpp
     src/core/SubsonicNetworkAccessManagerFactory.h
     src/core/SubsonicNetworkAccessManagerFactory.cpp
+    src/core/WindowStateManager.h src/core/WindowStateManager.cpp
     src/core/AppInfo.h
     src/discord/DiscordRPC.h src/discord/DiscordRPC.cpp
     src/updater/UpdateChecker.h src/updater/UpdateChecker.cpp
@@ -132,6 +133,7 @@ qt_add_resources(shibamusic "qml"
         qml/icons/volume_mute.svg
         qml/icons/volume_off.svg
         qml/icons/volume_up.svg
+        qml/icons/shiba_nobg_4k.ico
 )
 
 # Add translations as resources

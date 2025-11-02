@@ -7,6 +7,7 @@
 #include "core/SubsonicClient.h"
 #include "core/SubsonicNetworkAccessManagerFactory.h"
 #include "core/AppInfo.h"
+#include "core/WindowStateManager.h"
 #include "playback/PlayerController.h"
 #include "discord/DiscordRPC.h"
 #include "updater/UpdateChecker.h"
@@ -29,6 +30,7 @@ int main(int argc, char *argv[]) {
     PlayerController player(&api, &discord);
     AppInfo appInfo;
     UpdateChecker updateChecker;
+    WindowStateManager windowState;
 
     // Set engine reference for translation updates
     translationManager.setEngine(&engine);
@@ -40,6 +42,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("discord", &discord);
     engine.rootContext()->setContextProperty("appInfo", &appInfo);
     engine.rootContext()->setContextProperty("updateChecker", &updateChecker);
+    engine.rootContext()->setContextProperty("windowStateManager", &windowState);
     engine.load(QUrl("qrc:/qml/main.qml"));
     if (engine.rootObjects().isEmpty()) return -1;
     return app.exec();

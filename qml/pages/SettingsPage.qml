@@ -234,7 +234,7 @@ Page {
                     }
 
                     Label {
-                        text: qsTr("Version") + " " + appInfo.version
+                        text: qsTr("Version") + " " + (appInfo ? appInfo.version : "-")
                         color: "#8b96a8"
                         font.pixelSize: 12
                     }
