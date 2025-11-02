@@ -57,7 +57,7 @@ endif()
 qt_standard_project_setup()
 set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
 
-qt_add_executable(shibamusic WIN32
+qt_add_executable(shibamusic
     src/main.cpp
     src/core/SubsonicClient.h src/core/SubsonicClient.cpp
     src/core/CacheManager.h src/core/CacheManager.cpp
@@ -115,6 +115,8 @@ qt_add_resources(shibamusic "qml"
         qml/icons/account_circle.svg
         qml/icons/add.svg
         qml/icons/album.svg
+        qml/icons/chevron_left.svg
+        qml/icons/chevron_right.svg
         qml/icons/arrow_upward.svg
         qml/icons/auto_awesome.svg
         qml/icons/check_box_outline_blank.svg

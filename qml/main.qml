@@ -304,6 +304,8 @@ ApplicationWindow {
     property var savedServerProfiles: []
     property string activeCredentialKey: ""
     property bool switchingServer: false
+    property var navigationHistory: []
+    property var forwardHistory: []
 
     onSavedServerProfilesChanged: {
         if (typeof serverSelector !== "undefined") {
@@ -371,23 +373,52 @@ ApplicationWindow {
                     anchors.margins: 24
                     spacing: 24
 
-                    ColumnLayout {
+                    RowLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: implicitHeight
-                        spacing: 4
-                        Label {
-                            text: qsTr("Shiba")
-                            font.pixelSize: 24
-                            font.weight: Font.DemiBold
-                            color: "#f5f7ff"
-                            Layout.fillWidth: true
+                        Layout.preferredHeight: 40
+                        spacing: 8
+
+                        ToolButton {
+                            id: sidebarBackButton
+                            implicitWidth: 40
+                            implicitHeight: 36
+                            display: AbstractButton.IconOnly
+                            icon.source: "qrc:/qml/icons/chevron_left.svg"
+                            icon.width: 18
+                            icon.height: 18
+                            background: Rectangle {
+                                anchors.fill: parent
+                                radius: 12
+                                color: sidebarBackButton.hovered ? "#242c40" : "transparent"
+                                border.color: sidebarBackButton.hovered ? "#3b4764" : "transparent"
+                            }
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Go back")
+                            onClicked: win.goBack()
+                            enabled: win.canGoBack()
                         }
-                        Label {
-                            text: qsTr("Music Player")
-                            color: "#a0aac6"
-                            font.pixelSize: 12
-                            Layout.fillWidth: true
+
+                        ToolButton {
+                            id: sidebarForwardButton
+                            implicitWidth: 40
+                            implicitHeight: 36
+                            display: AbstractButton.IconOnly
+                            icon.source: "qrc:/qml/icons/chevron_right.svg"
+                            icon.width: 18
+                            icon.height: 18
+                            background: Rectangle {
+                                anchors.fill: parent
+                                radius: 12
+                                color: sidebarForwardButton.hovered ? "#242c40" : "transparent"
+                                border.color: sidebarForwardButton.hovered ? "#3b4764" : "transparent"
+                            }
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Go forward")
+                            onClicked: win.goForward()
+                            enabled: win.canGoForward()
                         }
+
+                        Item { Layout.fillWidth: true }
                     }
 
                     ListView {
@@ -580,14 +611,9 @@ ApplicationWindow {
                             NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 180 }
                             NumberAnimation { property: "x"; from: 0; to: width * 0.08; duration: 180; easing.type: Easing.InCubic }
                         }
-                                          Component.onCompleted: {
+                        Component.onCompleted: {
                             if (api && api.authenticated && depth === 0) {
-                                var page = push(win.homePageUrl)
-                                if (page && page.albumClicked)
-                                    page.albumClicked.connect(win.showAlbumPage)
-                                if (page && page.artistClicked)
-                                    page.artistClicked.connect(win.showArtistPage)
-                                win.currentSection = "home"
+                                win.loadSection("home", navigationHistory.length === 0)
                             }
                         }
                     }
@@ -776,14 +802,17 @@ ApplicationWindow {
                 win.switchingServer = false
                 loginLoader.active = false
                 win.initialLibraryLoaded = false
-                win.currentSection = "home"
-                pushContent(win.homePageUrl)
+                navigationHistory = []
+                forwardHistory = []
+                loadSection("home", true)
                 api.fetchArtists()
             } else {
                 win.initialLibraryLoaded = false
                 win.refreshSavedCredentials(win.activeCredentialKey)
                 stack.clear()
                 win.currentSection = "home"
+                navigationHistory = []
+                forwardHistory = []
                 if (win.switchingServer) {
                     loginLoader.active = false
                     win.hasStoredCredentials = true
@@ -839,19 +868,31 @@ ApplicationWindow {
         win.currentSection = "home"
     }
 
-    function handleNavigation(target) {
+    function pushHistoryEntry(entry) {
+        var last = navigationHistory.length ? navigationHistory[navigationHistory.length - 1] : null
+        var same = last && JSON.stringify(last) === JSON.stringify(entry)
+        if (!same) {
+            navigationHistory = navigationHistory.concat([entry])
+        }
+    }
+
+    function loadSection(target, recordHistory) {
         if (!api || !api.authenticated)
             return
+        if (recordHistory === undefined) recordHistory = true
+
+        if (recordHistory) {
+            recordHistoryEntry({kind: "section", target: target})
+        }
+
         win.currentSection = target
-
-        // Clear search when navigating to a different page
         searchBox.clear()
-
         stack.clear()
 
+        var page = null
         switch (target) {
         case "home":
-            var page = stack.push(win.homePageUrl)
+            page = stack.push(win.homePageUrl)
             if (page && page.albumClicked)
                 page.albumClicked.connect(showAlbumPage)
             if (page && page.artistClicked)
@@ -864,12 +905,12 @@ ApplicationWindow {
             stack.push(win.favoritesPageUrl)
             break
         case "albums":
-            var page = stack.push(win.albumsPageUrl)
+            page = stack.push(win.albumsPageUrl)
             if (page && page.albumClicked)
                 page.albumClicked.connect(showAlbumPage)
             break
         case "artists":
-            var page = stack.push(win.artistsPageUrl)
+            page = stack.push(win.artistsPageUrl)
             if (page && page.artistClicked)
                 page.artistClicked.connect(showArtistPage)
             break
@@ -882,6 +923,58 @@ ApplicationWindow {
         default:
             break
         }
+    }
+
+    function handleNavigation(target) {
+        loadSection(target, true)
+    }
+
+    function restoreEntry(entry) {
+        if (!entry) return
+        switch (entry.kind) {
+        case "section":
+            loadSection(entry.target, false)
+            break
+        case "album":
+            showAlbumPage(entry.albumId, entry.albumTitle, entry.artistName, entry.coverArtId, entry.artistId, false)
+            break
+        case "artist":
+            showArtistPage(entry.artistId, entry.artistName, entry.coverArtId, false)
+            break
+        case "playlist":
+            showPlaylistPage(entry.playlistId, entry.playlistName, entry.coverArtId, entry.songCount, false)
+            break
+        }
+    }
+
+    function canGoBack() {
+        return navigationHistory.length > 1
+    }
+
+    function canGoForward() {
+        return forwardHistory.length > 0
+    }
+
+    function goBack() {
+        if (!canGoBack())
+            return
+        var historyCopy = navigationHistory.slice()
+        var current = historyCopy.pop()
+        navigationHistory = historyCopy
+        forwardHistory = [JSON.parse(JSON.stringify(current))].concat(forwardHistory)
+        var entry = navigationHistory.length ? navigationHistory[navigationHistory.length - 1] : null
+        if (entry)
+            restoreEntry(entry)
+    }
+
+    function goForward() {
+        if (!canGoForward())
+            return
+        var entry = forwardHistory[0]
+        forwardHistory = forwardHistory.slice(1)
+        var entryCopy = JSON.parse(JSON.stringify(entry))
+        navigationHistory = navigationHistory.concat([entryCopy])
+        restoreEntry(entryCopy)
     }
 
         function pushContent(target) {
@@ -909,10 +1002,21 @@ ApplicationWindow {
         })
     }
 
-    function showArtistPage(artistId, artistName, coverArtId) {
+    function recordHistoryEntry(entry) {
+        pushHistoryEntry(JSON.parse(JSON.stringify(entry)))
+        forwardHistory = []
+    }
+
+    function showArtistPage(artistId, artistName, coverArtId, recordHistory) {
+        if (recordHistory === undefined) recordHistory = true
         // Clear search when navigating to artist page
         searchBox.clear()
-        
+
+        if (!recordHistory) {
+            stack.clear()
+            win.currentSection = "artists"
+        }
+
         var page = stack.push(Qt.resolvedUrl("qrc:/qml/pages/ArtistPage.qml"))
         page.artistId = artistId
         page.artistName = artistName
@@ -920,12 +1024,27 @@ ApplicationWindow {
         if (page && page.albumClicked) {
             page.albumClicked.connect(showAlbumPage)
         }
+
+        if (recordHistory) {
+            recordHistoryEntry({
+                kind: "artist",
+                artistId: artistId,
+                artistName: artistName,
+                coverArtId: coverArtId || ""
+            })
+        }
     }
 
-    function showAlbumPage(albumId, albumTitle, artistName, coverArtId, artistId) {
+    function showAlbumPage(albumId, albumTitle, artistName, coverArtId, artistId, recordHistory) {
+        if (recordHistory === undefined) recordHistory = true
         // Clear search when navigating to album page
         searchBox.clear()
-        
+
+        if (!recordHistory) {
+            stack.clear()
+            win.currentSection = "home"
+        }
+
         var page = stack.push(Qt.resolvedUrl("qrc:/qml/pages/AlbumPage.qml"), {
             albumId: albumId,
             albumTitle: albumTitle,
@@ -934,17 +1053,44 @@ ApplicationWindow {
             artistId: artistId || ""
         })
         // navigation to artist page handled internally by AlbumPage via StackView.view
+
+        if (recordHistory) {
+            recordHistoryEntry({
+                kind: "album",
+                albumId: albumId,
+                albumTitle: albumTitle,
+                artistName: artistName,
+                coverArtId: coverArtId || "",
+                artistId: artistId || ""
+            })
+        }
     }
 
-    function showPlaylistPage(playlistId, playlistName, coverArtId, songCount) {
+    function showPlaylistPage(playlistId, playlistName, coverArtId, songCount, recordHistory) {
+        if (recordHistory === undefined) recordHistory = true
         // Clear search when navigating to playlist page
         searchBox.clear()
-        
+
+        if (!recordHistory) {
+            stack.clear()
+            win.currentSection = "playlists"
+        }
+
         var page = stack.push(Qt.resolvedUrl("qrc:/qml/pages/PlaylistDetailPage.qml"))
         page.playlistId = playlistId
         page.playlistName = playlistName
         page.coverArtId = coverArtId
         page.songCount = songCount
+
+        if (recordHistory) {
+            recordHistoryEntry({
+                kind: "playlist",
+                playlistId: playlistId,
+                playlistName: playlistName,
+                coverArtId: coverArtId || "",
+                songCount: songCount || 0
+            })
+        }
     }
 
     Shortcut {
@@ -981,6 +1127,16 @@ ApplicationWindow {
     Shortcut {
         sequence: "Down"
         onActivated: if (player) player.volume = Math.max(0.0, player.volume - 0.05)
+    }
+
+    Shortcut {
+        sequences: ["Alt+Left", "Back"]
+        onActivated: if (win.canGoBack()) win.goBack()
+    }
+
+    Shortcut {
+        sequences: ["Alt+Right", "Forward"]
+        onActivated: if (win.canGoForward()) win.goForward()
     }
 
     Timer {
