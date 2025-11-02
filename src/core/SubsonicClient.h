@@ -3,6 +3,7 @@
 #include <QNetworkAccessManager>
 #include <QJsonDocument>
 #include <QUrlQuery>
+#include <QVector>
 
 class CacheManager;
 
@@ -64,12 +65,12 @@ public:
     Q_INVOKABLE QVariantList artists() const { return m_artists; }
     Q_INVOKABLE QVariantList albums() const { return m_albums; }
     Q_INVOKABLE QVariantList albumList() const { return m_albumList; }
-    Q_INVOKABLE QVariantList tracks() const { return m_tracks; }
+    Q_INVOKABLE QVariantList tracks() const;
     Q_INVOKABLE QVariantList searchArtists() const { return m_searchArtists; }
     Q_INVOKABLE QVariantList searchAlbums() const { return m_searchAlbums; }
     Q_INVOKABLE QVariantList recentlyPlayedAlbums() const { return m_recentlyPlayedAlbums; }
-    Q_INVOKABLE QVariantList randomSongs() const { return m_randomSongs; }
-    Q_INVOKABLE QVariantList favorites() const { return m_favorites; }
+    Q_INVOKABLE QVariantList randomSongs() const;
+    Q_INVOKABLE QVariantList favorites() const;
     Q_INVOKABLE QVariantList playlists() const { return m_playlists; }
     QString artistCover() const { return m_artistCover; }
     bool albumListLoading() const { return m_albumListPaging; }
@@ -105,6 +106,24 @@ signals:
     void albumListHasMoreChanged();
 
 private:
+    struct TrackEntry
+    {
+        QString id;
+        QString title;
+        QString artist;
+        QString artistId;
+        QString album;
+        QString albumId;
+        QString coverArt;
+        int duration = 0;
+        int track = 0;
+        int year = 0;
+        double replayGainTrackGain = 0.0;
+        double replayGainAlbumGain = 0.0;
+    };
+
+    using TrackList = QVector<TrackEntry>;
+
     enum class AuthMode
     {
         Token,
@@ -124,6 +143,10 @@ private:
     QString cacheKey(const QString &base) const;
     void setAlbumListLoading(bool loading);
     void setHasMoreAlbumList(bool hasMore);
+    static QVariantList tracksToVariantList(const TrackList &list);
+    static TrackList tracksFromVariantList(const QVariantList &list);
+    static QVariantMap trackEntryToVariant(const TrackEntry &entry);
+    static TrackEntry trackEntryFromVariant(const QVariantMap &map);
 
     QString m_server, m_user, m_token, m_salt;
     bool m_authenticated = false;
@@ -138,7 +161,10 @@ private:
     QNetworkReply *m_playlistsReply = nullptr;
     QNetworkReply *m_playlistReply = nullptr;
 
-    QVariantList m_artists, m_albums, m_albumList, m_tracks, m_searchArtists, m_searchAlbums, m_recentlyPlayedAlbums, m_randomSongs, m_favorites, m_playlists;
+    QVariantList m_artists, m_albums, m_albumList, m_searchArtists, m_searchAlbums, m_recentlyPlayedAlbums, m_playlists;
+    TrackList m_tracks;
+    TrackList m_randomSongs;
+    TrackList m_favorites;
     QString m_artistCover;
     QString m_pendingAlbumListType;
     int m_pendingAlbumListOffset = 0;

@@ -39,11 +39,69 @@ static QString normalizedCredentialUsername(const QString &user)
     return user.trimmed();
 }
 
-static void clearAndShrink(QVariantList &list)
+template <typename List>
+static void clearAndShrink(List &list)
 {
     if (!list.isEmpty())
         list.clear();
     list.squeeze();
+}
+
+QVariantList SubsonicClient::tracksToVariantList(const TrackList &list)
+{
+    QVariantList result;
+    result.reserve(list.size());
+    for (const auto &entry : list)
+        result.append(trackEntryToVariant(entry));
+    return result;
+}
+
+SubsonicClient::TrackList SubsonicClient::tracksFromVariantList(const QVariantList &list)
+{
+    TrackList result;
+    result.reserve(list.size());
+    for (const QVariant &value : list)
+        result.append(trackEntryFromVariant(value.toMap()));
+    return result;
+}
+
+QVariantMap SubsonicClient::trackEntryToVariant(const TrackEntry &entry)
+{
+    QVariantMap map;
+    map.insert(QStringLiteral("id"), entry.id);
+    map.insert(QStringLiteral("title"), entry.title);
+    map.insert(QStringLiteral("artist"), entry.artist);
+    map.insert(QStringLiteral("artistId"), entry.artistId);
+    map.insert(QStringLiteral("album"), entry.album);
+    map.insert(QStringLiteral("albumId"), entry.albumId);
+    map.insert(QStringLiteral("duration"), entry.duration);
+    if (entry.track > 0)
+        map.insert(QStringLiteral("track"), entry.track);
+    if (entry.year > 0)
+        map.insert(QStringLiteral("year"), entry.year);
+    if (!entry.coverArt.isEmpty())
+        map.insert(QStringLiteral("coverArt"), entry.coverArt);
+    map.insert(QStringLiteral("replayGainTrackGain"), entry.replayGainTrackGain);
+    map.insert(QStringLiteral("replayGainAlbumGain"), entry.replayGainAlbumGain);
+    return map;
+}
+
+SubsonicClient::TrackEntry SubsonicClient::trackEntryFromVariant(const QVariantMap &map)
+{
+    TrackEntry entry;
+    entry.id = map.value(QStringLiteral("id")).toString();
+    entry.title = map.value(QStringLiteral("title")).toString();
+    entry.artist = map.value(QStringLiteral("artist")).toString();
+    entry.artistId = map.value(QStringLiteral("artistId")).toString();
+    entry.album = map.value(QStringLiteral("album")).toString();
+    entry.albumId = map.value(QStringLiteral("albumId")).toString();
+    entry.coverArt = map.value(QStringLiteral("coverArt")).toString();
+    entry.duration = map.value(QStringLiteral("duration")).toInt();
+    entry.track = map.value(QStringLiteral("track")).toInt();
+    entry.year = map.value(QStringLiteral("year")).toInt();
+    entry.replayGainTrackGain = map.value(QStringLiteral("replayGainTrackGain")).toDouble();
+    entry.replayGainAlbumGain = map.value(QStringLiteral("replayGainAlbumGain")).toDouble();
+    return entry;
 }
 
 static QString credentialKeyFor(const QString &serverUrl, const QString &username)
@@ -551,11 +609,6 @@ void SubsonicClient::logout()
         emit artistCoverChanged();
     }
 
-    auto clearList = [](QVariantList &list)
-    {
-        clearAndShrink(list);
-    };
-
     const bool hadArtists = !m_artists.isEmpty();
     const bool hadAlbums = !m_albums.isEmpty();
     const bool hadAlbumList = !m_albumList.isEmpty();
@@ -567,16 +620,16 @@ void SubsonicClient::logout()
     const bool hadFavorites = !m_favorites.isEmpty();
     const bool hadPlaylists = !m_playlists.isEmpty();
 
-    clearList(m_artists);
-    clearList(m_albums);
-    clearList(m_albumList);
-    clearList(m_tracks);
-    clearList(m_searchArtists);
-    clearList(m_searchAlbums);
-    clearList(m_recentlyPlayedAlbums);
-    clearList(m_randomSongs);
-    clearList(m_favorites);
-    clearList(m_playlists);
+    clearAndShrink(m_artists);
+    clearAndShrink(m_albums);
+    clearAndShrink(m_albumList);
+    clearAndShrink(m_tracks);
+    clearAndShrink(m_searchArtists);
+    clearAndShrink(m_searchAlbums);
+    clearAndShrink(m_recentlyPlayedAlbums);
+    clearAndShrink(m_randomSongs);
+    clearAndShrink(m_favorites);
+    clearAndShrink(m_playlists);
 
     if (hadArtists)
         emit artistsChanged();
@@ -778,19 +831,20 @@ void SubsonicClient::fetchAlbum(const QString &albumId)
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
-            m_tracks.push_back(QVariantMap{
-                {"id", s.value("id").toString()},
-                {"title", s.value("title").toString()},
-                {"artist", s.value("artist").toString()},
-                {"artistId", s.value("artistId").toString()},
-                {"album", s.value("album").toString()},
-                {"albumId", s.value("albumId").toString()},
-                {"track", s.value("track").toInt()},
-                {"duration", s.value("duration").toInt()},
-                {"coverArt", s.value("coverArt").toString()},
-                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
-                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
-            });
+            TrackEntry entry;
+            entry.id = s.value("id").toString();
+            entry.title = s.value("title").toString();
+            entry.artist = s.value("artist").toString();
+            entry.artistId = s.value("artistId").toString();
+            entry.album = s.value("album").toString();
+            entry.albumId = s.value("albumId").toString();
+            entry.track = s.value("track").toInt();
+            entry.duration = s.value("duration").toInt();
+            entry.coverArt = s.value("coverArt").toString();
+            entry.replayGainTrackGain = rg.value("trackGain").toDouble();
+            entry.replayGainAlbumGain = rg.value("albumGain").toDouble();
+            entry.year = s.value("year").toInt();
+            m_tracks.push_back(entry);
         }
         emit tracksChanged(); });
 }
@@ -858,7 +912,7 @@ void SubsonicClient::fetchRandomSongs()
         const auto cached = m_cacheManager->getList(cacheKey("randomSongs"));
         if (!cached.isEmpty())
         {
-            m_randomSongs = cached;
+            m_randomSongs = tracksFromVariantList(cached);
             emit randomSongsChanged();
         }
     }
@@ -903,22 +957,24 @@ void SubsonicClient::fetchRandomSongs()
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
-            m_randomSongs.push_back(QVariantMap{
-                {"id", s.value("id").toString()},
-                {"title", s.value("title").toString()},
-                {"artist", s.value("artist").toString()},
-                {"artistId", s.value("artistId").toString()},
-                {"album", s.value("album").toString()},
-                {"albumId", s.value("albumId").toString()},
-                {"duration", s.value("duration").toInt()},
-                {"coverArt", s.value("coverArt").toString()},
-                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
-                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
-            });
+            TrackEntry entry;
+            entry.id = s.value("id").toString();
+            entry.title = s.value("title").toString();
+            entry.artist = s.value("artist").toString();
+            entry.artistId = s.value("artistId").toString();
+            entry.album = s.value("album").toString();
+            entry.albumId = s.value("albumId").toString();
+            entry.duration = s.value("duration").toInt();
+            entry.coverArt = s.value("coverArt").toString();
+            entry.track = s.value("track").toInt();
+            entry.year = s.value("year").toInt();
+            entry.replayGainTrackGain = rg.value("trackGain").toDouble();
+            entry.replayGainAlbumGain = rg.value("albumGain").toDouble();
+            m_randomSongs.push_back(entry);
         }
         emit randomSongsChanged();
         if (m_cacheManager) {
-            m_cacheManager->saveList(cacheKey("randomSongs"), m_randomSongs);
+            m_cacheManager->saveList(cacheKey("randomSongs"), tracksToVariantList(m_randomSongs));
         } });
 }
 
@@ -1034,18 +1090,20 @@ void SubsonicClient::fetchPlaylist(const QString &playlistId)
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
-            m_tracks.push_back(QVariantMap{
-                {"id", s.value("id").toString()},
-                {"title", s.value("title").toString()},
-                {"artist", s.value("artist").toString()},
-                {"artistId", s.value("artistId").toString()},
-                {"album", s.value("album").toString()},
-                {"albumId", s.value("albumId").toString()},
-                {"duration", s.value("duration").toInt()},
-                {"coverArt", s.value("coverArt").toString()},
-                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
-                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
-            });
+            TrackEntry entry;
+            entry.id = s.value("id").toString();
+            entry.title = s.value("title").toString();
+            entry.artist = s.value("artist").toString();
+            entry.artistId = s.value("artistId").toString();
+            entry.album = s.value("album").toString();
+            entry.albumId = s.value("albumId").toString();
+            entry.duration = s.value("duration").toInt();
+            entry.coverArt = s.value("coverArt").toString();
+            entry.track = s.value("track").toInt();
+            entry.year = s.value("year").toInt();
+            entry.replayGainTrackGain = rg.value("trackGain").toDouble();
+            entry.replayGainAlbumGain = rg.value("albumGain").toDouble();
+            m_tracks.push_back(entry);
         }
         emit tracksChanged(); });
 }
@@ -1060,7 +1118,7 @@ void SubsonicClient::fetchFavorites()
         const auto cached = m_cacheManager->getList(cacheKey("favorites"));
         if (!cached.isEmpty())
         {
-            m_favorites = cached;
+            m_favorites = tracksFromVariantList(cached);
             emit favoritesChanged();
         }
     }
@@ -1104,22 +1162,24 @@ void SubsonicClient::fetchFavorites()
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
-            m_favorites.push_back(QVariantMap{
-                {"id", s.value("id").toString()},
-                {"title", s.value("title").toString()},
-                {"artist", s.value("artist").toString()},
-                {"artistId", s.value("artistId").toString()},
-                {"album", s.value("album").toString()},
-                {"albumId", s.value("albumId").toString()},
-                {"duration", s.value("duration").toInt()},
-                {"coverArt", s.value("coverArt").toString()},
-                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
-                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
-            });
+            TrackEntry entry;
+            entry.id = s.value("id").toString();
+            entry.title = s.value("title").toString();
+            entry.artist = s.value("artist").toString();
+            entry.artistId = s.value("artistId").toString();
+            entry.album = s.value("album").toString();
+            entry.albumId = s.value("albumId").toString();
+            entry.duration = s.value("duration").toInt();
+            entry.coverArt = s.value("coverArt").toString();
+            entry.track = s.value("track").toInt();
+            entry.year = s.value("year").toInt();
+            entry.replayGainTrackGain = rg.value("trackGain").toDouble();
+            entry.replayGainAlbumGain = rg.value("albumGain").toDouble();
+            m_favorites.push_back(entry);
         }
         emit favoritesChanged();
         if (m_cacheManager) {
-            m_cacheManager->saveList(cacheKey("favorites"), m_favorites);
+            m_cacheManager->saveList(cacheKey("favorites"), tracksToVariantList(m_favorites));
         } });
 }
 
@@ -1191,20 +1251,22 @@ void SubsonicClient::search(const QString &term)
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
-            m_tracks.push_back(QVariantMap{
-                {"id", s.value("id").toString()},
-                {"title", s.value("title").toString()},
-                {"artist", s.value("artist").toString()},
-                {"artistId", s.value("artistId").toString()},
-                {"album", s.value("album").toString()},
-                {"albumId", s.value("albumId").toString()},
-                {"duration", s.value("duration").toInt()},
-                {"coverArt", s.value("coverArt").toString()},
-                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
-                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
-            });
+            TrackEntry entry;
+            entry.id = s.value("id").toString();
+            entry.title = s.value("title").toString();
+            entry.artist = s.value("artist").toString();
+            entry.artistId = s.value("artistId").toString();
+            entry.album = s.value("album").toString();
+            entry.albumId = s.value("albumId").toString();
+            entry.duration = s.value("duration").toInt();
+            entry.coverArt = s.value("coverArt").toString();
+            entry.track = s.value("track").toInt();
+            entry.year = s.value("year").toInt();
+            entry.replayGainTrackGain = rg.value("trackGain").toDouble();
+            entry.replayGainAlbumGain = rg.value("albumGain").toDouble();
+            m_tracks.push_back(entry);
         }
-        
+
         emit searchArtistsChanged();
         emit searchAlbumsChanged();
         emit tracksChanged(); });
@@ -1523,6 +1585,21 @@ QString SubsonicClient::cacheKey(const QString &base) const
     return QStringLiteral("%1|%2|%3").arg(base, m_server, m_user);
 }
 
+QVariantList SubsonicClient::tracks() const
+{
+    return tracksToVariantList(m_tracks);
+}
+
+QVariantList SubsonicClient::randomSongs() const
+{
+    return tracksToVariantList(m_randomSongs);
+}
+
+QVariantList SubsonicClient::favorites() const
+{
+    return tracksToVariantList(m_favorites);
+}
+
 void SubsonicClient::setAlbumListLoading(bool loading)
 {
     if (m_albumListPaging == loading)
@@ -1567,19 +1644,20 @@ void SubsonicClient::fetchAlbumTracksAndAppend(const QString &albumId)
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
-            m_tracks.push_back(QVariantMap{
-                {"id", s.value("id").toString()},
-                {"title", s.value("title").toString()},
-                {"artist", s.value("artist").toString()},
-                {"artistId", s.value("artistId").toString()},
-                {"album", s.value("album").toString()},
-                {"albumId", s.value("albumId").toString()},
-                {"track", s.value("track").toInt()},
-                {"duration", s.value("duration").toInt()},
-                {"coverArt", s.value("coverArt").toString()},
-                {"replayGainTrackGain", rg.value("trackGain").toDouble()},
-                {"replayGainAlbumGain", rg.value("albumGain").toDouble()}
-            });
+            TrackEntry entry;
+            entry.id = s.value("id").toString();
+            entry.title = s.value("title").toString();
+            entry.artist = s.value("artist").toString();
+            entry.artistId = s.value("artistId").toString();
+            entry.album = s.value("album").toString();
+            entry.albumId = s.value("albumId").toString();
+            entry.track = s.value("track").toInt();
+            entry.duration = s.value("duration").toInt();
+            entry.coverArt = s.value("coverArt").toString();
+            entry.replayGainTrackGain = rg.value("trackGain").toDouble();
+            entry.replayGainAlbumGain = rg.value("albumGain").toDouble();
+            entry.year = s.value("year").toInt();
+            m_tracks.push_back(entry);
             tracksAdded = true;
         }
         if (tracksAdded) {
