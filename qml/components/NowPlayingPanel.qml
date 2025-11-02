@@ -126,12 +126,6 @@ Rectangle {
                 enabled: panel.hasQueue
                 onClicked: player.next()
             }
-            ToolButton {
-                icon.source: player.crossfade ? "qrc:/qml/icons/auto_awesome.svg" : "qrc:/qml/icons/check_box_outline_blank.svg"
-                checkable: true
-                checked: player.crossfade
-                onToggled: player.crossfade = checked
-            }
         }
 
         Label {

@@ -74,18 +74,6 @@ Page {
                     RowLayout {
                         width: parent.width
                         Label {
-                            text: qsTr(qsTr(qsTr("Crossfade")))
-                            Layout.fillWidth: true
-                        }
-                        Switch {
-                            checked: player ? player.crossfade : false
-                            onToggled: if (player) player.crossfade = checked
-                        }
-                    }
-
-                    RowLayout {
-                        width: parent.width
-                        Label {
                             text: qsTr(qsTr(qsTr("ReplayGain")))
                             Layout.fillWidth: true
                         }

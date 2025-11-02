@@ -463,47 +463,7 @@ Rectangle {
                 }
             }
             
-            // Separador
-            Rectangle {
-                width: 1
-                height: 32
-                color: "#21262d"
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            
-            // Crossfade
-            RoundButton {
-                width: 36
-                height: 36
-                checkable: true
-                checked: player ? player.crossfade : false
-                
-                background: Rectangle {
-                    radius: 18
-                    color: parent.checked ? "#1f6feb" : (parent.hovered ? "#1f2937" : "transparent")
-                    border.color: parent.checked ? "#58a6ff" : (parent.hovered ? "#374151" : "transparent")
-                    
-                    Behavior on color { ColorAnimation { duration: 150 } }
-                }
-                
-                contentItem: Image {
-                    source: "../icons/auto_awesome.svg"
-                    width: 16
-                    height: 16
-                    anchors.centerIn: parent
-                    fillMode: Image.PreserveAspectFit
-                    opacity: parent.checked ? 1.0 : 0.5
-                    
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
-                }
-                
-                onToggled: player.crossfade = checked
-                
-                ToolTip.visible: hovered
-                ToolTip.text: checked ? "Crossfade ativado" : "Crossfade desativado"
-                ToolTip.delay: 500
-            }
-            
+
 
         }
     }
