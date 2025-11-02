@@ -222,8 +222,11 @@ jobs:
         }
 
         $shaderToolsCandidate = Join-Path $qtRoot "lib\Qt6ShaderTools.dll"
-        if (Test-Path $shaderToolsCandidate -and -not (Test-Path (Join-Path $qtBin "Qt6ShaderTools.dll"))) {
-          Copy-Item $shaderToolsCandidate -Destination $qtBin -Force
+        if (Test-Path $shaderToolsCandidate) {
+          $shaderToolsDest = Join-Path $qtBin "Qt6ShaderTools.dll"
+          if (-not (Test-Path $shaderToolsDest)) {
+            Copy-Item $shaderToolsCandidate -Destination $shaderToolsDest -Force
+          }
         }
 
         $env:PATH = "$qtBin;$(Join-Path $env:IQTA_TOOLS 'mingw1310_64\bin');$env:PATH"
