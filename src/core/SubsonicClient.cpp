@@ -1,12 +1,16 @@
 #include "SubsonicClient.h"
+#include "CacheManager.h"
 #include <set>
 #include <QCryptographicHash>
 #include <QRandomGenerator>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QNetworkDiskCache>
 #include <QSettings>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QStandardPaths>
+#include <QDir>
 #include <QDebug>
 
 static constexpr auto API_VERSION = "1.16.1";   // Navidrome alvo
@@ -17,7 +21,18 @@ static inline QString ensureNoTrailingSlash(QString s) {
     return s;
 }
 
-SubsonicClient::SubsonicClient(QObject *parent) : QObject(parent) { loadRecentlyPlayed(); }
+SubsonicClient::SubsonicClient(QObject *parent) : QObject(parent)
+{
+    loadRecentlyPlayed();
+
+    auto *diskCache = new QNetworkDiskCache(this);
+    const QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + "/network";
+    QDir().mkpath(cacheDir);
+    diskCache->setCacheDirectory(cacheDir);
+    diskCache->setMaximumCacheSize(100 * 1024 * 1024); // 100 MB cap
+    m_nam.setCache(diskCache);
+    m_nam.setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
+}
 
 void SubsonicClient::setServerUrl(const QString& url) {
     auto norm = ensureNoTrailingSlash(url.trimmed());
@@ -30,6 +45,13 @@ void SubsonicClient::setUsername(const QString& u) {
     if (u == m_user) return;
     m_user = u;
     emit usernameChanged();
+}
+
+void SubsonicClient::setCacheManager(CacheManager *cache)
+{
+    if (m_cacheManager == cache)
+        return;
+    m_cacheManager = cache;
 }
 
 QString SubsonicClient::md5(const QString& s) const {
@@ -123,6 +145,15 @@ void SubsonicClient::logout() {
 
 void SubsonicClient::fetchArtists() {
     if (!m_authenticated) return;
+
+    if (m_cacheManager && m_artists.isEmpty()) {
+        const auto cached = m_cacheManager->getList(cacheKey("artists"));
+        if (!cached.isEmpty()) {
+            m_artists = cached;
+            emit artistsChanged();
+        }
+    }
+
     QNetworkRequest req(buildUrl("getArtists", {}, true));
     auto *reply = m_nam.get(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply]{
@@ -152,6 +183,9 @@ void SubsonicClient::fetchArtists() {
             }
         }
         emit artistsChanged();
+        if (m_cacheManager) {
+            m_cacheManager->saveList(cacheKey("artists"), m_artists);
+        }
     });
 }
 
@@ -281,14 +315,19 @@ void SubsonicClient::fetchAlbum(const QString& albumId) {
 void SubsonicClient::fetchAlbumList(const QString& type) {
     if (!m_authenticated) return;
 
+    if (m_cacheManager && m_albumList.isEmpty()) {
+        const auto cached = m_cacheManager->getList(cacheKey(QStringLiteral("albumList:%1").arg(type)));
+        if (!cached.isEmpty()) {
+            m_albumList = cached;
+            emit albumListChanged();
+        }
+    }
+
     if (m_albumListReply) {
         m_albumListReply->abort();
         m_albumListReply->deleteLater();
         m_albumListReply = nullptr;
     }
-
-    m_albumList.clear();
-    emit albumListChanged();
 
     m_pendingAlbumListType = type;
     m_pendingAlbumListOffset = 0;
@@ -299,12 +338,17 @@ void SubsonicClient::fetchAlbumList(const QString& type) {
 void SubsonicClient::fetchRandomSongs() {
     if (!m_authenticated) return;
 
+    if (m_cacheManager && m_randomSongs.isEmpty()) {
+        const auto cached = m_cacheManager->getList(cacheKey("randomSongs"));
+        if (!cached.isEmpty()) {
+            m_randomSongs = cached;
+            emit randomSongsChanged();
+        }
+    }
+
     if (m_randomSongsReply) {
         m_randomSongsReply->abort();
     }
-
-    m_randomSongs.clear();
-    emit randomSongsChanged();
 
     QUrlQuery ex;
     ex.addQueryItem("size", "10");
@@ -332,6 +376,7 @@ void SubsonicClient::fetchRandomSongs() {
         QString err;
         if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
 
+        m_randomSongs.clear();
         auto root = doc.object().value("subsonic-response").toObject();
         auto songs = root.value("randomSongs").toObject().value("song").toArray();
         for (const auto &sv : songs) {
@@ -351,18 +396,26 @@ void SubsonicClient::fetchRandomSongs() {
             });
         }
         emit randomSongsChanged();
+        if (m_cacheManager) {
+            m_cacheManager->saveList(cacheKey("randomSongs"), m_randomSongs);
+        }
     });
 }
 
 void SubsonicClient::fetchPlaylists() {
     if (!m_authenticated) return;
 
+    if (m_cacheManager && m_playlists.isEmpty()) {
+        const auto cached = m_cacheManager->getList(cacheKey("playlists"));
+        if (!cached.isEmpty()) {
+            m_playlists = cached;
+            emit playlistsChanged();
+        }
+    }
+
     if (m_playlistsReply) {
         m_playlistsReply->abort();
     }
-
-    m_playlists.clear();
-    emit playlistsChanged();
 
     QNetworkRequest req(buildUrl("getPlaylists", {}, true));
     auto *reply = m_nam.get(req);
@@ -388,6 +441,7 @@ void SubsonicClient::fetchPlaylists() {
         QString err;
         if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
 
+        m_playlists.clear();
         auto root = doc.object().value("subsonic-response").toObject();
         auto playlists = root.value("playlists").toObject().value("playlist").toArray();
         for (const auto &pv : playlists) {
@@ -401,6 +455,9 @@ void SubsonicClient::fetchPlaylists() {
             });
         }
         emit playlistsChanged();
+        if (m_cacheManager) {
+            m_cacheManager->saveList(cacheKey("playlists"), m_playlists);
+        }
     });
 }
 
@@ -464,12 +521,17 @@ void SubsonicClient::fetchPlaylist(const QString& playlistId) {
 void SubsonicClient::fetchFavorites() {
     if (!m_authenticated) return;
 
+    if (m_cacheManager && m_favorites.isEmpty()) {
+        const auto cached = m_cacheManager->getList(cacheKey("favorites"));
+        if (!cached.isEmpty()) {
+            m_favorites = cached;
+            emit favoritesChanged();
+        }
+    }
+
     if (m_favoritesReply) {
         m_favoritesReply->abort();
     }
-
-    m_favorites.clear();
-    emit favoritesChanged();
 
     QNetworkRequest req(buildUrl("getStarred", {}, true));
     auto *reply = m_nam.get(req);
@@ -495,6 +557,7 @@ void SubsonicClient::fetchFavorites() {
         QString err;
         if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
 
+        m_favorites.clear();
         auto root = doc.object().value("subsonic-response").toObject();
         auto starred = root.value("starred").toObject();
         auto songs = starred.value("song").toArray();
@@ -515,6 +578,9 @@ void SubsonicClient::fetchFavorites() {
             });
         }
         emit favoritesChanged();
+        if (m_cacheManager) {
+            m_cacheManager->saveList(cacheKey("favorites"), m_favorites);
+        }
     });
 }
 
@@ -697,6 +763,11 @@ void SubsonicClient::loadRecentlyPlayed() {
     emit recentlyPlayedAlbumsChanged();
 }
 
+QString SubsonicClient::cacheKey(const QString &base) const
+{
+    return QStringLiteral("%1|%2|%3").arg(base, m_server, m_user);
+}
+
 void SubsonicClient::fetchAlbumTracksAndAppend(const QString& albumId) {
     if (!m_authenticated) return;
 
@@ -784,6 +855,9 @@ void SubsonicClient::fetchAlbumListPage(const QString& type, int offset)
 
         auto root = doc.object().value("subsonic-response").toObject();
         auto albums = root.value("albumList2").toObject().value("album").toArray();
+        if (offset == 0) {
+            m_albumList.clear();
+        }
         for (const auto &av : albums) {
             auto a = av.toObject();
             m_albumList.push_back(QVariantMap{
@@ -809,6 +883,9 @@ void SubsonicClient::fetchAlbumListPage(const QString& type, int offset)
         std::sort(m_albumList.begin(), m_albumList.end(), [](const QVariant& v1, const QVariant& v2) {
             return v1.toMap().value("name").toString().localeAwareCompare(v2.toMap().value("name").toString()) < 0;
         });
+        if (m_cacheManager) {
+            m_cacheManager->saveList(cacheKey(QStringLiteral("albumList:%1").arg(type)), m_albumList);
+        }
         emit albumListChanged();
         reply->deleteLater();
     });

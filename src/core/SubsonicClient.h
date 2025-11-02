@@ -4,6 +4,8 @@
 #include <QJsonDocument>
 #include <QUrlQuery>
 
+class CacheManager;
+
 class SubsonicClient : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString serverUrl READ serverUrl WRITE setServerUrl NOTIFY serverUrlChanged)
@@ -31,6 +33,7 @@ public:
 
     void setServerUrl(const QString& url);
     void setUsername(const QString& u);
+    void setCacheManager(CacheManager *cache);
 
     Q_INVOKABLE void login(const QString& url, const QString& user, const QString& password);
     Q_INVOKABLE void logout();
@@ -95,6 +98,7 @@ private:
 
     void setAuthenticated(bool ok);
     void fetchAlbumListPage(const QString& type, int offset);
+    QString cacheKey(const QString &base) const;
 
     QString m_server, m_user, m_token, m_salt;
     bool m_authenticated = false;
@@ -112,4 +116,5 @@ private:
     QString m_pendingAlbumListType;
     int m_pendingAlbumListOffset = 0;
     bool m_albumListPaging = false;
+    CacheManager *m_cacheManager = nullptr;
 };

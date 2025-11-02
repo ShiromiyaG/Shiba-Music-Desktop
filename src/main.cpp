@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
     
     TranslationManager translationManager;
     SubsonicClient api;
+    api.setCacheManager(&cacheManager);
     DiscordRPC discord;
     PlayerController player(&api, &discord);
     AppInfo appInfo;

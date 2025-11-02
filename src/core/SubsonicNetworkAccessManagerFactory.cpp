@@ -1,7 +1,19 @@
 #include "SubsonicNetworkAccessManagerFactory.h"
 
+#include <QNetworkDiskCache>
+#include <QStandardPaths>
+#include <QDir>
+
 SubsonicNetworkAccessManager::SubsonicNetworkAccessManager(QObject *parent)
-    : QNetworkAccessManager(parent) {}
+    : QNetworkAccessManager(parent)
+{
+    auto *diskCache = new QNetworkDiskCache(this);
+    const QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + "/network";
+    QDir().mkpath(cacheDir);
+    diskCache->setCacheDirectory(cacheDir);
+    diskCache->setMaximumCacheSize(100 * 1024 * 1024); // 100 MB cap
+    setCache(diskCache);
+}
 
 QNetworkReply *SubsonicNetworkAccessManager::createRequest(Operation op,
                                                            const QNetworkRequest &original,
