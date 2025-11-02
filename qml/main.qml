@@ -3,7 +3,6 @@ import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
 import QtQuick.Window 2.15
-import QtQuick.Shapes
 import "components" as Components
 
 ApplicationWindow {

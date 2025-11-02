@@ -197,379 +197,69 @@ jobs:
         $env:DISCORD_CLIENT_ID = "${{ secrets.DISCORD_CLIENT_ID }}"
         cmake --build build --config Release
     
-    - name: Install Dependencies.exe
+    - name: Deploy bundle
       run: |
-        Write-Host "📥 Downloading Dependencies.exe..." -ForegroundColor Cyan
-        $url = "https://github.com/lucasg/Dependencies/releases/download/v1.11.1/Dependencies_x64_Release.zip"
-        $zipFile = "Dependencies.zip"
-        Invoke-WebRequest -Uri $url -OutFile $zipFile
-        Expand-Archive -Path $zipFile -DestinationPath "Dependencies" -Force
-        Remove-Item $zipFile
-        Write-Host "✅ Dependencies.exe installed" -ForegroundColor Green
-    
-    - name: Deploy Qt dependencies
-      run: |
-        $ErrorActionPreference = "Continue"
-        $deployDir = "build\deploy"
-        
-        Write-Host "Creating deploy directory..."
-        New-Item -ItemType Directory -Force -Path $deployDir | Out-Null
-        
-        Write-Host "Copying executable..."
+        $ErrorActionPreference = "Stop"
+        $deployDir = Join-Path (Resolve-Path build) "deploy"
+        if (Test-Path $deployDir) {
+          Remove-Item $deployDir -Recurse -Force
+        }
+        New-Item -ItemType Directory -Path $deployDir | Out-Null
+
         Copy-Item "build\shibamusic.exe" -Destination $deployDir -Force
-        
-        Write-Host "Copying libmpv..."
-        if (Test-Path "libs\mpv\bin\libmpv-2.dll") {
-          Copy-Item "libs\mpv\bin\libmpv-2.dll" -Destination $deployDir -Force
-          Write-Host "✅ libmpv-2.dll copied"
-        } else {
-          Write-Host "⚠️  libmpv-2.dll not found"
+
+        $mpvDll = "libs\mpv\bin\libmpv-2.dll"
+        if (-not (Test-Path $mpvDll)) {
+          throw "libmpv-2.dll not found at $mpvDll"
         }
-        
-        Write-Host "Setting up environment for windeployqt..."
-        $env:PATH = "$env:QT_ROOT_DIR\bin;$env:IQTA_TOOLS\mingw1310_64\bin;$env:PATH"
-        $qtBinDir = "$env:QT_ROOT_DIR\bin"
-        $qtRootFullPath = [System.IO.Path]::GetFullPath($env:QT_ROOT_DIR)
-        $qtParentPath = Split-Path $qtRootFullPath -Parent
-        $qtGrandParentPath = Split-Path $qtParentPath -Parent
-        $toolOpenSslDir = if ($qtGrandParentPath) { Join-Path $qtGrandParentPath "Tools\OpenSSL\Win_x64\bin" } else { "" }
-        $openSslCandidates = @(
-          (Join-Path $env:IQTA_TOOLS "OpenSSL\Win_x64\bin"),
-          $toolOpenSslDir
-        ) | Where-Object { $_ -and (Test-Path $_) }
-        
-        Write-Host "Running windeployqt..."
-        $windeployqt = "$env:QT_ROOT_DIR\bin\windeployqt.exe"
+        Copy-Item $mpvDll -Destination $deployDir -Force
+
+        $qtRoot = $env:QT_ROOT_DIR
+        $qtBin = Join-Path $qtRoot "bin"
+        $windeployqt = Join-Path $qtBin "windeployqt.exe"
         if (-not (Test-Path $windeployqt)) {
-          Write-Host "❌ windeployqt not found at: $windeployqt"
-          throw "windeployqt not found"
+          throw "windeployqt not found at $windeployqt"
         }
-        
-        # Try windeployqt without --compiler-runtime first (simpler, less prone to errors)
-        Write-Host "Attempting windeployqt without --compiler-runtime..."
-        $output = & $windeployqt --qmldir qml --qmldir qml/components --qmldir qml/pages --release --no-translations "$deployDir\shibamusic.exe" 2>&1
-        $exitCode = $LASTEXITCODE
-        
-        # Show output
-        $output | ForEach-Object { Write-Host $_ }
-        
-        # Check if deployment worked (Qt DLLs present)
-        Start-Sleep -Seconds 2
-        $qtDlls = Get-ChildItem $deployDir -Filter "Qt*.dll" -ErrorAction SilentlyContinue
-        
-        if ($qtDlls.Count -gt 0) {
-          Write-Host "✅ windeployqt completed successfully (found $($qtDlls.Count) Qt DLLs)"
-        } else {
-          Write-Host "⚠️  windeployqt didn't copy Qt DLLs (exit code: $exitCode)"
-          Write-Host "Trying alternative method: manual DLL copy..."
-          
-          # Manual copy of essential Qt DLLs (fallback)
-          Write-Host "Copying Qt6 DLLs from $qtBinDir ..."
-          $qtDllFiles = Get-ChildItem $qtBinDir -Filter "Qt6*.dll" -File -ErrorAction SilentlyContinue
-          foreach ($file in $qtDllFiles) {
-            Copy-Item $file.FullName -Destination $deployDir -Force
-            Write-Host "  ✅ $($file.Name)"
-          }
 
-          # Additional runtime libraries that may not follow Qt6* pattern
-          $additionalDlls = @(
-            "libEGL.dll",
-            "libGLESv2.dll",
-            "d3dcompiler_47.dll",
-            "libssl-3-x64.dll",
-            "libcrypto-3-x64.dll"
-          )
+        $env:PATH = "$qtBin;$(Join-Path $env:IQTA_TOOLS 'mingw1310_64\bin');$env:PATH"
+        & $windeployqt --release --no-translations --compiler-runtime --qmldir qml --qmldir qml/components --qmldir qml/pages "$deployDir\shibamusic.exe"
 
-          foreach ($dll in $additionalDlls) {
-            $candidatePaths = @(
-              (Join-Path $qtBinDir $dll),
-              (Join-Path $env:IQTA_TOOLS "OpenSSL\Win_x64\bin\$dll"),
-              (Join-Path $env:QT_ROOT_DIR "lib\$dll"),
-              (Join-Path $toolOpenSslDir $dll)
-            ) | Where-Object { $_ -and (Test-Path $_) }
-
-            if ($candidatePaths.Count -gt 0) {
-              Copy-Item $candidatePaths[0] -Destination $deployDir -Force
-              Write-Host "  ✅ $dll"
-            } else {
-              Write-Host "  ⚠️  $dll (not found - may not be required)" -ForegroundColor DarkYellow
-            }
-          }
-          
-          # Copy plugins
-          Write-Host "Copying Qt plugins..."
-          $pluginsDir = "$env:QT_ROOT_DIR\plugins"
-          
-          # Platform plugin
-          if (Test-Path "$pluginsDir\platforms") {
-            New-Item -ItemType Directory -Force -Path "$deployDir\platforms" | Out-Null
-            Copy-Item "$pluginsDir\platforms\qwindows.dll" -Destination "$deployDir\platforms\" -Force -ErrorAction SilentlyContinue
-            Write-Host "  ✅ platforms/qwindows.dll"
-          }
-          
-          # TLS backend
-          if (Test-Path "$pluginsDir\tls") {
-            New-Item -ItemType Directory -Force -Path "$deployDir\tls" | Out-Null
-            Copy-Item "$pluginsDir\tls\*" -Destination "$deployDir\tls\" -Force -ErrorAction SilentlyContinue
-            Write-Host "  ✅ tls plugins"
-          }
-          
-          # Image formats
-          if (Test-Path "$pluginsDir\imageformats") {
-            New-Item -ItemType Directory -Force -Path "$deployDir\imageformats" | Out-Null
-            $imagePlugins = @("qgif.dll", "qicns.dll", "qico.dll", "qjpeg.dll", "qsvg.dll", "qwebp.dll")
-            foreach ($plugin in $imagePlugins) {
-              $pluginPath = "$pluginsDir\imageformats\$plugin"
-              if (Test-Path $pluginPath) {
-                Copy-Item $pluginPath -Destination "$deployDir\imageformats\" -Force -ErrorAction SilentlyContinue
-              }
-            }
-            Write-Host "  ✅ imageformats plugins"
-          }
-          
-          # Generic plugins
-          if (Test-Path "$pluginsDir\generic") {
-            New-Item -ItemType Directory -Force -Path "$deployDir\generic" | Out-Null
-            Copy-Item "$pluginsDir\generic\*" -Destination "$deployDir\generic\" -Force -ErrorAction SilentlyContinue
-            Write-Host "  ✅ generic plugins"
-          }
-          
-          # Styles
-          if (Test-Path "$pluginsDir\styles") {
-            New-Item -ItemType Directory -Force -Path "$deployDir\styles" | Out-Null
-            Copy-Item "$pluginsDir\styles\*" -Destination "$deployDir\styles\" -Force -ErrorAction SilentlyContinue
-            Write-Host "  ✅ styles plugins"
-          }
-          
-          # Copy QML modules
-          Write-Host "Copying essential QML modules..."
-          $qmlSrcDir = "$env:QT_ROOT_DIR\qml"
-          $qmlDstDir = "$deployDir\qml"
-          $qmlModules = @(
-            "QtCore",
-            "QtQuick",
-            "QtQuick.2",
-            "QtQml",
-            "QtQml.Models",
-            "QtQml.WorkerScript",
-            "QtQml.XmlListModel",
-            "QtQuick.Controls",
-            "QtQuick.Controls.Basic",
-            "QtQuick.Controls.Material",
-            "QtQuick.Controls.Fusion",
-            "QtQuick.Controls.Imagine",
-            "QtQuick.Controls.Universal",
-            "QtQuick.Controls.impl",
-            "QtQuick.Dialogs",
-            "QtQuick.Layouts",
-            "QtQuick.LocalStorage",
-            "QtQuick.NativeStyle",
-            "QtQuick.Particles",
-            "QtQuick.Templates",
-            "QtQuick.Window",
-            "QtQuick.Shapes",
-            "QtQuick.Effects"
-          )
-          
-          foreach ($module in $qmlModules) {
-            # Handle module paths with dots (e.g., QtQuick.Controls)
-            $modulePath = $module.Replace('.', '\')
-            $srcPath = Join-Path $qmlSrcDir $modulePath
-            
-            if (Test-Path $srcPath) {
-              $dstPath = Join-Path $qmlDstDir $modulePath
-              $dstParent = Split-Path $dstPath -Parent
-              
-              # Create parent directories
-              if ($dstParent) {
-                New-Item -ItemType Directory -Force -Path $dstParent -ErrorAction SilentlyContinue | Out-Null
-              }
-              
-              # Copy entire module directory
-              Copy-Item $srcPath -Destination $dstPath -Recurse -Force -ErrorAction SilentlyContinue
-              Write-Host "  ✅ $module"
-            } else {
-              Write-Host "  ⚠️  $module (not found)" -ForegroundColor DarkGray
-            }
-          }
-          
-          Write-Host "✅ Manual deployment completed"
+        if (-not (Test-Path (Join-Path $deployDir 'Qt6Core.dll'))) {
+          throw "Qt DLLs were not deployed correctly"
         }
-        
-        Write-Host "`nEnsuring TLS/OpenSSL runtime libraries..."
-        $opensslLibs = @("libssl-3-x64.dll", "libcrypto-3-x64.dll")
-        $opensslSearchDirs = @($qtBinDir) + $openSslCandidates
-        foreach ($lib in $opensslLibs) {
-          $targetPath = Join-Path $deployDir $lib
-          if (-not (Test-Path $targetPath)) {
-            $copied = $false
-            foreach ($dir in $opensslSearchDirs) {
-              if (-not $dir) { continue }
-              $sourcePath = Join-Path $dir $lib
-              if (Test-Path $sourcePath) {
-                Copy-Item $sourcePath -Destination $targetPath -Force
-                Write-Host "  ✅ $lib copied from $dir"
-                $copied = $true
+
+        $opensslDirs = @(
+          (Join-Path $qtRoot 'bin'),
+          (Join-Path $qtRoot 'lib'),
+          (Join-Path $env:IQTA_TOOLS 'OpenSSL\Win_x64\bin')
+        ) | Where-Object { $_ -and (Test-Path $_) }
+
+        foreach ($lib in @('libssl-3-x64.dll','libcrypto-3-x64.dll')) {
+          if (-not (Test-Path (Join-Path $deployDir $lib))) {
+            foreach ($dir in $opensslDirs) {
+              $candidate = Join-Path $dir $lib
+              if (Test-Path $candidate) {
+                Copy-Item $candidate -Destination $deployDir -Force
                 break
               }
             }
-            if (-not $copied) {
-              Write-Host "  ⚠️  $lib not found in configured OpenSSL directories" -ForegroundColor DarkYellow
-            }
-          } else {
-            Write-Host "  ✅ $lib already present"
           }
         }
 
-        $tlsPluginSource = Join-Path "$env:QT_ROOT_DIR\plugins" "tls"
-        $tlsPluginDest = Join-Path $deployDir "tls"
-        if (Test-Path $tlsPluginSource) {
-          if (-not (Test-Path $tlsPluginDest)) {
-            New-Item -ItemType Directory -Force -Path $tlsPluginDest | Out-Null
-          }
-          Copy-Item "$tlsPluginSource\*" -Destination $tlsPluginDest -Force -ErrorAction SilentlyContinue
-          Write-Host "  ✅ TLS plugins ensured"
-        } else {
-          Write-Host "  ⚠️  TLS plugins directory not found at $tlsPluginSource" -ForegroundColor DarkYellow
+        $platformDll = Join-Path $deployDir 'platforms\qwindows.dll'
+        if (-not (Test-Path $platformDll)) {
+          throw "Qt platform plugin not found at $platformDll"
         }
 
-        Write-Host "Copying MinGW runtime DLLs..."
-        $mingwPath = "$env:IQTA_TOOLS\mingw1310_64\bin"
-        $dllsToCheck = @(
-          "libgcc_s_seh-1.dll",
-          "libstdc++-6.dll",
-          "libwinpthread-1.dll"
-        )
-        
-        foreach ($dll in $dllsToCheck) {
-          $dllPath = Join-Path $mingwPath $dll
-          if (Test-Path $dllPath) {
-            Copy-Item $dllPath -Destination $deployDir -Force
-            Write-Host "  ✅ $dll"
-          } else {
-            Write-Host "  ⚠️  $dll not found"
+        foreach ($dll in @('libgcc_s_seh-1.dll','libstdc++-6.dll','libwinpthread-1.dll')) {
+          $mingwDll = Join-Path $env:IQTA_TOOLS "mingw1310_64\bin\$dll"
+          if (Test-Path $mingwDll) {
+            Copy-Item $mingwDll -Destination $deployDir -Force
           }
         }
-        
-        Write-Host "`n✅ Deployment complete!"
-        Write-Host "Deploy directory contents:"
-        try {
-          Get-ChildItem $deployDir -Name -ErrorAction Stop | ForEach-Object { Write-Host "  - $_" }
-        } catch {
-          Write-Host "Could not list directory contents: $_"
-        }
-        
-        # Ensure success
-        exit 0
-    
-    - name: Verify dependencies with Dependencies.exe
-      run: |
-        Write-Host "`n🔍 Verifying DLL dependencies..." -ForegroundColor Cyan
-        Write-Host "=" * 70
-        
-        $deployDir = "build\deploy"
-        $exePath = "$deployDir\shibamusic.exe"
-        $depsExe = "Dependencies\DependenciesGui.exe"
-        $depsCli = "Dependencies\Dependencies.exe"
-        
-        # Check if CLI version exists
-        if (Test-Path $depsCli) {
-          Write-Host "✅ Using Dependencies CLI" -ForegroundColor Green
-          
-          # Run dependency check
-          & $depsCli -imports $exePath | Out-File "dependency-report.txt"
-          
-          # Parse output to find missing DLLs
-          $report = Get-Content "dependency-report.txt" -Raw
-          
-          if ($report -match "missing|not found") {
-            Write-Host "⚠️  Some dependencies may be missing!" -ForegroundColor Yellow
-            Write-Host $report
-          } else {
-            Write-Host "✅ All dependencies appear to be satisfied" -ForegroundColor Green
-          }
-          
-          # Show key Qt DLLs
-          Write-Host "`n📦 Qt DLLs in deployment:" -ForegroundColor Cyan
-          Get-ChildItem $deployDir -Filter "Qt6*.dll" | ForEach-Object {
-            Write-Host "  ✅ $($_.Name)" -ForegroundColor Green
-          }
-          
-        } else {
-          Write-Host "⚠️  Dependencies CLI not available, using manual check" -ForegroundColor Yellow
-          
-          # Manual check of essential DLLs
-          $essentialChecks = @(
-            "Qt6Core.dll",
-            "Qt6Gui.dll",
-            "Qt6Qml.dll",
-            "Qt6QmlCore.dll",
-            "Qt6Sql.dll",
-            "Qt6Quick.dll",
-            "Qt6QuickControls2.dll",
-            "Qt6QuickControls2Impl.dll",
-            "Qt6QuickTemplates2.dll",
-            "libmpv-2.dll",
-            "libssl-3-x64.dll",
-            "libcrypto-3-x64.dll",
-            "tls\opensslbackend.dll"
-          )
-          
-          Write-Host "`n📦 Checking essential DLLs:" -ForegroundColor Cyan
-          $allPresent = $true
-          foreach ($dll in $essentialChecks) {
-            $dllPath = Join-Path $deployDir $dll
-            if (Test-Path $dllPath) {
-              Write-Host "  ✅ $dll" -ForegroundColor Green
-            } else {
-              Write-Host "  ❌ $dll - MISSING!" -ForegroundColor Red
-              $allPresent = $false
-            }
-          }
 
-          # Ensure SQL driver plugins are included
-          $qtPluginsDir = Join-Path $env:QT_ROOT_DIR "plugins"
-          $sourceSqlDir = Join-Path $qtPluginsDir "sqldrivers"
-          $destSqlDir = Join-Path $deployDir "sqldrivers"
-          if (Test-Path $sourceSqlDir) {
-            Write-Host "`n📦 Ensuring SQL driver plugins are deployed..." -ForegroundColor Cyan
-            if (-not (Test-Path $destSqlDir)) {
-              New-Item -ItemType Directory -Path $destSqlDir -Force | Out-Null
-            }
-            Copy-Item (Join-Path $sourceSqlDir "*") -Destination $destSqlDir -Recurse -Force
-            Write-Host "  ✅ SQL drivers copied to $(Resolve-Path $destSqlDir)" -ForegroundColor Green
-          } else {
-            Write-Host "`n⚠️  SQL driver plugins directory not found at $sourceSqlDir" -ForegroundColor Yellow
-            $allPresent = $false
-          }
-          
-          # Check QML modules
-          Write-Host "`n📦 Checking essential QML modules:" -ForegroundColor Cyan
-          $qmlDir = "$deployDir\qml"
-          $essentialModules = @(
-            "QtQuick\Controls\Material",
-            "QtQuick\Controls\impl"
-          )
-          
-          foreach ($module in $essentialModules) {
-            $modulePath = Join-Path $qmlDir $module
-            if (Test-Path $modulePath) {
-              Write-Host "  ✅ $module" -ForegroundColor Green
-            } else {
-              Write-Host "  ❌ $module - MISSING!" -ForegroundColor Red
-              $allPresent = $false
-            }
-          }
-          
-          if ($allPresent) {
-            Write-Host "`n✅ All essential dependencies present!" -ForegroundColor Green
-          } else {
-            Write-Host "`n⚠️  Some dependencies are missing!" -ForegroundColor Yellow
-            Write-Host "The app may not work correctly." -ForegroundColor Yellow
-          }
-        }
-        
-        Write-Host "=" * 70
+        Write-Host "Deployment directory:" 
+        Get-ChildItem $deployDir | ForEach-Object { Write-Host "  - $($_.Name)" }
     
     - name: Create archive
       run: |
@@ -580,16 +270,6 @@ jobs:
       with:
         name: ShibaMusic-Windows
         path: ShibaMusic-Windows-x64.zip
-    
-    - name: Upload dependency report
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: Dependency-Report
-        path: |
-          dependency-report.txt
-          check-dlls.ps1
-        if-no-files-found: ignore
     
     - name: Create Release
       uses: softprops/action-gh-release@v1
