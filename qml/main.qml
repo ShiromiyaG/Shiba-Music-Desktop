@@ -4,7 +4,6 @@ import QtQuick.Controls.Material
 import QtQuick.Layouts
 import QtQuick.Window 2.15
 import QtQuick.Shapes
-import QtQuick.Shapes
 import "components" as Components
 
 ApplicationWindow {
@@ -50,15 +49,15 @@ ApplicationWindow {
                     defaults.x, defaults.y, defaults.width, defaults.height,
                     win.visibility === Window.Maximized, win.minimumWidth, win.minimumHeight)
 
+        pendingMaximizeRestore = false
+
         if (state && state.stored) {
-            if (state.maximized) {
-                win.visibility = Window.Maximized
-            } else {
-                win.width = state.width
-                win.height = state.height
-                win.x = state.x
-                win.y = state.y
-            }
+            win.width = state.width
+            win.height = state.height
+            win.x = state.x
+            win.y = state.y
+            lastWindowedGeometry = Qt.rect(state.x, state.y, state.width, state.height)
+            pendingMaximizeRestore = state.maximized
         }
 
         windowStateRestored = true
@@ -73,7 +72,11 @@ ApplicationWindow {
             geom = win.normalGeometry
             if (!geom || typeof geom.x !== "number" || typeof geom.y !== "number" ||
                     typeof geom.width !== "number" || typeof geom.height !== "number") {
-                geom = Qt.rect(win.x, win.y, win.width, win.height)
+                if (lastWindowedGeometry) {
+                    geom = lastWindowedGeometry
+                } else {
+                    geom = Qt.rect(win.x, win.y, win.width, win.height)
+                }
             }
         } else {
             geom = Qt.rect(win.x, win.y, win.width, win.height)
@@ -86,6 +89,12 @@ ApplicationWindow {
             geom = { x: win.x, y: win.y, width: win.width, height: win.height }
         }
         windowStateManager.saveState(geom.x, geom.y, geom.width, geom.height, isMaximized)
+    }
+
+    function captureWindowedGeometry() {
+        if (win.visibility !== Window.Maximized && win.visibility !== Window.FullScreen) {
+            lastWindowedGeometry = Qt.rect(win.x, win.y, win.width, win.height)
+        }
     }
 
     function normalizeServerUrl(value) {
@@ -230,6 +239,8 @@ ApplicationWindow {
     property bool switchingServer: false
     property var navigationHistory: []
     property var forwardHistory: []
+    property bool pendingMaximizeRestore: false
+    property var lastWindowedGeometry: Qt.rect(x, y, width, height)
 
     onSavedServerProfilesChanged: {
         if (typeof serverSelector !== "undefined") {
@@ -1130,7 +1141,12 @@ ApplicationWindow {
 
     Component.onCompleted: {
         restoreWindowState()
+        captureWindowedGeometry()
         win.visible = true
+        if (pendingMaximizeRestore) {
+            win.visibility = Window.Maximized
+            pendingMaximizeRestore = false
+        }
         win.requestActivate()
 
         if (api) {
@@ -1147,26 +1163,31 @@ ApplicationWindow {
     }
 
     onXChanged: {
+        captureWindowedGeometry()
         if (windowStateRestored && visible)
             windowStateSaveTimer.restart()
     }
 
     onYChanged: {
+        captureWindowedGeometry()
         if (windowStateRestored && visible)
             windowStateSaveTimer.restart()
     }
 
     onWidthChanged: {
+        captureWindowedGeometry()
         if (windowStateRestored && visible && win.visibility !== Window.Maximized)
             windowStateSaveTimer.restart()
     }
 
     onHeightChanged: {
+        captureWindowedGeometry()
         if (windowStateRestored && visible && win.visibility !== Window.Maximized)
             windowStateSaveTimer.restart()
     }
 
     onVisibilityChanged: function(newVisibility) {
+        captureWindowedGeometry()
         if (!windowStateRestored)
             return
         if (newVisibility === Window.Maximized || newVisibility === Window.Windowed)
