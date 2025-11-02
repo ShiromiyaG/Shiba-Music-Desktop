@@ -201,7 +201,7 @@ jobs:
         
         # Try windeployqt without --compiler-runtime first (simpler, less prone to errors)
         Write-Host "Attempting windeployqt without --compiler-runtime..."
-        $output = & $windeployqt --qmldir qml --release --no-translations "$deployDir\shibamusic.exe" 2>&1
+        $output = & $windeployqt --qmldir qml --release --no-translations --sql sqlite "$deployDir\shibamusic.exe" 2>&1
         $exitCode = $LASTEXITCODE
         
         # Show output
@@ -223,6 +223,7 @@ jobs:
             "Qt6Core.dll",
             "Qt6Gui.dll",
             "Qt6Network.dll",
+            "Qt6Sql.dll",
             "Qt6Qml.dll",
             "Qt6QmlCore.dll",
             "Qt6QmlLocalStorage.dll",
@@ -444,6 +445,7 @@ jobs:
             "Qt6Gui.dll",
             "Qt6Qml.dll",
             "Qt6QmlCore.dll",
+            "Qt6Sql.dll",
             "Qt6Quick.dll",
             "Qt6QuickControls2.dll",
             "Qt6QuickControls2Impl.dll",
@@ -461,6 +463,22 @@ jobs:
               Write-Host "  ❌ $dll - MISSING!" -ForegroundColor Red
               $allPresent = $false
             }
+          }
+
+          # Ensure SQL driver plugins are included
+          $qtPluginsDir = Join-Path $env:QT_ROOT_DIR "plugins"
+          $sourceSqlDir = Join-Path $qtPluginsDir "sqldrivers"
+          $destSqlDir = Join-Path $deployDir "sqldrivers"
+          if (Test-Path $sourceSqlDir) {
+            Write-Host "`n📦 Ensuring SQL driver plugins are deployed..." -ForegroundColor Cyan
+            if (-not (Test-Path $destSqlDir)) {
+              New-Item -ItemType Directory -Path $destSqlDir -Force | Out-Null
+            }
+            Copy-Item (Join-Path $sourceSqlDir "*") -Destination $destSqlDir -Recurse -Force
+            Write-Host "  ✅ SQL drivers copied to $(Resolve-Path $destSqlDir)" -ForegroundColor Green
+          } else {
+            Write-Host "`n⚠️  SQL driver plugins directory not found at $sourceSqlDir" -ForegroundColor Yellow
+            $allPresent = $false
           }
           
           # Check QML modules
