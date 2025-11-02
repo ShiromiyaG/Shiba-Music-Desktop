@@ -7,6 +7,17 @@ on:
       - master
     paths:
       - 'version.txt'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (leave empty to use version.txt)'
+        required: false
+        type: string
+      force_release:
+        description: 'Force build even if the tag already exists'
+        required: false
+        type: boolean
+        default: false
 
 env:
   QT_VERSION: '6.9.3'
@@ -22,6 +33,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
       tag_exists: ${{ steps.check_tag.outputs.exists }}
+      should_build: ${{ steps.check_tag.outputs.continue }}
     
     steps:
     - name: Checkout code
@@ -31,21 +43,46 @@ jobs:
     
     - name: Read version
       id: version
+      env:
+        INPUT_VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || '' }}
       run: |
-        VERSION=$(cat version.txt | tr -d '\n' | tr -d '\r')
+        if [ -n "$INPUT_VERSION" ]; then
+          VERSION="$INPUT_VERSION"
+          echo "Using version from manual input: $VERSION"
+        else
+          VERSION=$(tr -d '\n' < version.txt | tr -d '\r')
+          echo "Using version from version.txt: $VERSION"
+        fi
+
+        if [ -z "$VERSION" ]; then
+          echo "❌ Version could not be determined" >&2
+          exit 1
+        fi
+
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "tag=v$VERSION" >> $GITHUB_OUTPUT
         echo "📦 Version: $VERSION"
     
     - name: Check if tag exists
       id: check_tag
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
+        FORCE_RELEASE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_release || 'false' }}
       run: |
-        if git rev-parse "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+        TAG="v$VERSION"
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
           echo "exists=true" >> $GITHUB_OUTPUT
-          echo "⚠️  Tag v${{ steps.version.outputs.version }} already exists"
+          if [ "$FORCE_RELEASE" = "true" ]; then
+            echo "continue=true" >> $GITHUB_OUTPUT
+            echo "🔁 Tag $TAG already exists but force_release enabled"
+          else
+            echo "continue=false" >> $GITHUB_OUTPUT
+            echo "⚠️  Tag $TAG already exists"
+          fi
         else
           echo "exists=false" >> $GITHUB_OUTPUT
-          echo "✅ Tag v${{ steps.version.outputs.version }} is new"
+          echo "continue=true" >> $GITHUB_OUTPUT
+          echo "✅ Tag $TAG is new"
         fi
     
     - name: Create and push tag
@@ -61,7 +98,7 @@ jobs:
 
   build-windows:
     needs: create-release
-    if: needs.create-release.outputs.tag_exists == 'false'
+    if: needs.create-release.outputs.should_build == 'true'
     runs-on: windows-latest
     permissions:
       contents: write
