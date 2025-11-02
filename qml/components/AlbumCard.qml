@@ -6,7 +6,7 @@ import QtQuick.Window
 Item {
     id: root
     width: 200
-    height: 260
+    height: 270
     property string title
     property string subtitle
     property url cover

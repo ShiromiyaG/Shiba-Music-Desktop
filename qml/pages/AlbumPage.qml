@@ -15,15 +15,15 @@ Page {
     function requestArtistPage() {
         var id = artistId
         var name = artistName
-        if ((!id || id.length === 0) && api.tracks.length > 0) {
+        if (api && api.tracks && (!id || id.length === 0) && api.tracks.length > 0) {
             var first = api.tracks[0]
-            if (first.albumId === albumId) {
+            if (first && first.albumId === albumId) {
                 id = first.artistId || id
                 if (!name || name.length === 0)
                     name = first.artist || name
             }
         }
-        if (id && id.length > 0)
+        if (id && id.length > 0 && StackView.view)
             StackView.view.push(Qt.resolvedUrl("qrc:/qml/pages/ArtistPage.qml"), {
                 artistId: id,
                 artistName: name,
@@ -32,10 +32,10 @@ Page {
     }
 
     function refreshArtistMetadata() {
-        if (api.tracks.length === 0)
+        if (!api || !api.tracks || api.tracks.length === 0)
             return
         var firstTrack = api.tracks[0]
-        if (firstTrack.albumId !== albumId)
+        if (!firstTrack || firstTrack.albumId !== albumId)
             return
         if (!artistId || artistId.length === 0)
             artistId = firstTrack.artistId || ""
@@ -46,25 +46,25 @@ Page {
     background: Rectangle { color: "transparent" }
 
     Component.onCompleted: {
-        api.clearTracks()
-        artistId = ""
-        if (albumId.length > 0)
+        if (api && albumId.length > 0)
             api.fetchAlbum(albumId)
     }
 
+    Component.onDestruction: {
+        if (api && api.clearTracks)
+            api.clearTracks()
+    }
+
     onAlbumIdChanged: {
-        api.clearTracks()
-        artistId = ""
-        if (albumId.length > 0)
+        if (api && albumId.length > 0)
             api.fetchAlbum(albumId)
     }
 
     Connections {
         target: api
         function onTracksChanged() {
-            if (!albumPage.visible)
-                return
-            refreshArtistMetadata()
+            if (albumPage && albumPage.StackView.status === StackView.Active)
+                refreshArtistMetadata()
         }
     }
 
@@ -108,7 +108,7 @@ Page {
                 Image {
                     id: bgImage
                     anchors.fill: parent
-                    source: api.coverArtUrl(coverArtId, 600)
+                    source: (api && coverArtId) ? api.coverArtUrl(coverArtId, 600) : ""
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
                     visible: false
@@ -279,12 +279,12 @@ Page {
                         Components.SectionHeader {
                 width: contentCol.width - contentCol.padding * 2
                 title: qsTr("Tracks")
-                subtitle: api.tracks.length > 0 ? (api.tracks.length + " músicas") : "Álbum vazio"
+                subtitle: (api && api.tracks && api.tracks.length > 0) ? (api.tracks.length + " músicas") : "Álbum vazio"
             }
 
                         Loader {
                 width: contentCol.width - contentCol.padding * 2
-                sourceComponent: api.tracks.length === 0 ? emptyTracks : trackList
+                sourceComponent: (api && api.tracks && api.tracks.length > 0) ? trackList : emptyTracks
             }
         }
     }
@@ -295,16 +295,16 @@ Page {
             width: parent.width
             spacing: 10
             Repeater {
-                model: api.tracks
+                model: (api && api.tracks) ? api.tracks : []
                 delegate: Components.TrackRow {
                     index: index
                     width: parent.width
                     title: (modelData.track > 0 ? modelData.track + ". " : "") + modelData.title
                     subtitle: modelData.artist
                     duration: modelData.duration
-                    cover: api.coverArtUrl(modelData.coverArt, 128)
-                    onPlayClicked: player.playTrack(modelData, index)
-                    onQueueClicked: player.addToQueue(modelData)
+                    cover: (api && modelData.coverArt) ? api.coverArtUrl(modelData.coverArt, 128) : ""
+                    onPlayClicked: { if (player) player.playTrack(modelData, index) }
+                    onQueueClicked: { if (player) player.addToQueue(modelData) }
                 }
             }
         }
@@ -360,7 +360,7 @@ Page {
                 Layout.fillWidth: true
             }
             Label {
-                text: "<b>Faixas:</b> " + api.tracks.length
+                text: "<b>Faixas:</b> " + (api && api.tracks ? api.tracks.length : 0)
                 Layout.fillWidth: true
             }
             Label {

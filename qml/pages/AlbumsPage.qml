@@ -10,7 +10,12 @@ Page {
     background: Rectangle { color: "transparent" }
 
     Component.onCompleted: {
-        api.fetchAlbumList("random");
+        try {
+            if (api && api.fetchAlbumList)
+                api.fetchAlbumList("random");
+        } catch (e) {
+            console.error("AlbumsPage initialization error:", e)
+        }
     }
 
     ColumnLayout {
@@ -34,39 +39,61 @@ Page {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            cellWidth: 210
-            cellHeight: 260
+            cellWidth: 220
+            cellHeight: 300
             flickDeceleration: 1200
             maximumFlickVelocity: 2500
-            model: api.albumList
-            delegate: Components.AlbumCard {
-                title: modelData.name || "Álbum Desconhecido"
-                subtitle: modelData.artist || "Artista desconhecido"
-                cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
-                albumId: modelData.id
-                artistId: modelData.artistId || ""
-                onClicked: albumsPage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt, modelData.artistId || "")
-            }
-
-            function maybeFetchMore() {
-                if (!api.albumListHasMore || api.albumListLoading)
-                    return;
-                var distance = contentHeight - (contentY + height);
-                if (distance < cellHeight * 2 || contentHeight <= height) {
-                    api.fetchMoreAlbums();
+            model: (api && api.albumList) ? api.albumList : []
+            delegate: Item {
+                width: 220
+                height: 300
+                
+                Components.AlbumCard {
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    title: (modelData && modelData.name) ? modelData.name : "Álbum Desconhecido"
+                    subtitle: (modelData && modelData.artist) ? modelData.artist : "Artista desconhecido"
+                    cover: (modelData && modelData.coverArt && api) ? api.coverArtUrl(modelData.coverArt, 256) : ""
+                    albumId: (modelData && modelData.id) ? modelData.id : ""
+                    artistId: (modelData && modelData.artistId) ? modelData.artistId : ""
+                    onClicked: {
+                        if (albumsPage && modelData && modelData.id)
+                            albumsPage.albumClicked(
+                                modelData.id, 
+                                modelData.name || "", 
+                                modelData.artist || "", 
+                                modelData.coverArt || "", 
+                                modelData.artistId || ""
+                            )
+                    }
                 }
             }
 
-            onContentYChanged: maybeFetchMore()
-            onContentHeightChanged: maybeFetchMore()
-            onCountChanged: maybeFetchMore()
+            function maybeFetchMore() {
+                try {
+                    if (!api || !api.albumListHasMore || api.albumListLoading)
+                        return;
+                    if (!contentHeight || !height) return;
+                    var distance = contentHeight - (contentY + height);
+                    if (distance < cellHeight * 2 || contentHeight <= height) {
+                        if (api.fetchMoreAlbums)
+                            api.fetchMoreAlbums();
+                    }
+                } catch (e) {
+                    console.warn("maybeFetchMore error:", e)
+                }
+            }
+
+            onContentYChanged: { if (gridView) maybeFetchMore() }
+            onContentHeightChanged: { if (gridView) maybeFetchMore() }
+            onCountChanged: { if (gridView) maybeFetchMore() }
 
             footer: Item {
                 width: gridView.width
-                height: api.albumListLoading ? 56 : 0
+                height: (api && api.albumListLoading) ? 56 : 0
                 BusyIndicator {
                     anchors.centerIn: parent
-                    running: api.albumListLoading
+                    running: api && api.albumListLoading
                     visible: running
                 }
             }
@@ -76,8 +103,12 @@ Page {
                 acceptedButtons: Qt.NoButton
                 propagateComposedEvents: true
                 onWheel: (wheel) => {
-                    var delta = wheel.angleDelta.y
-                    gridView.contentY = Math.max(0, Math.min(gridView.contentY - delta, gridView.contentHeight - gridView.height))
+                    if (!wheel || !wheel.angleDelta) return;
+                    var delta = wheel.angleDelta.y || 0
+                    if (!gridView) return;
+                    var newY = gridView.contentY - delta
+                    var maxY = Math.max(0, gridView.contentHeight - gridView.height)
+                    gridView.contentY = Math.max(0, Math.min(newY, maxY))
                 }
             }
         }

@@ -16,13 +16,17 @@ Page {
     background: Rectangle { color: "transparent" }
 
     Component.onCompleted: {
-        coverArtId = ""
         if (artistId.length > 0)
             api.fetchArtist(artistId)
     }
 
+    StackView.onStatusChanged: {
+        if (StackView.status === StackView.Deactivating) {
+            pendingRandomAlbumId = ""
+        }
+    }
+
     onArtistIdChanged: {
-        coverArtId = ""
         if (artistId.length > 0)
             api.fetchArtist(artistId)
     }
@@ -30,6 +34,8 @@ Page {
     Connections {
         target: api
         function onArtistCoverChanged() {
+            if (artistPage.StackView.status !== StackView.Active)
+                return
             if (!artistPage.artistId.length)
                 return
             if (artistPage.coverArtId !== api.artistCover) {
@@ -37,6 +43,8 @@ Page {
             }
         }
         function onTracksChanged() {
+            if (artistPage.StackView.status !== StackView.Active)
+                return
             if (!artistPage.pendingRandomAlbumId.length)
                 return
             if (!api.tracks || api.tracks.length === 0)

@@ -933,7 +933,7 @@ void SubsonicClient::fetchRandomSongs()
     }
 
     QUrlQuery ex;
-    ex.addQueryItem("size", "5");
+    ex.addQueryItem("size", "10");
     QNetworkRequest req(buildUrl("getRandomSongs", ex, true));
     auto *reply = m_nam.get(req);
     m_randomSongsReply = reply;
@@ -1276,7 +1276,6 @@ void SubsonicClient::search(const QString &term)
             entry.replayGainAlbumGain = rg.value("albumGain").toDouble();
             m_tracks.push_back(entry);
         }
-
         emit searchArtistsChanged();
         emit searchAlbumsChanged();
         emit tracksChanged(); });
