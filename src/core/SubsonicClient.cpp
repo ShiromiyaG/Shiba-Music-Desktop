@@ -10,8 +10,11 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QStandardPaths>
+#include <QDateTime>
+#include <QUrl>
 #include <QDir>
 #include <QDebug>
+#include <algorithm>
 
 static constexpr auto API_VERSION = "1.16.1";   // Navidrome alvo
 static constexpr auto CLIENT_NAME = "ShibaMusicQt";
@@ -19,6 +22,177 @@ static constexpr int ALBUM_LIST_PAGE_SIZE = 200;
 static inline QString ensureNoTrailingSlash(QString s) {
     if (s.endsWith('/')) s.chop(1);
     return s;
+}
+
+static QString normalizedCredentialUrl(const QString &url)
+{
+    return ensureNoTrailingSlash(url.trimmed());
+}
+
+static QString normalizedCredentialUsername(const QString &user)
+{
+    return user.trimmed();
+}
+
+static QString credentialKeyFor(const QString &serverUrl, const QString &username)
+{
+    const QString normalizedUrl = normalizedCredentialUrl(serverUrl);
+    const QString normalizedUser = normalizedCredentialUsername(username);
+    if (normalizedUrl.isEmpty() || normalizedUser.isEmpty()) {
+        return {};
+    }
+    return normalizedUrl.toLower() + '|' + normalizedUser.toLower();
+}
+
+static QString credentialDisplayName(const QString &serverUrl, const QString &username)
+{
+    const QString trimmedUser = normalizedCredentialUsername(username);
+    QUrl parsed = QUrl::fromUserInput(serverUrl);
+    QString location = parsed.host();
+    if (parsed.port() != -1) {
+        location += ':' + QString::number(parsed.port());
+    }
+    const QString path = parsed.path();
+    if (!path.isEmpty() && path != "/") {
+        if (!location.isEmpty()) {
+            location += path;
+        } else {
+            location = path;
+        }
+    }
+    if (location.isEmpty()) {
+        location = normalizedCredentialUrl(serverUrl);
+    }
+    if (trimmedUser.isEmpty()) {
+        return location;
+    }
+    return QStringLiteral("%1 @ %2").arg(trimmedUser, location);
+}
+
+static QVariantMap sanitizeCredentialEntry(const QVariantMap &entry)
+{
+    QVariantMap sanitized = entry;
+    const QString url = normalizedCredentialUrl(sanitized.value("serverUrl").toString());
+    const QString user = normalizedCredentialUsername(sanitized.value("username").toString());
+    sanitized.insert("serverUrl", url);
+    sanitized.insert("username", user);
+
+    QString key = sanitized.value("key").toString();
+    if (key.isEmpty()) {
+        key = credentialKeyFor(url, user);
+        sanitized.insert("key", key);
+    }
+
+    if (sanitized.value("displayName").toString().isEmpty()) {
+        sanitized.insert("displayName", credentialDisplayName(url, user));
+    }
+
+    return sanitized;
+}
+
+static bool sanitizeCredentialList(QVariantList &list)
+{
+    bool changed = false;
+    for (int i = list.size() - 1; i >= 0; --i) {
+        QVariantMap rawEntry = list.at(i).toMap();
+        QVariantMap sanitized = sanitizeCredentialEntry(rawEntry);
+        const QString url = sanitized.value("serverUrl").toString();
+        const QString user = sanitized.value("username").toString();
+        if (url.isEmpty() || user.isEmpty()) {
+            list.removeAt(i);
+            changed = true;
+            continue;
+        }
+        if (sanitized != rawEntry) {
+            list[i] = sanitized;
+            changed = true;
+        } else {
+            list[i] = sanitized;
+        }
+    }
+    return changed;
+}
+
+static void sortCredentialList(QVariantList &list)
+{
+    std::sort(list.begin(), list.end(), [](const QVariant &first, const QVariant &second) {
+        const QVariantMap a = first.toMap();
+        const QVariantMap b = second.toMap();
+        const QString aTime = a.value("lastUsed").toString();
+        const QString bTime = b.value("lastUsed").toString();
+        if (aTime == bTime) {
+            const QString aName = a.value("displayName").toString();
+            const QString bName = b.value("displayName").toString();
+            return aName.compare(bName, Qt::CaseInsensitive) < 0;
+        }
+        return aTime > bTime;
+    });
+}
+
+static void migrateLegacyCredentials(QSettings &settings)
+{
+    const QString legacyUrl = settings.value("serverUrl").toString();
+    const QString legacyUsername = settings.value("username").toString();
+    const QString legacyPassword = settings.value("password").toString();
+
+    if (legacyUrl.isEmpty() && legacyUsername.isEmpty() && legacyPassword.isEmpty()) {
+        return;
+    }
+
+    const QString url = normalizedCredentialUrl(legacyUrl);
+    const QString user = normalizedCredentialUsername(legacyUsername);
+    const QString key = credentialKeyFor(url, user);
+
+    if (url.isEmpty() || user.isEmpty() || key.isEmpty()) {
+        settings.remove("serverUrl");
+        settings.remove("username");
+        settings.remove("password");
+        return;
+    }
+
+    settings.beginGroup("credentials");
+    QVariantList profiles = settings.value("profiles").toList();
+    bool updated = false;
+    const auto now = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+    for (int i = 0; i < profiles.size(); ++i) {
+        QVariantMap entry = profiles.at(i).toMap();
+        if (entry.value("key").toString() == key) {
+            entry.insert("serverUrl", url);
+            entry.insert("username", user);
+            if (!legacyPassword.isEmpty()) {
+                entry.insert("password", legacyPassword);
+            }
+            entry.insert("displayName", credentialDisplayName(url, user));
+            if (entry.value("lastUsed").toString().isEmpty()) {
+                entry.insert("lastUsed", now);
+            }
+            profiles[i] = entry;
+            updated = true;
+            break;
+        }
+    }
+
+    if (!updated) {
+        QVariantMap entry;
+        entry.insert("serverUrl", url);
+        entry.insert("username", user);
+        entry.insert("password", legacyPassword);
+        entry.insert("key", key);
+        entry.insert("displayName", credentialDisplayName(url, user));
+        entry.insert("lastUsed", now);
+        profiles.prepend(entry);
+    }
+
+    sanitizeCredentialList(profiles);
+    sortCredentialList(profiles);
+
+    settings.setValue("profiles", profiles);
+    settings.setValue("lastUsedKey", key);
+    settings.endGroup();
+
+    settings.remove("serverUrl");
+    settings.remove("username");
+    settings.remove("password");
 }
 
 SubsonicClient::SubsonicClient(QObject *parent) : QObject(parent)
@@ -135,7 +309,6 @@ void SubsonicClient::login(const QString& url, const QString& user, const QStrin
 }
 
 void SubsonicClient::logout() {
-    saveCredentials("", "", "");
     setAuthenticated(false);
     if (!m_artistCover.isEmpty()) {
         m_artistCover.clear();
@@ -709,20 +882,174 @@ void SubsonicClient::unstar(const QString& id) {
     connect(reply, &QNetworkReply::finished, reply, &QObject::deleteLater);
 }
 
-void SubsonicClient::saveCredentials(const QString& url, const QString& user, const QString& password) {
+void SubsonicClient::saveCredentials(const QString& url, const QString& user, const QString& password, bool remember) {
     QSettings settings;
-    settings.setValue("serverUrl", url);
-    settings.setValue("username", user);
-    settings.setValue("password", password);
+    migrateLegacyCredentials(settings);
+
+    const QString normalizedUrl = normalizedCredentialUrl(url);
+    const QString normalizedUser = normalizedCredentialUsername(user);
+
+    if (normalizedUrl.isEmpty() || normalizedUser.isEmpty()) {
+        if (!remember) {
+            settings.beginGroup("credentials");
+            settings.remove("lastUsedKey");
+            settings.endGroup();
+        }
+        return;
+    }
+
+    const QString key = credentialKeyFor(normalizedUrl, normalizedUser);
+    if (key.isEmpty()) {
+        return;
+    }
+
+    settings.beginGroup("credentials");
+    QVariantList originalProfiles = settings.value("profiles").toList();
+    QVariantList profiles = originalProfiles;
+    bool sanitized = sanitizeCredentialList(profiles);
+    const QString now = QDateTime::currentDateTimeUtc().toString(Qt::ISODate);
+
+    if (remember) {
+        bool updated = false;
+        for (int i = 0; i < profiles.size(); ++i) {
+            QVariantMap entry = profiles.at(i).toMap();
+            if (entry.value("key").toString() == key) {
+                entry.insert("serverUrl", normalizedUrl);
+                entry.insert("username", normalizedUser);
+                entry.insert("password", password);
+                entry.insert("lastUsed", now);
+                entry.insert("displayName", credentialDisplayName(normalizedUrl, normalizedUser));
+                profiles[i] = entry;
+                updated = true;
+                break;
+            }
+        }
+        if (!updated) {
+            QVariantMap entry;
+            entry.insert("serverUrl", normalizedUrl);
+            entry.insert("username", normalizedUser);
+            entry.insert("password", password);
+            entry.insert("key", key);
+            entry.insert("displayName", credentialDisplayName(normalizedUrl, normalizedUser));
+            entry.insert("lastUsed", now);
+            profiles.append(entry);
+        }
+        sortCredentialList(profiles);
+        if (sanitized || profiles != originalProfiles) {
+            settings.setValue("profiles", profiles);
+        }
+        settings.setValue("lastUsedKey", key);
+    } else {
+        bool removed = false;
+        for (int i = profiles.size() - 1; i >= 0; --i) {
+            if (profiles.at(i).toMap().value("key").toString() == key) {
+                profiles.removeAt(i);
+                removed = true;
+            }
+        }
+        if (removed || sanitized) {
+            sortCredentialList(profiles);
+            settings.setValue("profiles", profiles);
+        } else if (profiles != originalProfiles) {
+            sortCredentialList(profiles);
+            settings.setValue("profiles", profiles);
+        }
+        if (settings.value("lastUsedKey").toString() == key) {
+            settings.remove("lastUsedKey");
+        }
+    }
+    settings.endGroup();
 }
 
 QVariantMap SubsonicClient::loadCredentials() {
     QSettings settings;
+    migrateLegacyCredentials(settings);
+
+    settings.beginGroup("credentials");
+    QVariantList originalProfiles = settings.value("profiles").toList();
+    QVariantList profiles = originalProfiles;
+    bool sanitized = sanitizeCredentialList(profiles);
+    sortCredentialList(profiles);
+    if (sanitized || profiles != originalProfiles) {
+        settings.setValue("profiles", profiles);
+    }
+    const QString lastUsedKey = settings.value("lastUsedKey").toString();
+    settings.endGroup();
+
     QVariantMap credentials;
-    credentials.insert("serverUrl", settings.value("serverUrl"));
-    credentials.insert("username", settings.value("username"));
-    credentials.insert("password", settings.value("password"));
+    if (!lastUsedKey.isEmpty()) {
+        for (const QVariant& variant : profiles) {
+            const QVariantMap entry = variant.toMap();
+            if (entry.value("key").toString() == lastUsedKey) {
+                credentials = entry;
+                break;
+            }
+        }
+    }
+
+    if (credentials.isEmpty() && !profiles.isEmpty()) {
+        credentials = profiles.first().toMap();
+        const QString key = credentials.value("key").toString();
+        if (!key.isEmpty() && key != lastUsedKey) {
+            settings.beginGroup("credentials");
+            settings.setValue("lastUsedKey", key);
+            settings.endGroup();
+        }
+    }
+
     return credentials;
+}
+
+QVariantList SubsonicClient::savedCredentials() {
+    QSettings settings;
+    migrateLegacyCredentials(settings);
+
+    settings.beginGroup("credentials");
+    QVariantList originalProfiles = settings.value("profiles").toList();
+    QVariantList profiles = originalProfiles;
+    bool sanitized = sanitizeCredentialList(profiles);
+    sortCredentialList(profiles);
+    if (sanitized || profiles != originalProfiles) {
+        settings.setValue("profiles", profiles);
+    }
+    settings.endGroup();
+
+    return profiles;
+}
+
+void SubsonicClient::removeCredentials(const QString& credentialKey) {
+    if (credentialKey.isEmpty()) {
+        return;
+    }
+
+    QSettings settings;
+    migrateLegacyCredentials(settings);
+
+    settings.beginGroup("credentials");
+    QVariantList originalProfiles = settings.value("profiles").toList();
+    QVariantList profiles = originalProfiles;
+    bool sanitized = sanitizeCredentialList(profiles);
+
+    bool removed = false;
+    for (int i = profiles.size() - 1; i >= 0; --i) {
+        if (profiles.at(i).toMap().value("key").toString() == credentialKey) {
+            profiles.removeAt(i);
+            removed = true;
+        }
+    }
+
+    if (sanitized || removed) {
+        sortCredentialList(profiles);
+        settings.setValue("profiles", profiles);
+    } else if (profiles != originalProfiles) {
+        sortCredentialList(profiles);
+        settings.setValue("profiles", profiles);
+    }
+
+    if (settings.value("lastUsedKey").toString() == credentialKey) {
+        settings.remove("lastUsedKey");
+    }
+    settings.endGroup();
 }
 
 void SubsonicClient::addToRecentlyPlayed(const QVariantMap& track) {

@@ -163,12 +163,159 @@ ApplicationWindow {
         }
         windowStateManager.saveState(geom.x, geom.y, geom.width, geom.height, isMaximized)
     }
+
+    function normalizeServerUrl(value) {
+        var trimmed = (value || "").trim()
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.slice(0, -1)
+        }
+        return trimmed
+    }
+
+    function normalizeUsername(value) {
+        return (value || "").trim()
+    }
+
+    function credentialKeyFor(url, username) {
+        var normalizedUrl = normalizeServerUrl(url)
+        var normalizedUser = normalizeUsername(username)
+        if (!normalizedUrl.length || !normalizedUser.length)
+            return ""
+        return normalizedUrl.toLowerCase() + "|" + normalizedUser.toLowerCase()
+    }
+
+    function savedCredentialIndex(key) {
+        if (!key || !savedServerProfiles || !savedServerProfiles.length)
+            return -1
+        for (var i = 0; i < savedServerProfiles.length; ++i) {
+            var entry = savedServerProfiles[i]
+            if (!entry)
+                continue
+            var entryKey = entry.key || credentialKeyFor(entry.serverUrl, entry.username)
+            if (entryKey && entryKey === key)
+                return i
+        }
+        return -1
+    }
+
+    function toPlainString(value) {
+        if (value === undefined || value === null)
+            return ""
+        return String(value)
+    }
+
+    function mappedCredential(entry) {
+        if (!entry)
+            return null
+        var server = normalizeServerUrl(entry.serverUrl)
+        var user = normalizeUsername(entry.username)
+        var key = entry.key || credentialKeyFor(server, user)
+        if (!key)
+            return null
+        var label = entry.displayName
+        if (!label || !label.length) {
+            label = user.length ? user + " @ " + server : server
+        }
+        return {
+            key: key,
+            serverUrl: server,
+            username: user,
+            password: toPlainString(entry.password),
+            displayName: label,
+            lastUsed: toPlainString(entry.lastUsed)
+        }
+    }
+
+    function refreshSavedCredentials(preferredKey) {
+        var list = []
+        if (api && api.savedCredentials) {
+            var fetched = api.savedCredentials()
+            if (fetched && fetched.length !== undefined) {
+                for (var i = 0; i < fetched.length; ++i) {
+                    var mapped = mappedCredential(fetched[i])
+                    if (mapped)
+                        list.push(mapped)
+                }
+            }
+        }
+
+        savedServerProfiles = list
+
+        var key = preferredKey || activeCredentialKey
+        if (!key && api && api.loadCredentials) {
+            var current = api.loadCredentials()
+            if (current) {
+                key = current.key || credentialKeyFor(current.serverUrl, current.username)
+            }
+        }
+        if (!key && api && api.serverUrl && api.username) {
+            key = credentialKeyFor(api.serverUrl, api.username)
+        }
+
+        activeCredentialKey = key || ""
+
+        if (typeof serverSelector !== "undefined") {
+            serverSelector.currentIndex = savedCredentialIndex(activeCredentialKey)
+        }
+    }
+
+    function connectUsingCredential(entry) {
+        if (!entry || !api)
+            return
+
+        var serverUrl = normalizeServerUrl(entry.serverUrl)
+        var username = normalizeUsername(entry.username)
+        var password = toPlainString(entry.password)
+
+        if (!serverUrl.length || !username.length || !password.length) {
+            return
+        }
+
+        var key = entry.key || credentialKeyFor(serverUrl, username)
+
+        switchingServer = api.authenticated
+        activeCredentialKey = key
+        hasStoredCredentials = true
+        loginLoader.active = false
+
+        if (api.saveCredentials) {
+            api.saveCredentials(serverUrl, username, password, true)
+        }
+
+        if (api.authenticated && api.logout) {
+            api.logout()
+        }
+
+        api.login(serverUrl, username, password)
+        refreshSavedCredentials(key)
+    }
+
+    function selectServerByIndex(index) {
+        if (index < 0 || index >= (savedServerProfiles ? savedServerProfiles.length : 0))
+            return
+        connectUsingCredential(savedServerProfiles[index])
+    }
     
     property var navigationItems: getNavigationItems()
     property string currentSection: "home"
     property bool initialLibraryLoaded: false
     property bool hasStoredCredentials: false
     property bool windowStateRestored: false
+    property var savedServerProfiles: []
+    property string activeCredentialKey: ""
+    property bool switchingServer: false
+
+    onSavedServerProfilesChanged: {
+        if (typeof serverSelector !== "undefined") {
+            serverSelector.currentIndex = savedCredentialIndex(activeCredentialKey)
+        }
+    }
+
+    onActiveCredentialKeyChanged: {
+        if (typeof serverSelector !== "undefined") {
+            serverSelector.currentIndex = savedCredentialIndex(activeCredentialKey)
+        }
+    }
 
     Connections {
         target: translationManager
@@ -181,6 +328,8 @@ ApplicationWindow {
         target: api
         function onLoginFailed(message) {
             win.hasStoredCredentials = false
+            win.switchingServer = false
+            win.refreshSavedCredentials(win.activeCredentialKey)
             Qt.callLater(function() {
                 if (loginLoader.item && loginLoader.item.showError)
                     loginLoader.item.showError(message)
@@ -308,6 +457,7 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         Layout.preferredHeight: implicitHeight
                         onClicked: {
+                            win.switchingServer = false
                             api.logout()
                             win.currentSection = "home"
                         }
@@ -331,6 +481,32 @@ ApplicationWindow {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 16
+
+                        ColumnLayout {
+                            visible: win.savedServerProfiles.length > 0
+                            Layout.preferredWidth: 280
+                            Layout.maximumWidth: 340
+                            Layout.alignment: Qt.AlignVCenter
+                            spacing: 4
+
+                            Label {
+                                text: qsTr("Server")
+                                color: "#9aa4af"
+                                font.pixelSize: 12
+                                visible: parent.visible
+                            }
+
+                            ComboBox {
+                                id: serverSelector
+                                Layout.fillWidth: true
+                                model: win.savedServerProfiles
+                                textRole: "displayName"
+                                displayText: currentIndex >= 0 && currentIndex < win.savedServerProfiles.length
+                                        ? win.savedServerProfiles[currentIndex].displayName
+                                        : qsTr("Select a server")
+                                onActivated: win.selectServerByIndex(index)
+                            }
+                        }
 
                         TextField {
                             id: searchBox
@@ -594,6 +770,10 @@ ApplicationWindow {
         target: api
         function onAuthenticatedChanged() {
             if (api.authenticated) {
+                var key = credentialKeyFor(api.serverUrl, api.username)
+                win.refreshSavedCredentials(key)
+                win.hasStoredCredentials = true
+                win.switchingServer = false
                 loginLoader.active = false
                 win.initialLibraryLoaded = false
                 win.currentSection = "home"
@@ -601,10 +781,16 @@ ApplicationWindow {
                 api.fetchArtists()
             } else {
                 win.initialLibraryLoaded = false
-                win.hasStoredCredentials = false
-                loginLoader.active = true
+                win.refreshSavedCredentials(win.activeCredentialKey)
                 stack.clear()
                 win.currentSection = "home"
+                if (win.switchingServer) {
+                    loginLoader.active = false
+                    win.hasStoredCredentials = true
+                } else {
+                    win.hasStoredCredentials = false
+                    loginLoader.active = true
+                }
             }
         }
         function onArtistsChanged() {
@@ -780,13 +966,18 @@ ApplicationWindow {
         onTriggered: {
             if (!api) {
                 hasStoredCredentials = false
+                refreshSavedCredentials("")
                 return
             }
             var credentials = api.loadCredentials();
             if (credentials.serverUrl && credentials.username && credentials.password) {
+                var key = credentials.key || credentialKeyFor(credentials.serverUrl, credentials.username)
+                refreshSavedCredentials(key)
+                switchingServer = false
                 api.login(credentials.serverUrl, credentials.username, credentials.password);
             } else {
                 hasStoredCredentials = false
+                refreshSavedCredentials("")
             }
         }
     }
@@ -816,12 +1007,15 @@ ApplicationWindow {
         restoreWindowState()
         win.visible = true
         win.requestActivate()
-        
+
         if (api) {
             var credentials = api.loadCredentials();
             hasStoredCredentials = !!(credentials.serverUrl && credentials.username && credentials.password)
+            var key = credentials.key || credentialKeyFor(credentials.serverUrl, credentials.username)
+            refreshSavedCredentials(key)
         } else {
             hasStoredCredentials = false
+            refreshSavedCredentials("")
         }
         autoLoginTimer.start()
         updateCheckTimer.start()

@@ -49,8 +49,10 @@ public:
     Q_INVOKABLE void star(const QString& id);
     Q_INVOKABLE void unstar(const QString& id);
 
-    Q_INVOKABLE void saveCredentials(const QString& url, const QString& user, const QString& password);
+    Q_INVOKABLE void saveCredentials(const QString& url, const QString& user, const QString& password, bool remember = true);
     Q_INVOKABLE QVariantMap loadCredentials();
+    Q_INVOKABLE QVariantList savedCredentials();
+    Q_INVOKABLE void removeCredentials(const QString& credentialKey);
 
     Q_INVOKABLE QUrl streamUrl(const QString& songId, int maxBitrateKbps = 0) const;
     Q_INVOKABLE QUrl coverArtUrl(const QString& artId, int size = 300) const;
