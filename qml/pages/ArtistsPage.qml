@@ -32,11 +32,23 @@ Page {
             clip: true
             cellWidth: 196
             cellHeight: 244
+            flickDeceleration: 1200
+            maximumFlickVelocity: 2500
             model: (api && api.artists) ? api.artists : []
             delegate: Components.ArtistCard {
                 name: modelData.name || "Artista Desconhecido"
                 cover: (modelData.coverArt && api) ? api.coverArtUrl(modelData.coverArt, 256) : ""
                 onClicked: artistsPage.artistClicked(modelData.id, modelData.name, modelData.coverArt)
+            }
+            
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+                propagateComposedEvents: true
+                onWheel: (wheel) => {
+                    var delta = wheel.angleDelta.y
+                    gridView.contentY = Math.max(0, Math.min(gridView.contentY - delta, gridView.contentHeight - gridView.height))
+                }
             }
         }
     }

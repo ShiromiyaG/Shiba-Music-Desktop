@@ -36,6 +36,8 @@ Page {
             clip: true
             cellWidth: 210
             cellHeight: 260
+            flickDeceleration: 1200
+            maximumFlickVelocity: 2500
             model: api.albumList
             delegate: Components.AlbumCard {
                 title: modelData.name || "Álbum Desconhecido"
@@ -44,6 +46,16 @@ Page {
                 albumId: modelData.id
                 artistId: modelData.artistId || ""
                 onClicked: albumsPage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt, modelData.artistId || "")
+            }
+            
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+                propagateComposedEvents: true
+                onWheel: (wheel) => {
+                    var delta = wheel.angleDelta.y
+                    gridView.contentY = Math.max(0, Math.min(gridView.contentY - delta, gridView.contentHeight - gridView.height))
+                }
             }
         }
     }

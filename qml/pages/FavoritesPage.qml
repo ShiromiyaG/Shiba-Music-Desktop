@@ -32,6 +32,8 @@ Page {
             Layout.fillHeight: true
             clip: true
             spacing: 10
+            flickDeceleration: 1200
+            maximumFlickVelocity: 2500
             model: api.favorites
             delegate: Components.TrackRow {
                 width: listView.width
@@ -41,6 +43,16 @@ Page {
                 cover: api.coverArtUrl(modelData.coverArt, 128)
                 onPlayClicked: player.playTrack(modelData)
                 onQueueClicked: player.addToQueue(modelData)
+            }
+            
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+                propagateComposedEvents: true
+                onWheel: (wheel) => {
+                    var delta = wheel.angleDelta.y
+                    listView.contentY = Math.max(0, Math.min(listView.contentY - delta, listView.contentHeight - listView.height))
+                }
             }
         }
     }

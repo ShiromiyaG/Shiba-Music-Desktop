@@ -97,6 +97,8 @@ qt_add_resources(shibamusic "qml"
         qml/components/NowPlayingPanel.qml
         qml/components/UpdateDialog.qml
         qml/components/LanguageSelector.qml
+        qml/components/ScrollConfig.qml
+        qml/components/qmldir
         qml/pages/LoginPage.qml
         qml/pages/HomePage.qml
         qml/pages/ArtistPage.qml

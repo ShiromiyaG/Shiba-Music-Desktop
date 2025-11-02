@@ -84,7 +84,18 @@ Page {
         contentHeight: column.height
         boundsBehavior: Flickable.StopAtBounds
         flickableDirection: Flickable.VerticalFlick
+        flickDeceleration: 1200
+        maximumFlickVelocity: 2500
         ScrollBar.vertical: ScrollBar { }
+        
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton
+            onWheel: (wheel) => {
+                var delta = wheel.angleDelta.y
+                scrollArea.contentY = Math.max(0, Math.min(scrollArea.contentY - delta, scrollArea.contentHeight - scrollArea.height))
+            }
+        }
 
         Column {
             id: column

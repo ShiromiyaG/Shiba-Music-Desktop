@@ -36,6 +36,8 @@ Page {
             GridView {
                 cellWidth: 220
                 cellHeight: 280
+                flickDeceleration: 1200
+                maximumFlickVelocity: 2500
                 model: api.playlists
                 delegate: Rectangle {
                     width: 200
@@ -93,6 +95,7 @@ Page {
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
+                        acceptedButtons: Qt.LeftButton
                         onClicked: {
                             showPlaylistPage(modelData.id, modelData.name, modelData.coverArt, modelData.songCount)
                         }
