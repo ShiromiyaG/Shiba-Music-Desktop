@@ -247,7 +247,7 @@ jobs:
         
         # Try windeployqt without --compiler-runtime first (simpler, less prone to errors)
         Write-Host "Attempting windeployqt without --compiler-runtime..."
-        $output = & $windeployqt --qmldir qml --qmldir qml/components --qmldir qml/pages --release --no-translations --sql sqlite "$deployDir\shibamusic.exe" 2>&1
+        $output = & $windeployqt --qmldir qml --qmldir qml/components --qmldir qml/pages --release --no-translations "$deployDir\shibamusic.exe" 2>&1
         $exitCode = $LASTEXITCODE
         
         # Show output
