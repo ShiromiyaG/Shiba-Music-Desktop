@@ -81,8 +81,10 @@ jobs:
         host: 'windows'
         target: 'desktop'
         arch: 'win64_mingw'
-        modules: 'qtmultimedia qt5compat'
-        tools: 'tools_mingw1310,tools_openssl_x64'
+        modules: 'qtmultimedia qt5compat qtsql'
+        tools: |
+          tools_mingw1310
+          tools_openssl_x64
     
     - name: Setup Ninja
       uses: seanmiddleditch/gha-setup-ninja@master
