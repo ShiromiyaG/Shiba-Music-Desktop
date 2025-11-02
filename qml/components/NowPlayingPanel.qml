@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 
 Rectangle {
     id: panel
@@ -78,6 +79,9 @@ Rectangle {
                         source: panel.hasTrack ? api.coverArtUrl(panel.currentTrack.coverArt, 256) : ""
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
+                        cache: true
+                        sourceSize.width: Math.min(384, width * Screen.devicePixelRatio * 1.5)
+                        sourceSize.height: Math.min(384, height * Screen.devicePixelRatio * 1.5)
                     }
                     Image {
                         anchors.centerIn: parent
@@ -166,6 +170,9 @@ Rectangle {
                                 source: api.coverArtUrl(modelData.coverArt, 128)
                                 fillMode: Image.PreserveAspectCrop
                                 asynchronous: true
+                                cache: true
+                                sourceSize.width: Math.min(256, width * Screen.devicePixelRatio * 1.5)
+                                sourceSize.height: Math.min(256, height * Screen.devicePixelRatio * 1.5)
                             }
                             Image {
                                 anchors.centerIn: parent

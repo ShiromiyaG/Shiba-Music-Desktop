@@ -910,6 +910,7 @@ ApplicationWindow {
         var current = historyCopy.pop()
         navigationHistory = historyCopy
         forwardHistory = [JSON.parse(JSON.stringify(current))].concat(forwardHistory)
+        trimHistory()
         var entry = navigationHistory.length ? navigationHistory[navigationHistory.length - 1] : null
         if (entry)
             restoreEntry(entry)
@@ -922,6 +923,7 @@ ApplicationWindow {
         forwardHistory = forwardHistory.slice(1)
         var entryCopy = JSON.parse(JSON.stringify(entry))
         navigationHistory = navigationHistory.concat([entryCopy])
+        trimHistory()
         restoreEntry(entryCopy)
     }
 
@@ -950,9 +952,18 @@ ApplicationWindow {
         })
     }
 
+    function trimHistory() {
+        const maxEntries = 100
+        if (navigationHistory.length > maxEntries)
+            navigationHistory = navigationHistory.slice(navigationHistory.length - maxEntries)
+        if (forwardHistory.length > maxEntries)
+            forwardHistory = forwardHistory.slice(forwardHistory.length - maxEntries)
+    }
+
     function recordHistoryEntry(entry) {
         pushHistoryEntry(JSON.parse(JSON.stringify(entry)))
         forwardHistory = []
+        trimHistory()
     }
 
     function showArtistPage(artistId, artistName, coverArtId, recordHistory) {

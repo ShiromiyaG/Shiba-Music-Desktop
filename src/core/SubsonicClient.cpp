@@ -39,6 +39,13 @@ static QString normalizedCredentialUsername(const QString &user)
     return user.trimmed();
 }
 
+static void clearAndShrink(QVariantList &list)
+{
+    if (!list.isEmpty())
+        list.clear();
+    list.squeeze();
+}
+
 static QString credentialKeyFor(const QString &serverUrl, const QString &username)
 {
     const QString normalizedUrl = normalizedCredentialUrl(serverUrl);
@@ -520,11 +527,82 @@ void SubsonicClient::logout()
     m_salt.clear();
     m_passwordHex.clear();
     m_authMode = AuthMode::Token;
+
+    auto abortReply = [](QNetworkReply *&reply)
+    {
+        if (!reply)
+            return;
+        reply->abort();
+        reply->deleteLater();
+        reply = nullptr;
+    };
+
+    abortReply(m_artistReply);
+    abortReply(m_albumListReply);
+    abortReply(m_albumReply);
+    abortReply(m_randomSongsReply);
+    abortReply(m_favoritesReply);
+    abortReply(m_playlistsReply);
+    abortReply(m_playlistReply);
+
     if (!m_artistCover.isEmpty())
     {
         m_artistCover.clear();
         emit artistCoverChanged();
     }
+
+    auto clearList = [](QVariantList &list)
+    {
+        clearAndShrink(list);
+    };
+
+    const bool hadArtists = !m_artists.isEmpty();
+    const bool hadAlbums = !m_albums.isEmpty();
+    const bool hadAlbumList = !m_albumList.isEmpty();
+    const bool hadTracks = !m_tracks.isEmpty();
+    const bool hadSearchArtists = !m_searchArtists.isEmpty();
+    const bool hadSearchAlbums = !m_searchAlbums.isEmpty();
+    const bool hadRecentlyPlayed = !m_recentlyPlayedAlbums.isEmpty();
+    const bool hadRandomSongs = !m_randomSongs.isEmpty();
+    const bool hadFavorites = !m_favorites.isEmpty();
+    const bool hadPlaylists = !m_playlists.isEmpty();
+
+    clearList(m_artists);
+    clearList(m_albums);
+    clearList(m_albumList);
+    clearList(m_tracks);
+    clearList(m_searchArtists);
+    clearList(m_searchAlbums);
+    clearList(m_recentlyPlayedAlbums);
+    clearList(m_randomSongs);
+    clearList(m_favorites);
+    clearList(m_playlists);
+
+    if (hadArtists)
+        emit artistsChanged();
+    if (hadAlbums)
+        emit albumsChanged();
+    if (hadAlbumList)
+        emit albumListChanged();
+    if (hadTracks)
+        emit tracksChanged();
+    if (hadSearchArtists)
+        emit searchArtistsChanged();
+    if (hadSearchAlbums)
+        emit searchAlbumsChanged();
+    if (hadRecentlyPlayed)
+        emit recentlyPlayedAlbumsChanged();
+    if (hadRandomSongs)
+        emit randomSongsChanged();
+    if (hadFavorites)
+        emit favoritesChanged();
+    if (hadPlaylists)
+        emit playlistsChanged();
+
+    setAlbumListLoading(false);
+    setHasMoreAlbumList(false);
+    m_pendingAlbumListType.clear();
+    m_pendingAlbumListOffset = 0;
 }
 
 void SubsonicClient::fetchArtists()
@@ -556,9 +634,17 @@ void SubsonicClient::fetchArtists()
         QString err;
         if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
 
-        m_artists.clear();
         auto root = doc.object().value("subsonic-response").toObject();
         auto artists = root.value("artists").toObject().value("index").toArray();
+
+        qsizetype totalArtists = 0;
+        for (const auto &idxVal : artists)
+            totalArtists += idxVal.toObject().value("artist").toArray().size();
+
+        clearAndShrink(m_artists);
+        if (totalArtists > 0)
+            m_artists.reserve(totalArtists);
+
         for (const auto &idxVal : artists) {
             auto idx = idxVal.toObject();
             for (const auto &aVal : idx.value("artist").toArray()) {
@@ -587,13 +673,9 @@ void SubsonicClient::fetchArtist(const QString &artistId)
         m_artistReply->abort();
     }
 
-    m_albums.clear();
+    clearAndShrink(m_albums);
     emit albumsChanged();
-    if (!m_tracks.isEmpty())
-    {
-        m_tracks.clear();
-        emit tracksChanged();
-    }
+    clearTracks();
     if (!m_artistCover.isEmpty())
     {
         m_artistCover.clear();
@@ -635,6 +717,8 @@ void SubsonicClient::fetchArtist(const QString &artistId)
             emit artistCoverChanged();
         }
         auto albums = artistObj.value("album").toArray();
+        if (!albums.isEmpty())
+            m_albums.reserve(albums.size());
         for (const auto &av : albums) {
             auto a = av.toObject();
             m_albums.push_back(QVariantMap{
@@ -658,8 +742,7 @@ void SubsonicClient::fetchAlbum(const QString &albumId)
         m_albumReply->abort();
     }
 
-    m_tracks.clear();
-    emit tracksChanged();
+    clearTracks();
 
     QUrlQuery ex;
     ex.addQueryItem("id", albumId);
@@ -690,6 +773,8 @@ void SubsonicClient::fetchAlbum(const QString &albumId)
 
         auto root = doc.object().value("subsonic-response").toObject();
         auto songs = root.value("album").toObject().value("song").toArray();
+        if (!songs.isEmpty())
+            m_tracks.reserve(songs.size());
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
@@ -715,13 +800,26 @@ void SubsonicClient::fetchAlbumList(const QString &type)
     if (!m_authenticated)
         return;
 
+    if (m_pendingAlbumListType != type && !m_albumList.isEmpty())
+    {
+        clearAndShrink(m_albumList);
+        emit albumListChanged();
+    }
+
+    setHasMoreAlbumList(false);
+
     if (m_cacheManager && m_albumList.isEmpty())
     {
         const auto cached = m_cacheManager->getList(cacheKey(QStringLiteral("albumList:%1").arg(type)));
         if (!cached.isEmpty())
         {
-            m_albumList = cached;
+            const int initialCount = std::min(static_cast<qsizetype>(ALBUM_LIST_PAGE_SIZE), cached.size());
+            m_albumList = cached.mid(0, initialCount);
             emit albumListChanged();
+            if (cached.size() > initialCount)
+            {
+                setHasMoreAlbumList(true);
+            }
         }
     }
 
@@ -730,12 +828,24 @@ void SubsonicClient::fetchAlbumList(const QString &type)
         m_albumListReply->abort();
         m_albumListReply->deleteLater();
         m_albumListReply = nullptr;
+        setAlbumListLoading(false);
     }
 
     m_pendingAlbumListType = type;
     m_pendingAlbumListOffset = 0;
-    m_albumListPaging = true;
     fetchAlbumListPage(type, 0);
+}
+
+void SubsonicClient::fetchMoreAlbums()
+{
+    if (!m_authenticated)
+        return;
+    if (!m_hasMoreAlbumList || m_albumListPaging)
+        return;
+    if (m_pendingAlbumListType.isEmpty())
+        return;
+
+    fetchAlbumListPage(m_pendingAlbumListType, m_pendingAlbumListOffset);
 }
 
 void SubsonicClient::fetchRandomSongs()
@@ -785,9 +895,11 @@ void SubsonicClient::fetchRandomSongs()
         QString err;
         if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
 
-        m_randomSongs.clear();
+        clearAndShrink(m_randomSongs);
         auto root = doc.object().value("subsonic-response").toObject();
         auto songs = root.value("randomSongs").toObject().value("song").toArray();
+        if (!songs.isEmpty())
+            m_randomSongs.reserve(songs.size());
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
@@ -855,9 +967,11 @@ void SubsonicClient::fetchPlaylists()
         QString err;
         if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
 
-        m_playlists.clear();
+        clearAndShrink(m_playlists);
         auto root = doc.object().value("subsonic-response").toObject();
         auto playlists = root.value("playlists").toObject().value("playlist").toArray();
+        if (!playlists.isEmpty())
+            m_playlists.reserve(playlists.size());
         for (const auto &pv : playlists) {
             auto p = pv.toObject();
             m_playlists.push_back(QVariantMap{
@@ -884,8 +998,7 @@ void SubsonicClient::fetchPlaylist(const QString &playlistId)
         m_playlistReply->abort();
     }
 
-    m_tracks.clear();
-    emit tracksChanged();
+    clearTracks();
 
     QUrlQuery ex;
     ex.addQueryItem("id", playlistId);
@@ -916,6 +1029,8 @@ void SubsonicClient::fetchPlaylist(const QString &playlistId)
 
         auto root = doc.object().value("subsonic-response").toObject();
         auto songs = root.value("playlist").toObject().value("entry").toArray();
+        if (!songs.isEmpty())
+            m_tracks.reserve(songs.size());
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
@@ -980,10 +1095,12 @@ void SubsonicClient::fetchFavorites()
         QString err;
         if (!checkOk(doc, &err)) { emit errorOccurred(err); return; }
 
-        m_favorites.clear();
+        clearAndShrink(m_favorites);
         auto root = doc.object().value("subsonic-response").toObject();
         auto starred = root.value("starred").toObject();
         auto songs = starred.value("song").toArray();
+        if (!songs.isEmpty())
+            m_favorites.reserve(songs.size());
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
@@ -1033,8 +1150,10 @@ void SubsonicClient::search(const QString &term)
         auto searchResult = root.value("searchResult3").toObject();
         
         // Parse artists
-        m_searchArtists.clear();
+        clearAndShrink(m_searchArtists);
         auto artists = searchResult.value("artist").toArray();
+        if (!artists.isEmpty())
+            m_searchArtists.reserve(artists.size());
         for (const auto &av : artists) {
             auto a = av.toObject();
             m_searchArtists.push_back(QVariantMap{
@@ -1046,8 +1165,10 @@ void SubsonicClient::search(const QString &term)
         }
         
         // Parse albums
-        m_searchAlbums.clear();
+        clearAndShrink(m_searchAlbums);
         auto albums = searchResult.value("album").toArray();
+        if (!albums.isEmpty())
+            m_searchAlbums.reserve(albums.size());
         for (const auto &av : albums) {
             auto a = av.toObject();
             m_searchAlbums.push_back(QVariantMap{
@@ -1063,8 +1184,10 @@ void SubsonicClient::search(const QString &term)
         }
         
         // Parse songs
-        m_tracks.clear();
+        clearAndShrink(m_tracks);
         auto songs = searchResult.value("song").toArray();
+        if (!songs.isEmpty())
+            m_tracks.reserve(songs.size());
         for (const auto &sv : songs) {
             auto s = sv.toObject();
             auto rg = s.value("replayGain").toObject();
@@ -1400,6 +1523,22 @@ QString SubsonicClient::cacheKey(const QString &base) const
     return QStringLiteral("%1|%2|%3").arg(base, m_server, m_user);
 }
 
+void SubsonicClient::setAlbumListLoading(bool loading)
+{
+    if (m_albumListPaging == loading)
+        return;
+    m_albumListPaging = loading;
+    emit albumListLoadingChanged();
+}
+
+void SubsonicClient::setHasMoreAlbumList(bool hasMore)
+{
+    if (m_hasMoreAlbumList == hasMore)
+        return;
+    m_hasMoreAlbumList = hasMore;
+    emit albumListHasMoreChanged();
+}
+
 void SubsonicClient::fetchAlbumTracksAndAppend(const QString &albumId)
 {
     if (!m_authenticated)
@@ -1453,6 +1592,8 @@ void SubsonicClient::fetchAlbumListPage(const QString &type, int offset)
     if (!m_authenticated)
         return;
 
+    setAlbumListLoading(true);
+
     QUrlQuery ex;
     ex.addQueryItem("type", type);
     ex.addQueryItem("size", QString::number(ALBUM_LIST_PAGE_SIZE));
@@ -1471,57 +1612,61 @@ void SubsonicClient::fetchAlbumListPage(const QString &type, int offset)
         }
         m_albumListReply = nullptr;
 
-        if (reply->error() != QNetworkReply::NoError) {
-            if (reply->error() != QNetworkReply::OperationCanceledError) {
-                emit errorOccurred(reply->errorString());
+        const auto error = reply->error();
+        const QString errorString = reply->errorString();
+        const QByteArray payload = (error == QNetworkReply::NoError) ? reply->readAll() : QByteArray();
+        reply->deleteLater();
+
+        if (error != QNetworkReply::NoError) {
+            if (error != QNetworkReply::OperationCanceledError) {
+                emit errorOccurred(errorString);
             }
-            m_albumListPaging = false;
-            reply->deleteLater();
+            setAlbumListLoading(false);
             return;
         }
 
-        const auto doc = QJsonDocument::fromJson(reply->readAll());
+        const auto doc = QJsonDocument::fromJson(payload);
         QString err;
         if (!checkOk(doc, &err)) {
             emit errorOccurred(err);
-            m_albumListPaging = false;
-            reply->deleteLater();
+            setAlbumListLoading(false);
             return;
         }
 
         auto root = doc.object().value("subsonic-response").toObject();
         auto albums = root.value("albumList2").toObject().value("album").toArray();
+
         if (offset == 0) {
-            m_albumList.clear();
-        }
-        for (const auto &av : albums) {
-            auto a = av.toObject();
-            m_albumList.push_back(QVariantMap{
-                {"id", a.value("id").toString()},
-                {"name", a.value("name").toString()},
-                {"artistId", a.value("artistId").toString()},
-                {"artist", a.value("artist").toString()},
-                {"year", a.value("year").toInt()},
-                {"coverArt", a.value("coverArt").toString()}
-            });
+            clearAndShrink(m_albumList);
         }
 
-        emit albumListChanged();
-
-        if (albums.size() == ALBUM_LIST_PAGE_SIZE) {
-            m_pendingAlbumListOffset = offset + albums.size();
-            reply->deleteLater();
-            fetchAlbumListPage(type, m_pendingAlbumListOffset);
-            return;
+        if (!albums.isEmpty()) {
+            m_albumList.reserve(m_albumList.size() + albums.size());
+            for (const auto &av : albums) {
+                auto a = av.toObject();
+                m_albumList.push_back(QVariantMap{
+                    {"id", a.value("id").toString()},
+                    {"name", a.value("name").toString()},
+                    {"artistId", a.value("artistId").toString()},
+                    {"artist", a.value("artist").toString()},
+                    {"year", a.value("year").toInt()},
+                    {"coverArt", a.value("coverArt").toString()}
+                });
+            }
         }
 
-        m_albumListPaging = false;
-        std::sort(m_albumList.begin(), m_albumList.end(), [](const QVariant& v1, const QVariant& v2) {
+        std::sort(m_albumList.begin(), m_albumList.end(), [](const QVariant &v1, const QVariant &v2) {
             return v1.toMap().value("name").toString().localeAwareCompare(v2.toMap().value("name").toString()) < 0;
         });
+        emit albumListChanged();
+
+        const bool hasMore = albums.size() == ALBUM_LIST_PAGE_SIZE;
+        setHasMoreAlbumList(hasMore);
+        m_pendingAlbumListOffset = offset + albums.size();
+
         if (m_cacheManager) {
             m_cacheManager->saveList(cacheKey(QStringLiteral("albumList:%1").arg(type)), m_albumList);
         }
-        emit albumListChanged();
-        reply->deleteLater(); });
+
+        setAlbumListLoading(false); });
 }

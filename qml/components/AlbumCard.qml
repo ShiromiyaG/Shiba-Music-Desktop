@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 
 Item {
     id: root
@@ -48,6 +49,8 @@ Item {
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         cache: true
+                        sourceSize.width: Math.min(512, width * Screen.devicePixelRatio * 1.5)
+                        sourceSize.height: Math.min(512, height * Screen.devicePixelRatio * 1.5)
                         visible: status === Image.Ready
                     }
                     Rectangle {

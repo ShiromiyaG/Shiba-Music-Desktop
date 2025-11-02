@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Window
 
 Item {
     id: root
@@ -25,22 +26,24 @@ Item {
             anchors.margins: 12
             spacing: 10
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 150
-                radius: 12
-                color: "#111"
-                border.color: "#2a313f"
-                clip: true
-                Image {
-                    id: coverImage
-                    anchors.fill: parent
-                    source: root.cover
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    cache: true
-                    visible: status === Image.Ready
-                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 150
+                    radius: 12
+                    color: "#111"
+                    border.color: "#2a313f"
+                    clip: true
+                    Image {
+                        id: coverImage
+                        anchors.fill: parent
+                        source: root.cover
+                        fillMode: Image.PreserveAspectCrop
+                        asynchronous: true
+                        cache: true
+                        sourceSize.width: Math.min(512, width * Screen.devicePixelRatio * 1.5)
+                        sourceSize.height: Math.min(512, height * Screen.devicePixelRatio * 1.5)
+                        visible: status === Image.Ready
+                    }
                 Rectangle {
                     id: fallback
                     anchors.fill: parent

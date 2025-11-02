@@ -47,6 +47,29 @@ Page {
                 artistId: modelData.artistId || ""
                 onClicked: albumsPage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt, modelData.artistId || "")
             }
+
+            function maybeFetchMore() {
+                if (!api.albumListHasMore || api.albumListLoading)
+                    return;
+                var distance = contentHeight - (contentY + height);
+                if (distance < cellHeight * 2 || contentHeight <= height) {
+                    api.fetchMoreAlbums();
+                }
+            }
+
+            onContentYChanged: maybeFetchMore()
+            onContentHeightChanged: maybeFetchMore()
+            onCountChanged: maybeFetchMore()
+
+            footer: Item {
+                width: gridView.width
+                height: api.albumListLoading ? 56 : 0
+                BusyIndicator {
+                    anchors.centerIn: parent
+                    running: api.albumListLoading
+                    visible: running
+                }
+            }
             
             MouseArea {
                 anchors.fill: parent

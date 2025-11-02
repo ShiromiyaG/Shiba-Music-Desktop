@@ -23,6 +23,8 @@ class SubsonicClient : public QObject
     Q_PROPERTY(QVariantList favorites READ favorites NOTIFY favoritesChanged)
     Q_PROPERTY(QVariantList playlists READ playlists NOTIFY playlistsChanged)
     Q_PROPERTY(QString artistCover READ artistCover NOTIFY artistCoverChanged)
+    Q_PROPERTY(bool albumListLoading READ albumListLoading NOTIFY albumListLoadingChanged)
+    Q_PROPERTY(bool albumListHasMore READ albumListHasMore NOTIFY albumListHasMoreChanged)
 public:
     explicit SubsonicClient(QObject *parent = nullptr);
 
@@ -42,6 +44,7 @@ public:
     Q_INVOKABLE void fetchArtist(const QString &artistId);
     Q_INVOKABLE void fetchAlbum(const QString &albumId);
     Q_INVOKABLE void fetchAlbumList(const QString &type = "random");
+    Q_INVOKABLE void fetchMoreAlbums();
     Q_INVOKABLE void fetchRandomSongs();
     Q_INVOKABLE void fetchFavorites();
     Q_INVOKABLE void fetchPlaylists();
@@ -69,11 +72,14 @@ public:
     Q_INVOKABLE QVariantList favorites() const { return m_favorites; }
     Q_INVOKABLE QVariantList playlists() const { return m_playlists; }
     QString artistCover() const { return m_artistCover; }
+    bool albumListLoading() const { return m_albumListPaging; }
+    bool albumListHasMore() const { return m_hasMoreAlbumList; }
     Q_INVOKABLE void clearTracks()
     {
         if (!m_tracks.isEmpty())
         {
             m_tracks.clear();
+            m_tracks.squeeze();
             emit tracksChanged();
         }
     }
@@ -95,6 +101,8 @@ signals:
     void favoritesChanged();
     void playlistsChanged();
     void artistCoverChanged();
+    void albumListLoadingChanged();
+    void albumListHasMoreChanged();
 
 private:
     enum class AuthMode
@@ -114,6 +122,8 @@ private:
     void setAuthenticated(bool ok);
     void fetchAlbumListPage(const QString &type, int offset);
     QString cacheKey(const QString &base) const;
+    void setAlbumListLoading(bool loading);
+    void setHasMoreAlbumList(bool hasMore);
 
     QString m_server, m_user, m_token, m_salt;
     bool m_authenticated = false;
@@ -133,5 +143,6 @@ private:
     QString m_pendingAlbumListType;
     int m_pendingAlbumListOffset = 0;
     bool m_albumListPaging = false;
+    bool m_hasMoreAlbumList = false;
     CacheManager *m_cacheManager = nullptr;
 };
