@@ -4,6 +4,7 @@
 #include <QPixmap>
 #include <QVariantMap>
 #include <QVariantList>
+#include <QCache>
 
 class CacheManager : public QObject {
     Q_OBJECT
@@ -47,4 +48,5 @@ private:
     
     QSqlDatabase m_db;
     QString m_cachePath;
+    QCache<QString, QPixmap> m_imageMemoryCache;
 };

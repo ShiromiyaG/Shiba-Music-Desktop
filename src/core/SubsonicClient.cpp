@@ -19,9 +19,19 @@
 #include <memory>
 #include <algorithm>
 
-static constexpr auto API_VERSION = "1.16.1"; // Navidrome alvo
+static constexpr auto API_VERSION = "1.16.1";
 static constexpr auto CLIENT_NAME = "ShibaMusicQt";
-static constexpr int ALBUM_LIST_PAGE_SIZE = 200;
+static constexpr int ALBUM_LIST_PAGE_SIZE = 50;
+
+static QHash<QString, QString> g_stringPool;
+static QString internString(const QString &str) {
+    if (str.isEmpty()) return str;
+    auto it = g_stringPool.constFind(str);
+    if (it != g_stringPool.constEnd()) return *it;
+    g_stringPool.insert(str, str);
+    return str;
+}
+
 static inline QString ensureNoTrailingSlash(QString s)
 {
     if (s.endsWith('/'))
@@ -89,13 +99,13 @@ QVariantMap SubsonicClient::trackEntryToVariant(const TrackEntry &entry)
 SubsonicClient::TrackEntry SubsonicClient::trackEntryFromVariant(const QVariantMap &map)
 {
     TrackEntry entry;
-    entry.id = map.value(QStringLiteral("id")).toString();
+    entry.id = internString(map.value(QStringLiteral("id")).toString());
     entry.title = map.value(QStringLiteral("title")).toString();
-    entry.artist = map.value(QStringLiteral("artist")).toString();
-    entry.artistId = map.value(QStringLiteral("artistId")).toString();
-    entry.album = map.value(QStringLiteral("album")).toString();
-    entry.albumId = map.value(QStringLiteral("albumId")).toString();
-    entry.coverArt = map.value(QStringLiteral("coverArt")).toString();
+    entry.artist = internString(map.value(QStringLiteral("artist")).toString());
+    entry.artistId = internString(map.value(QStringLiteral("artistId")).toString());
+    entry.album = internString(map.value(QStringLiteral("album")).toString());
+    entry.albumId = internString(map.value(QStringLiteral("albumId")).toString());
+    entry.coverArt = internString(map.value(QStringLiteral("coverArt")).toString());
     entry.duration = map.value(QStringLiteral("duration")).toInt();
     entry.track = map.value(QStringLiteral("track")).toInt();
     entry.year = map.value(QStringLiteral("year")).toInt();
@@ -320,7 +330,7 @@ SubsonicClient::SubsonicClient(QObject *parent) : QObject(parent)
     const QString cacheDir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + "/network";
     QDir().mkpath(cacheDir);
     diskCache->setCacheDirectory(cacheDir);
-    diskCache->setMaximumCacheSize(100 * 1024 * 1024); // 100 MB cap
+    diskCache->setMaximumCacheSize(30 * 1024 * 1024);
     m_nam.setCache(diskCache);
     m_nam.setRedirectPolicy(QNetworkRequest::NoLessSafeRedirectPolicy);
 }
@@ -923,7 +933,7 @@ void SubsonicClient::fetchRandomSongs()
     }
 
     QUrlQuery ex;
-    ex.addQueryItem("size", "10");
+    ex.addQueryItem("size", "5");
     QNetworkRequest req(buildUrl("getRandomSongs", ex, true));
     auto *reply = m_nam.get(req);
     m_randomSongsReply = reply;
@@ -1558,8 +1568,7 @@ void SubsonicClient::addToRecentlyPlayed(const QVariantMap &track)
     }
     // Add to the front
     m_recentlyPlayedAlbums.prepend(album);
-    // Limit the list size
-    if (m_recentlyPlayedAlbums.size() > 20)
+    if (m_recentlyPlayedAlbums.size() > 10)
     {
         m_recentlyPlayedAlbums.removeLast();
     }

@@ -13,6 +13,7 @@
 CacheManager::CacheManager(QObject *parent) : QObject(parent) {
     m_cachePath = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
     QDir().mkpath(m_cachePath);
+    m_imageMemoryCache.setMaxCost(50 * 1024 * 1024); // 50MB limit
 }
 
 CacheManager::~CacheManager() {
@@ -91,6 +92,10 @@ bool CacheManager::hasImage(const QString& url) {
 }
 
 QPixmap CacheManager::getImage(const QString& url) {
+    if (QPixmap *cached = m_imageMemoryCache.object(url)) {
+        return *cached;
+    }
+    
     QSqlQuery query(m_db);
     query.prepare("SELECT data FROM image_cache WHERE url = ?");
     query.addBindValue(url);
@@ -99,6 +104,8 @@ QPixmap CacheManager::getImage(const QString& url) {
         QByteArray data = query.value(0).toByteArray();
         QPixmap pixmap;
         if (pixmap.loadFromData(data)) {
+            int cost = pixmap.width() * pixmap.height() * pixmap.depth() / 8;
+            m_imageMemoryCache.insert(url, new QPixmap(pixmap), cost);
             return pixmap;
         }
     }
@@ -107,11 +114,13 @@ QPixmap CacheManager::getImage(const QString& url) {
 }
 
 void CacheManager::saveImage(const QString& url, const QPixmap& pixmap) {
+    int cost = pixmap.width() * pixmap.height() * pixmap.depth() / 8;
+    m_imageMemoryCache.insert(url, new QPixmap(pixmap), cost);
+    
     QByteArray data;
     QBuffer buffer(&data);
     buffer.open(QIODevice::WriteOnly);
     
-    // Save as JPEG with quality 90 for good compression
     if (!pixmap.save(&buffer, "JPEG", 90)) {
         qWarning() << "Failed to convert pixmap to JPEG for caching";
         return;
@@ -278,6 +287,7 @@ int CacheManager::getImageCount() {
 }
 
 void CacheManager::clearAllCache() {
+    m_imageMemoryCache.clear();
     QSqlQuery query(m_db);
     query.exec("DELETE FROM image_cache");
     query.exec("DELETE FROM metadata_cache");
