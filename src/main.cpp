@@ -6,6 +6,7 @@
 #include <QIcon>
 #include "core/SubsonicClient.h"
 #include "core/SubsonicNetworkAccessManagerFactory.h"
+#include "core/CacheManager.h"
 #include "core/AppInfo.h"
 #include "core/WindowStateManager.h"
 #include "playback/PlayerController.h"
@@ -24,6 +25,12 @@ int main(int argc, char *argv[]) {
 
     QQmlApplicationEngine engine;
     
+    // Initialize cache manager
+    CacheManager cacheManager;
+    if (!cacheManager.initialize()) {
+        qWarning() << "Failed to initialize cache manager";
+    }
+    
     TranslationManager translationManager;
     SubsonicClient api;
     DiscordRPC discord;
@@ -36,6 +43,7 @@ int main(int argc, char *argv[]) {
     translationManager.setEngine(&engine);
     
     engine.setNetworkAccessManagerFactory(new SubsonicNetworkAccessManagerFactory);
+    engine.rootContext()->setContextProperty("cacheManager", &cacheManager);
     engine.rootContext()->setContextProperty("translationManager", &translationManager);
     engine.rootContext()->setContextProperty("api", &api);
     engine.rootContext()->setContextProperty("player", &player);

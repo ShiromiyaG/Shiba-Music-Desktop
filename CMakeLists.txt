@@ -22,7 +22,7 @@ else()
     message(STATUS "Discord Client ID: Not set (Discord RPC will be disabled)")
 endif()
 
-find_package(Qt6 6.9 REQUIRED COMPONENTS Quick QuickControls2 Network Core5Compat)
+find_package(Qt6 6.9 REQUIRED COMPONENTS Quick QuickControls2 Network Core5Compat Sql)
 
 # Tentar encontrar libmpv no projeto primeiro
 set(MPV_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/libs/mpv/include")
@@ -60,6 +60,7 @@ set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
 qt_add_executable(shibamusic WIN32
     src/main.cpp
     src/core/SubsonicClient.h src/core/SubsonicClient.cpp
+    src/core/CacheManager.h src/core/CacheManager.cpp
     src/playback/MpvPlayer.h src/playback/MpvPlayer.cpp
     src/playback/PlayerController.h src/playback/PlayerController.cpp
     src/core/SubsonicNetworkAccessManagerFactory.h
@@ -148,9 +149,9 @@ qt_add_resources(shibamusic "translations"
 target_include_directories(shibamusic PRIVATE ${MPV_INCLUDE_DIR} ${RAPIDJSON_INCLUDE_DIR})
 
 if(TARGET PkgConfig::MPV)
-    target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Core5Compat PkgConfig::MPV)
+    target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Core5Compat Qt6::Sql PkgConfig::MPV)
 else()
-    target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Core5Compat ${MPV_LIBRARY})
+    target_link_libraries(shibamusic PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Core5Compat Qt6::Sql ${MPV_LIBRARY})
     # Copiar DLL do mpv para a pasta de build
     if(EXISTS "${CMAKE_SOURCE_DIR}/libs/mpv/bin/libmpv-2.dll")
         add_custom_command(TARGET shibamusic POST_BUILD
