@@ -115,11 +115,11 @@ private:
         QString album;
         QString albumId;
         QString coverArt;
-        int duration = 0;
-        int track = 0;
-        int year = 0;
-        double replayGainTrackGain = 0.0;
-        double replayGainAlbumGain = 0.0;
+        qint32 duration = 0;
+        qint16 track = 0;
+        qint16 year = 0;
+        float replayGainTrackGain = 0.0f;
+        float replayGainAlbumGain = 0.0f;
     };
 
     using TrackList = QVector<TrackEntry>;
@@ -167,7 +167,7 @@ private:
     TrackList m_favorites;
     QString m_artistCover;
     QString m_pendingAlbumListType;
-    int m_pendingAlbumListOffset = 0;
+    qint32 m_pendingAlbumListOffset = 0;
     bool m_albumListPaging = false;
     bool m_hasMoreAlbumList = false;
     CacheManager *m_cacheManager = nullptr;
