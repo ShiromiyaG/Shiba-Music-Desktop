@@ -18,10 +18,12 @@
 #include <functional>
 #include <memory>
 #include <algorithm>
+#include <QSet>
 
 static constexpr auto API_VERSION = "1.16.1";
 static constexpr auto CLIENT_NAME = "ShibaMusicQt";
 static constexpr int ALBUM_LIST_PAGE_SIZE = 50;
+static constexpr int RECENTLY_PLAYED_ALBUM_LIMIT = 20;
 
 static QHash<QString, QString> g_stringPool;
 static QString internString(const QString &str) {
@@ -1571,10 +1573,7 @@ void SubsonicClient::addToRecentlyPlayed(const QVariantMap &track)
     }
     // Add to the front
     m_recentlyPlayedAlbums.prepend(album);
-    if (m_recentlyPlayedAlbums.size() > 10)
-    {
-        m_recentlyPlayedAlbums.removeLast();
-    }
+    pruneRecentlyPlayed();
     saveRecentlyPlayed();
     emit recentlyPlayedAlbumsChanged();
 }
@@ -1589,7 +1588,44 @@ void SubsonicClient::loadRecentlyPlayed()
 {
     QSettings settings;
     m_recentlyPlayedAlbums = settings.value("recentlyPlayedAlbums").toList();
+    if (pruneRecentlyPlayed())
+    {
+        saveRecentlyPlayed();
+    }
     emit recentlyPlayedAlbumsChanged();
+}
+
+bool SubsonicClient::pruneRecentlyPlayed()
+{
+    if (m_recentlyPlayedAlbums.isEmpty())
+        return false;
+
+    QSet<QString> seen;
+    QVariantList pruned;
+    const qsizetype reserveSize = std::min<qsizetype>(
+        m_recentlyPlayedAlbums.size(),
+        static_cast<qsizetype>(RECENTLY_PLAYED_ALBUM_LIMIT));
+    pruned.reserve(reserveSize);
+
+    for (const QVariant &entryVar : m_recentlyPlayedAlbums)
+    {
+        const QVariantMap entry = entryVar.toMap();
+        const QString id = entry.value(QStringLiteral("id")).toString();
+        if (id.isEmpty() || seen.contains(id))
+            continue;
+
+        pruned.append(entry);
+        seen.insert(id);
+
+        if (pruned.size() >= RECENTLY_PLAYED_ALBUM_LIMIT)
+            break;
+    }
+
+    if (pruned == m_recentlyPlayedAlbums)
+        return false;
+
+    m_recentlyPlayedAlbums = pruned;
+    return true;
 }
 
 QString SubsonicClient::cacheKey(const QString &base) const
