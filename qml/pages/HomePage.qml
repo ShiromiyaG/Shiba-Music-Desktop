@@ -174,7 +174,8 @@ Page {
                             }
                         }
                         
-                        ScrollBar {
+                        Components.ScrollBar {
+                            theme.manager: themeManager
                             width: parent.width
                             orientation: Qt.Horizontal
                             size: artistsScroll.width / artistsScroll.contentWidth
@@ -234,7 +235,8 @@ Page {
                             }
                         }
                         
-                        ScrollBar {
+                        Components.ScrollBar {
+                            theme.manager: themeManager
                             width: parent.width
                             orientation: Qt.Horizontal
                             size: albumsScroll.width / albumsScroll.contentWidth
@@ -359,8 +361,8 @@ Page {
                 }
             }
             
-            ScrollBar {
-                id: recentScrollBar
+            Components.ScrollBar {
+                theme.manager: themeManager
                 width: parent.width
                 orientation: Qt.Horizontal
                 size: recentScroll.width / recentScroll.contentWidth
