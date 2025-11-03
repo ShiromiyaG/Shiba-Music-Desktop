@@ -318,6 +318,7 @@ void PlayerController::onPlaylistPosChanged(int pos) {
     m_api->addToRecentlyPlayed(m_current);
     m_api->scrobble(m_current.value("id").toString(), true, 0);
     updateVolume();
+    updateDiscordPresence();
 }
 
 void PlayerController::onEndOfFile() {
