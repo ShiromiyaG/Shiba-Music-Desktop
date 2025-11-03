@@ -96,7 +96,32 @@ Item {
             id: hoverArea
             anchors.fill: parent
             hoverEnabled: true
-            onClicked: root.clicked()
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: (mouse) => {
+                if (mouse.button === Qt.LeftButton) {
+                    root.clicked()
+                } else if (mouse.button === Qt.RightButton) {
+                    contextMenu.popup()
+                }
+            }
+
+            Menu {
+                id: contextMenu
+                MenuItem {
+                    text: qsTr("View Artist")
+                    icon.source: "qrc:/qml/icons/mic.svg"
+                    onTriggered: root.clicked()
+                }
+                MenuSeparator {}
+                MenuItem {
+                    text: qsTr("Shuffle Artist")
+                    icon.source: "qrc:/qml/icons/shuffle.svg"
+                    enabled: artistId.length > 0
+                    onTriggered: {
+                        // Implementar shuffle do artista
+                    }
+                }
+            }
         }
     }
 }

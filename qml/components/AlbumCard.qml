@@ -125,7 +125,45 @@ Item {
             id: hoverArea
             anchors.fill: parent
             hoverEnabled: true
-            onClicked: root.clicked()
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: (mouse) => {
+                if (mouse.button === Qt.LeftButton) {
+                    root.clicked()
+                } else if (mouse.button === Qt.RightButton) {
+                    contextMenu.popup()
+                }
+            }
+
+            Menu {
+                id: contextMenu
+                MenuItem {
+                    text: qsTr("Play Album")
+                    icon.source: "qrc:/qml/icons/play_arrow.svg"
+                    enabled: albumId.length > 0
+                    onTriggered: {
+                        api.fetchAlbum(albumId)
+                        Qt.callLater(() => player.playCurrentTracks())
+                    }
+                }
+                MenuItem {
+                    text: qsTr("Add to Queue")
+                    icon.source: "qrc:/qml/icons/add.svg"
+                    enabled: albumId.length > 0
+                    onTriggered: {
+                        api.fetchAlbum(albumId)
+                    }
+                }
+                MenuSeparator {}
+                MenuItem {
+                    text: qsTr("Go to Artist")
+                    icon.source: "qrc:/qml/icons/mic.svg"
+                    enabled: artistId.length > 0
+                    onTriggered: {
+                        if (artistId.length > 0)
+                            showArtistPage(artistId, root.subtitle, "")
+                    }
+                }
+            }
 
             ToolButton {
                 id: playBtn

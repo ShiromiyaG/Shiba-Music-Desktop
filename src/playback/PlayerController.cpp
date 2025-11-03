@@ -29,6 +29,17 @@ PlayerController::PlayerController(SubsonicClient *api, DiscordRPC *discord, QOb
     
     QSettings settings;
     m_volume = settings.value("player/volume", 1.0).toDouble();
+    m_replayGainEnabled = settings.value("player/replayGainEnabled", true).toBool();
+    m_replayGainMode = settings.value("player/replayGainMode", 1).toInt();
+    
+    // Initialize ReplayGain in MPV
+    if (m_replayGainEnabled) {
+        const QString mode = (m_replayGainMode == 1) ? "album" : "track";
+        m_mpv->setReplayGainMode(mode);
+    } else {
+        m_mpv->setReplayGainMode("no");
+    }
+    
     updateVolume();
 }
 
@@ -233,6 +244,17 @@ void PlayerController::setMuted(bool m) {
 void PlayerController::setReplayGainEnabled(bool enabled) {
     if (m_replayGainEnabled == enabled) return;
     m_replayGainEnabled = enabled;
+    
+    QSettings settings;
+    settings.setValue("player/replayGainEnabled", enabled);
+    
+    if (enabled) {
+        const QString mode = (m_replayGainMode == 1) ? "album" : "track";
+        m_mpv->setReplayGainMode(mode);
+    } else {
+        m_mpv->setReplayGainMode("no");
+    }
+    
     updateVolume();
     emit replayGainEnabledChanged();
 }
@@ -240,6 +262,15 @@ void PlayerController::setReplayGainEnabled(bool enabled) {
 void PlayerController::setReplayGainMode(int mode) {
     if (m_replayGainMode == mode) return;
     m_replayGainMode = mode;
+    
+    QSettings settings;
+    settings.setValue("player/replayGainMode", mode);
+    
+    if (m_replayGainEnabled) {
+        const QString rgMode = (mode == 1) ? "album" : "track";
+        m_mpv->setReplayGainMode(rgMode);
+    }
+    
     updateVolume();
     emit replayGainModeChanged();
 }
@@ -250,19 +281,9 @@ void PlayerController::updateVolume() {
         return;
     }
     
-    qreal targetVolume = 1.0;
-    if (m_replayGainEnabled && !m_current.isEmpty()) {
-        const QString gainKey = (m_replayGainMode == 1) ? "replayGainAlbumGain" : "replayGainTrackGain";
-        if (m_current.contains(gainKey)) {
-            const qreal gainDb = m_current.value(gainKey).toDouble();
-            if (qAbs(gainDb) > 0.01) {
-                targetVolume = qPow(10.0, gainDb / 20.0);
-                targetVolume = qBound(0.1, targetVolume, 2.0);
-            }
-        }
-    }
-    
-    m_mpv->setVolume(targetVolume * m_volume * 200.0);
+    // MPV handles ReplayGain automatically from file tags
+    // We just set the user volume
+    m_mpv->setVolume(m_volume * 100.0);
 }
 
 void PlayerController::onPlaylistPosChanged(int pos) {

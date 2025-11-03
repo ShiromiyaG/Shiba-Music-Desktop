@@ -107,6 +107,16 @@ Rectangle {
                     font.pixelSize: 16
                     font.weight: Font.Bold
                     color: bar.hasTrack ? "#f0f6fc" : "#8b949e"
+                    
+                    MouseArea {
+                        anchors.fill: parent
+                        acceptedButtons: Qt.RightButton
+                        onClicked: (mouse) => {
+                            if (mouse.button === Qt.RightButton && bar.hasTrack) {
+                                trackContextMenu.popup()
+                            }
+                        }
+                    }
                 }
                 
                 Label {
@@ -120,6 +130,53 @@ Rectangle {
                     color: "#8b949e"
                     font.pixelSize: 13
                     elide: Label.ElideRight
+                }
+                
+                Menu {
+                    id: trackContextMenu
+                    MenuItem {
+                        text: qsTr("Go to Album")
+                        icon.source: "qrc:/qml/icons/album.svg"
+                        enabled: bar.hasTrack && player.currentTrack.albumId
+                        onTriggered: {
+                            if (player.currentTrack.albumId) {
+                                showAlbumPage(
+                                    player.currentTrack.albumId,
+                                    player.currentTrack.album || "",
+                                    player.currentTrack.artist || "",
+                                    player.currentTrack.coverArt || "",
+                                    player.currentTrack.artistId || ""
+                                )
+                            }
+                        }
+                    }
+                    MenuItem {
+                        text: qsTr("Go to Artist")
+                        icon.source: "qrc:/qml/icons/mic.svg"
+                        enabled: bar.hasTrack && player.currentTrack.artistId
+                        onTriggered: {
+                            if (player.currentTrack.artistId) {
+                                showArtistPage(
+                                    player.currentTrack.artistId,
+                                    player.currentTrack.artist || "",
+                                    player.currentTrack.coverArt || ""
+                                )
+                            }
+                        }
+                    }
+                    MenuSeparator {}
+                    MenuItem {
+                        text: bar.hasTrack && player.currentTrack.starred ? qsTr("Remove from Favorites") : qsTr("Add to Favorites")
+                        icon.source: bar.hasTrack && player.currentTrack.starred ? "qrc:/qml/icons/favorite.svg" : "qrc:/qml/icons/favorite_border.svg"
+                        enabled: bar.hasTrack && player.currentTrack.id
+                        onTriggered: {
+                            if (player.currentTrack.starred) {
+                                api.unstar(player.currentTrack.id)
+                            } else {
+                                api.star(player.currentTrack.id)
+                            }
+                        }
+                    }
                 }
             }
 

@@ -25,6 +25,12 @@ MpvPlayer::MpvPlayer(QObject *parent) : QObject(parent) {
     mpv_set_option_string(m_mpv, "loop-playlist", "no");
     mpv_set_option_string(m_mpv, "loop-file", "no");
     mpv_set_option_string(m_mpv, "keep-open", "yes");
+    
+    // ReplayGain support for all audio formats
+    mpv_set_option_string(m_mpv, "replaygain", "track");
+    mpv_set_option_string(m_mpv, "replaygain-preamp", "0");
+    mpv_set_option_string(m_mpv, "replaygain-clip", "yes");
+    mpv_set_option_string(m_mpv, "replaygain-fallback", "0");
 
     if (mpv_initialize(m_mpv) < 0) {
         qCritical() << "Failed to initialize mpv";
@@ -116,6 +122,19 @@ double MpvPlayer::volume() const {
 
 void MpvPlayer::setVolume(double vol) {
     setProperty("volume", vol);
+}
+
+void MpvPlayer::setReplayGainMode(const QString &mode) {
+    if (!m_mpv) return;
+    QByteArray modeUtf8 = mode.toUtf8();
+    mpv_set_property_string(m_mpv, "replaygain", modeUtf8.constData());
+}
+
+void MpvPlayer::setReplayGainPreamp(double db) {
+    if (!m_mpv) return;
+    QString preamp = QString::number(db);
+    QByteArray preampUtf8 = preamp.toUtf8();
+    mpv_set_property_string(m_mpv, "replaygain-preamp", preampUtf8.constData());
 }
 
 void MpvPlayer::processEvents() {

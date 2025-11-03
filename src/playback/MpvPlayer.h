@@ -19,6 +19,8 @@ public:
     bool isPaused() const;
     double volume() const;
     void setVolume(double vol);
+    void setReplayGainMode(const QString &mode);
+    void setReplayGainPreamp(double db);
 
 signals:
     void positionChanged(qint64 pos);

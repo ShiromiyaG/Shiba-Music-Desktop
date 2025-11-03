@@ -156,9 +156,15 @@ Item {
             acceptedDevices: PointerDevice.Mouse
         }
         TapHandler {
-            acceptedButtons: Qt.LeftButton
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             gesturePolicy: TapHandler.DragThreshold
-            onTapped: root.playClicked()
+            onTapped: (eventPoint, button) => {
+                if (button === Qt.LeftButton) {
+                    root.playClicked()
+                } else if (button === Qt.RightButton) {
+                    trackMenu.popup()
+                }
+            }
         }
     }
 
