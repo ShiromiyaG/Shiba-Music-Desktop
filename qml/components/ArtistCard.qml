@@ -107,19 +107,37 @@ Item {
 
             Menu {
                 id: contextMenu
+                width: 200
+                
+                background: Rectangle {
+                    color: "#1d2330"
+                    radius: 12
+                    border.color: "#2a3040"
+                    border.width: 1
+                }
+                
+                delegate: MenuItem {
+                    id: menuItem
+                    implicitWidth: 200
+                    implicitHeight: 40
+                    
+                    contentItem: Label {
+                        text: menuItem.text
+                        color: menuItem.highlighted ? "#f5f7ff" : "#b0b8c8"
+                        font.pixelSize: 13
+                        leftPadding: 16
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    
+                    background: Rectangle {
+                        color: menuItem.highlighted ? "#2a3545" : "transparent"
+                        radius: 8
+                    }
+                }
+                
                 MenuItem {
                     text: qsTr("View Artist")
-                    icon.source: "qrc:/qml/icons/mic.svg"
                     onTriggered: root.clicked()
-                }
-                MenuSeparator {}
-                MenuItem {
-                    text: qsTr("Shuffle Artist")
-                    icon.source: "qrc:/qml/icons/shuffle.svg"
-                    enabled: artistId.length > 0
-                    onTriggered: {
-                        // Implementar shuffle do artista
-                    }
                 }
             }
         }

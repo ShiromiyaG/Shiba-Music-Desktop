@@ -134,29 +134,79 @@ Item {
                 }
             }
 
+            property string pendingPlayAlbumId: ""
+            property string pendingQueueAlbumId: ""
+            
+            Connections {
+                target: api
+                function onTracksChanged() {
+                    if (hoverArea.pendingPlayAlbumId.length > 0 && api.tracks.length > 0) {
+                        player.playCurrentTracks(0)
+                        hoverArea.pendingPlayAlbumId = ""
+                    }
+                    if (hoverArea.pendingQueueAlbumId.length > 0 && api.tracks.length > 0) {
+                        for (var i = 0; i < api.tracks.length; i++) {
+                            player.addToQueue(api.tracks[i])
+                        }
+                        hoverArea.pendingQueueAlbumId = ""
+                    }
+                }
+            }
+            
             Menu {
                 id: contextMenu
+                width: 200
+                
+                background: Rectangle {
+                    color: "#1d2330"
+                    radius: 12
+                    border.color: "#2a3040"
+                    border.width: 1
+                }
+                
+                delegate: MenuItem {
+                    id: menuItem
+                    implicitWidth: 200
+                    implicitHeight: 40
+                    
+                    contentItem: Label {
+                        text: menuItem.text
+                        color: menuItem.highlighted ? "#f5f7ff" : "#b0b8c8"
+                        font.pixelSize: 13
+                        leftPadding: 16
+                        verticalAlignment: Text.AlignVCenter
+                    }
+                    
+                    background: Rectangle {
+                        color: menuItem.highlighted ? "#2a3545" : "transparent"
+                        radius: 8
+                    }
+                }
+                
                 MenuItem {
                     text: qsTr("Play Album")
-                    icon.source: "qrc:/qml/icons/play_arrow.svg"
                     enabled: albumId.length > 0
                     onTriggered: {
+                        hoverArea.pendingPlayAlbumId = albumId
                         api.fetchAlbum(albumId)
-                        Qt.callLater(() => player.playCurrentTracks())
                     }
                 }
                 MenuItem {
                     text: qsTr("Add to Queue")
-                    icon.source: "qrc:/qml/icons/add.svg"
                     enabled: albumId.length > 0
                     onTriggered: {
+                        hoverArea.pendingQueueAlbumId = albumId
                         api.fetchAlbum(albumId)
                     }
                 }
-                MenuSeparator {}
+                MenuSeparator {
+                    contentItem: Rectangle {
+                        implicitHeight: 1
+                        color: "#2a3040"
+                    }
+                }
                 MenuItem {
                     text: qsTr("Go to Artist")
-                    icon.source: "qrc:/qml/icons/mic.svg"
                     enabled: artistId.length > 0
                     onTriggered: {
                         if (artistId.length > 0)

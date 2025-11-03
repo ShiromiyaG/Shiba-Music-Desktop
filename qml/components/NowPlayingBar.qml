@@ -134,9 +134,36 @@ Rectangle {
                 
                 Menu {
                     id: trackContextMenu
+                    width: 200
+                    
+                    background: Rectangle {
+                        color: "#1d2330"
+                        radius: 12
+                        border.color: "#2a3040"
+                        border.width: 1
+                    }
+                    
+                    delegate: MenuItem {
+                        id: menuItem
+                        implicitWidth: 200
+                        implicitHeight: 40
+                        
+                        contentItem: Label {
+                            text: menuItem.text
+                            color: menuItem.highlighted ? "#f5f7ff" : "#b0b8c8"
+                            font.pixelSize: 13
+                            leftPadding: 16
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        
+                        background: Rectangle {
+                            color: menuItem.highlighted ? "#2a3545" : "transparent"
+                            radius: 8
+                        }
+                    }
+                    
                     MenuItem {
                         text: qsTr("Go to Album")
-                        icon.source: "qrc:/qml/icons/album.svg"
                         enabled: bar.hasTrack && player.currentTrack.albumId
                         onTriggered: {
                             if (player.currentTrack.albumId) {
@@ -152,7 +179,6 @@ Rectangle {
                     }
                     MenuItem {
                         text: qsTr("Go to Artist")
-                        icon.source: "qrc:/qml/icons/mic.svg"
                         enabled: bar.hasTrack && player.currentTrack.artistId
                         onTriggered: {
                             if (player.currentTrack.artistId) {
@@ -164,10 +190,14 @@ Rectangle {
                             }
                         }
                     }
-                    MenuSeparator {}
+                    MenuSeparator {
+                        contentItem: Rectangle {
+                            implicitHeight: 1
+                            color: "#2a3040"
+                        }
+                    }
                     MenuItem {
                         text: bar.hasTrack && player.currentTrack.starred ? qsTr("Remove from Favorites") : qsTr("Add to Favorites")
-                        icon.source: bar.hasTrack && player.currentTrack.starred ? "qrc:/qml/icons/favorite.svg" : "qrc:/qml/icons/favorite_border.svg"
                         enabled: bar.hasTrack && player.currentTrack.id
                         onTriggered: {
                             if (player.currentTrack.starred) {

@@ -132,18 +132,31 @@ Item {
                         }
                         
                         MenuItem {
+                            text: qsTr("Play now")
+                            onTriggered: root.playClicked()
+                        }
+                        MenuItem {
                             text: qsTr("Add to queue")
                             onTriggered: root.queueClicked()
                         }
+                        MenuSeparator {
+                            contentItem: Rectangle {
+                                implicitHeight: 1
+                                color: "#2a3040"
+                            }
+                        }
                         MenuItem {
-                            text: root.starred ? "Remover dos favoritos" : "Adicionar aos favoritos"
+                            text: root.starred ? qsTr("Remove from Favorites") : qsTr("Add to Favorites")
+                            enabled: root.trackId.length > 0
                             onTriggered: {
-                                if (root.starred) {
-                                    api.unstar(root.trackId)
-                                } else {
-                                    api.star(root.trackId)
+                                if (root.trackId.length > 0) {
+                                    if (root.starred) {
+                                        api.unstar(root.trackId)
+                                    } else {
+                                        api.star(root.trackId)
+                                    }
+                                    root.starred = !root.starred
                                 }
-                                root.starred = !root.starred
                             }
                         }
                     }
