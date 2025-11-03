@@ -12,7 +12,7 @@ Page {
     Component.onCompleted: {
         try {
             if (api && api.fetchAlbumList)
-                api.fetchAlbumList("random");
+                api.fetchAlbumList("alphabeticalByName");
         } catch (e) {
             console.error("AlbumsPage initialization error:", e)
         }
@@ -43,6 +43,10 @@ Page {
             cellHeight: 300
             flickDeceleration: 1200
             maximumFlickVelocity: 2500
+            cacheBuffer: 2000
+            displayMarginBeginning: 1000
+            displayMarginEnd: 1000
+            reuseItems: false
             model: (api && api.albumList) ? api.albumList : []
             delegate: Item {
                 width: 220
@@ -51,6 +55,7 @@ Page {
                 Components.AlbumCard {
                     anchors.fill: parent
                     anchors.margins: 10
+                    visible: true
                     title: (modelData && modelData.name) ? modelData.name : "Álbum Desconhecido"
                     subtitle: (modelData && modelData.artist) ? modelData.artist : "Artista desconhecido"
                     cover: (modelData && modelData.coverArt && api) ? api.coverArtUrl(modelData.coverArt, 256) : ""
@@ -69,13 +74,17 @@ Page {
                 }
             }
 
+            property bool initialLoadComplete: false
+            property real savedContentY: 0
+            
             function maybeFetchMore() {
                 try {
                     if (!api || !api.albumListHasMore || api.albumListLoading)
                         return;
                     if (!contentHeight || !height) return;
                     var distance = contentHeight - (contentY + height);
-                    if (distance < cellHeight * 2 || contentHeight <= height) {
+                    if (distance < cellHeight * 2) {
+                        savedContentY = contentY
                         if (api.fetchMoreAlbums)
                             api.fetchMoreAlbums();
                     }
@@ -85,8 +94,21 @@ Page {
             }
 
             onContentYChanged: { if (gridView) maybeFetchMore() }
-            onContentHeightChanged: { if (gridView) maybeFetchMore() }
-            onCountChanged: { if (gridView) maybeFetchMore() }
+            
+            onContentHeightChanged: {
+                if (gridView && initialLoadComplete && savedContentY > 0) {
+                    contentY = savedContentY
+                }
+            }
+            
+            onCountChanged: {
+                if (gridView && count > 0) {
+                    initialLoadComplete = true
+                    if (savedContentY > 0) {
+                        contentY = savedContentY
+                    }
+                }
+            }
 
             footer: Item {
                 width: gridView.width

@@ -23,6 +23,7 @@ Item {
         color: hoverArea.containsMouse ? "#273040" : "#1d222c"
         border.color: hoverArea.containsMouse ? "#3b465f" : "#2a303c"
         Behavior on color { ColorAnimation { duration: 120 } }
+        antialiasing: true
 
         ColumnLayout {
             anchors.fill: parent
@@ -40,6 +41,7 @@ Item {
                     color: "#111"
                     border.color: "#2a313f"
                     clip: true
+                    antialiasing: true
                     
                     Image {
                         id: coverImage
@@ -49,21 +51,39 @@ Item {
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
                         cache: true
-                        sourceSize.width: Math.min(512, width * Screen.devicePixelRatio * 1.5)
-                        sourceSize.height: Math.min(512, height * Screen.devicePixelRatio * 1.5)
+                        smooth: true
+                        mipmap: true
+                        sourceSize.width: 256
+                        sourceSize.height: 256
                         visible: status === Image.Ready
+                        
+                        onStatusChanged: {
+                            if (status === Image.Error) {
+                                console.warn("Failed to load album cover:", root.cover, "for album:", root.title)
+                            }
+                        }
                     }
+                    
+                    BusyIndicator {
+                        anchors.centerIn: parent
+                        running: coverImage.status === Image.Loading
+                        visible: running
+                        width: 40
+                        height: 40
+                    }
+                    
                     Rectangle {
                         id: fallback
                         anchors.fill: parent
                         color: "#1f2530"
-                        visible: coverImage.status !== Image.Ready
+                        visible: coverImage.status !== Image.Ready && coverImage.status !== Image.Loading
                         Image {
                             anchors.centerIn: parent
                             source: "qrc:/qml/icons/album.svg"
                             sourceSize.width: 42
                             sourceSize.height: 42
                             antialiasing: true
+                            smooth: true
                         }
                     }
                 }
