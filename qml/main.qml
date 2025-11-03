@@ -1152,11 +1152,14 @@ ApplicationWindow {
     Component.onCompleted: {
         restoreWindowState()
         captureWindowedGeometry()
-        win.visible = true
+        
         if (pendingMaximizeRestore) {
-            win.visibility = Window.Maximized
+            win.showMaximized()
             pendingMaximizeRestore = false
+        } else {
+            win.show()
         }
+        
         win.requestActivate()
 
         if (api) {
