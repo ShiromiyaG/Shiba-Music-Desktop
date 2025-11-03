@@ -29,6 +29,7 @@ Page {
             id: gridView
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.rightMargin: 20
             clip: true
             cellWidth: 196
             cellHeight: 244
@@ -39,6 +40,11 @@ Page {
                 name: modelData.name || "Artista Desconhecido"
                 cover: (modelData.coverArt && api) ? api.coverArtUrl(modelData.coverArt, 256) : ""
                 onClicked: artistsPage.artistClicked(modelData.id, modelData.name, modelData.coverArt)
+            }
+            
+            ScrollBar.vertical: ScrollBar {
+                policy: ScrollBar.AsNeeded
+                visible: gridView.contentHeight > gridView.height
             }
             
             MouseArea {

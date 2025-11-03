@@ -38,6 +38,7 @@ Page {
             id: gridView
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.rightMargin: 20
             clip: true
             cellWidth: 220
             cellHeight: 300
@@ -48,6 +49,11 @@ Page {
             displayMarginEnd: 1000
             reuseItems: false
             model: (api && api.albumList) ? api.albumList : []
+            
+            ScrollBar.vertical: ScrollBar {
+                policy: ScrollBar.AsNeeded
+                visible: gridView.contentHeight > gridView.height
+            }
             delegate: Item {
                 width: 220
                 height: 300

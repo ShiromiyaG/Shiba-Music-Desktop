@@ -100,17 +100,17 @@ SubsonicClient::TrackEntry SubsonicClient::trackEntryFromVariant(const QVariantM
 {
     TrackEntry entry;
     entry.id = internString(map.value(QStringLiteral("id")).toString());
-    entry.title = map.value(QStringLiteral("title")).toString();
+    entry.title = internString(map.value(QStringLiteral("title")).toString());
     entry.artist = internString(map.value(QStringLiteral("artist")).toString());
     entry.artistId = internString(map.value(QStringLiteral("artistId")).toString());
     entry.album = internString(map.value(QStringLiteral("album")).toString());
     entry.albumId = internString(map.value(QStringLiteral("albumId")).toString());
     entry.coverArt = internString(map.value(QStringLiteral("coverArt")).toString());
     entry.duration = map.value(QStringLiteral("duration")).toInt();
-    entry.track = map.value(QStringLiteral("track")).toInt();
-    entry.year = map.value(QStringLiteral("year")).toInt();
-    entry.replayGainTrackGain = map.value(QStringLiteral("replayGainTrackGain")).toDouble();
-    entry.replayGainAlbumGain = map.value(QStringLiteral("replayGainAlbumGain")).toDouble();
+    entry.track = static_cast<qint16>(map.value(QStringLiteral("track")).toInt());
+    entry.year = static_cast<qint16>(map.value(QStringLiteral("year")).toInt());
+    entry.replayGainTrackGain = static_cast<float>(map.value(QStringLiteral("replayGainTrackGain")).toDouble());
+    entry.replayGainAlbumGain = static_cast<float>(map.value(QStringLiteral("replayGainAlbumGain")).toDouble());
     return entry;
 }
 
@@ -640,6 +640,10 @@ void SubsonicClient::logout()
     clearAndShrink(m_randomSongs);
     clearAndShrink(m_favorites);
     clearAndShrink(m_playlists);
+    
+    // Clear string pool on logout to free memory
+    g_stringPool.clear();
+    g_stringPool.squeeze();
 
     if (hadArtists)
         emit artistsChanged();
@@ -1227,10 +1231,10 @@ void SubsonicClient::search(const QString &term)
         for (const auto &av : artists) {
             auto a = av.toObject();
             m_searchArtists.push_back(QVariantMap{
-                {"id", a.value("id").toString()},
-                {"name", a.value("name").toString()},
+                {"id", internString(a.value("id").toString())},
+                {"name", internString(a.value("name").toString())},
                 {"albumCount", a.value("albumCount").toInt()},
-                {"coverArt", a.value("coverArt").toString()}
+                {"coverArt", internString(a.value("coverArt").toString())}
             });
         }
         
@@ -1242,11 +1246,11 @@ void SubsonicClient::search(const QString &term)
         for (const auto &av : albums) {
             auto a = av.toObject();
             m_searchAlbums.push_back(QVariantMap{
-                {"id", a.value("id").toString()},
-                {"name", a.value("name").toString()},
-                {"artist", a.value("artist").toString()},
-                {"artistId", a.value("artistId").toString()},
-                {"coverArt", a.value("coverArt").toString()},
+                {"id", internString(a.value("id").toString())},
+                {"name", internString(a.value("name").toString())},
+                {"artist", internString(a.value("artist").toString())},
+                {"artistId", internString(a.value("artistId").toString())},
+                {"coverArt", internString(a.value("coverArt").toString())},
                 {"songCount", a.value("songCount").toInt()},
                 {"duration", a.value("duration").toInt()},
                 {"year", a.value("year").toInt()}

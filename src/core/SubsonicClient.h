@@ -3,7 +3,7 @@
 #include <QNetworkAccessManager>
 #include <QJsonDocument>
 #include <QUrlQuery>
-#include <QVector>
+#include <QList>
 
 class CacheManager;
 
@@ -122,7 +122,7 @@ private:
         float replayGainAlbumGain = 0.0f;
     };
 
-    using TrackList = QVector<TrackEntry>;
+    using TrackList = QList<TrackEntry>;
 
     enum class AuthMode
     {

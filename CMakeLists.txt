@@ -9,8 +9,29 @@ project(ShibaMusic VERSION ${APP_VERSION} LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Optimization flags
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
 if(MSVC)
     add_compile_options(/Zc:__cplusplus /permissive-)
+    # Release optimizations for MSVC
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(/O2 /GL /Oi /Ot /Gy)
+        add_link_options(/LTCG /OPT:REF /OPT:ICF)
+    endif()
+else()
+    # Release optimizations for GCC/Clang
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        include(ProcessorCount)
+        ProcessorCount(N)
+        if(N EQUAL 0)
+            set(N 4)
+        endif()
+        add_compile_options(-O3 -march=native -flto=${N})
+        add_link_options(-flto=${N} -fuse-linker-plugin)
+    endif()
 endif()
 
 # Discord Client ID (can be set via environment variable or CMake option)

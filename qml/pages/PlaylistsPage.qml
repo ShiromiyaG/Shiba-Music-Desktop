@@ -28,17 +28,22 @@ Page {
             font.pixelSize: 14
         }
 
-        ScrollView {
+        GridView {
+            id: playlistGrid
             Layout.fillWidth: true
             Layout.fillHeight: true
+            Layout.rightMargin: 20
             clip: true
-
-            GridView {
-                cellWidth: 220
-                cellHeight: 280
-                flickDeceleration: 1200
-                maximumFlickVelocity: 2500
-                model: api.playlists
+            cellWidth: 220
+            cellHeight: 280
+            flickDeceleration: 1200
+            maximumFlickVelocity: 2500
+            model: api.playlists
+            
+            ScrollBar.vertical: ScrollBar {
+                policy: ScrollBar.AsNeeded
+                visible: playlistGrid.contentHeight > playlistGrid.height
+            }
                 delegate: Rectangle {
                     width: 200
                     height: 260
@@ -124,6 +129,15 @@ Page {
                             }
                         }
                     }
+                }
+            
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+                propagateComposedEvents: true
+                onWheel: (wheel) => {
+                    var delta = wheel.angleDelta.y
+                    playlistGrid.contentY = Math.max(0, Math.min(playlistGrid.contentY - delta, playlistGrid.contentHeight - playlistGrid.height))
                 }
             }
         }
