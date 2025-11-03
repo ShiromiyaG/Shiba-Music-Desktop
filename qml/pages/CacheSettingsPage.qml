@@ -1,8 +1,10 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components" as Components
 
 Page {
+    Components.ThemePalette { id: theme }
     id: cacheSettingsPage
     
     background: Rectangle {
@@ -22,7 +24,7 @@ Page {
                 text: qsTr("Cache Settings")
                 font.pixelSize: 32
                 font.weight: Font.Bold
-                color: "#f5f7ff"
+                color: theme.textPrimary
             }
             
             // Cache Statistics
@@ -30,8 +32,8 @@ Page {
                 Layout.fillWidth: true
                 Layout.preferredHeight: statsColumn.implicitHeight + 32
                 radius: 16
-                color: "#1a1f2e"
-                border.color: "#252d42"
+                color: theme.cardBackground
+                border.color: theme.cardBorder
                 border.width: 1
                 
                 ColumnLayout {
@@ -44,7 +46,7 @@ Page {
                         text: qsTr("Cache Statistics")
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
-                        color: "#f5f7ff"
+                        color: theme.textPrimary
                     }
                     
                     GridLayout {
@@ -55,23 +57,23 @@ Page {
                         
                         Label {
                             text: qsTr("Total Size:")
-                            color: "#a0aac6"
+                            color: theme.textSecondary
                         }
                         Label {
                             id: cacheSizeLabel
                             text: formatBytes(cacheManager ? cacheManager.getCacheSize() : 0)
-                            color: "#f5f7ff"
+                            color: theme.textPrimary
                             font.weight: Font.Medium
                         }
                         
                         Label {
                             text: qsTr("Cached Images:")
-                            color: "#a0aac6"
+                            color: theme.textSecondary
                         }
                         Label {
                             id: imageCountLabel
                             text: cacheManager ? cacheManager.getImageCount() : "0"
-                            color: "#f5f7ff"
+                            color: theme.textPrimary
                             font.weight: Font.Medium
                         }
                     }
@@ -92,8 +94,8 @@ Page {
                 Layout.fillWidth: true
                 Layout.preferredHeight: actionsColumn.implicitHeight + 32
                 radius: 16
-                color: "#1a1f2e"
-                border.color: "#252d42"
+                color: theme.cardBackground
+                border.color: theme.cardBorder
                 border.width: 1
                 
                 ColumnLayout {
@@ -106,7 +108,7 @@ Page {
                         text: qsTr("Cache Management")
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
-                        color: "#f5f7ff"
+                        color: theme.textPrimary
                     }
                     
                     Button {
@@ -138,7 +140,7 @@ Page {
                     Rectangle {
                         Layout.fillWidth: true
                         height: 1
-                        color: "#252d42"
+                        color: theme.cardBorder
                     }
                     
                     Button {

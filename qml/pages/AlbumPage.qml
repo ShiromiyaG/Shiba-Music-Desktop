@@ -5,6 +5,7 @@ import Qt5Compat.GraphicalEffects
 import "qrc:/qml/components" as Components
 
 Page {
+    Components.ThemePalette { id: theme }
     id: albumPage
     property string albumId: ""
     property string albumTitle: ""
@@ -77,7 +78,7 @@ Page {
         boundsBehavior: Flickable.StopAtBounds
         flickDeceleration: 1200
         maximumFlickVelocity: 2500
-        ScrollBar.vertical: ScrollBar { }
+    ScrollBar.vertical: Components.ScrollBar { theme.manager: themeManager }
         
         MouseArea {
             anchors.fill: parent
@@ -99,10 +100,10 @@ Page {
                 height: 240
                 radius: 24
                 gradient: Gradient {
-                    GradientStop { position: 0.0; color: "#243047" }
-                    GradientStop { position: 1.0; color: "#1b2233" }
+                    GradientStop { position: 0.0; color: theme.cardBackground }
+                    GradientStop { position: 1.0; color: theme.cardBackground }
                 }
-                border.color: "#303a52"
+                border.color: theme.surfaceInteractiveBorder
                 clip: true
 
                 Image {
@@ -129,7 +130,7 @@ Page {
                 Rectangle {
                     anchors.fill: parent
                     radius: 24
-                    color: "#14171f"
+                    color: theme.windowBackgroundStart
                     opacity: 0.35
                 }
 
@@ -142,8 +143,8 @@ Page {
                         Layout.preferredWidth: 180
                         Layout.preferredHeight: 180
                         radius: 18
-                        color: "#101321"
-                        border.color: "#2b3246"
+                        color: theme.surface
+                        border.color: theme.surfaceInteractiveBorder
                         clip: true
                         Image {
                             anchors.fill: parent
@@ -182,7 +183,7 @@ Page {
                                 id: artistText
                                 text: artistName
                                 font.pixelSize: 14
-                                color: (artistLink.hovered && artistLink.enabled) ? "#c5d2ff" : "#8b96a8"
+                                color: (artistLink.hovered && artistLink.enabled) ? theme.accentLight : theme.textSecondary
                             }
 
                             MouseArea {
@@ -332,8 +333,8 @@ Page {
         
         background: Rectangle {
             gradient: Gradient {
-                GradientStop { position: 0.0; color: "#243047" }
-                GradientStop { position: 1.0; color: "#1b2233" }
+                GradientStop { position: 0.0; color: theme.cardBackground }
+                GradientStop { position: 1.0; color: theme.cardBackground }
             }
             radius: 16
         }
@@ -368,7 +369,7 @@ Page {
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
                 font.pixelSize: 11
-                color: "#8b96a8"
+                color: theme.textSecondary
             }
         }
         

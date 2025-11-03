@@ -11,10 +11,16 @@ ApplicationWindow {
     height: 840
     minimumWidth: 1080
     minimumHeight: 720
-    color: "#11141a"
+    Components.ThemePalette { id: theme }
+    readonly property bool materialTheme: theme.isMaterial
+    readonly property bool micaTheme: theme.isMica
+    readonly property bool gtkTheme: theme.isGtk
+    readonly property string currentThemeId: theme.themeId
+    readonly property bool darkTheme: theme.isDark
+    color: theme.windowBackgroundFallback
     title: qsTr("Shiba Music")
-    Material.theme: Material.Dark
-    Material.accent: Material.Indigo
+    Material.theme: darkTheme ? Material.Dark : Material.Light
+    Material.accent: currentThemeId === "material" ? Material.Indigo : Material.BlueGrey
 
     readonly property url homePageUrl: Qt.resolvedUrl("qrc:/qml/pages/HomePage.qml")
     readonly property url loginPageUrl: Qt.resolvedUrl("qrc:/qml/pages/LoginPage.qml")
@@ -22,10 +28,37 @@ ApplicationWindow {
     readonly property url albumsPageUrl: Qt.resolvedUrl("qrc:/qml/pages/AlbumsPage.qml")
     readonly property url favoritesPageUrl: Qt.resolvedUrl("qrc:/qml/pages/FavoritesPage.qml")
 
-    background: Rectangle {
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: "#141926" }
-            GradientStop { position: 1.0; color: "#0c0f18" }
+    background: Item {
+        anchors.fill: parent
+
+        Rectangle {
+            anchors.fill: parent
+            visible: gtkTheme
+            color: theme.windowBackgroundFallback
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            visible: !gtkTheme
+            color: "transparent"
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: theme.windowBackgroundStart }
+                GradientStop { position: 1.0; color: theme.windowBackgroundEnd }
+            }
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            visible: micaTheme
+            color: theme.windowBackgroundFallback
+            opacity: 0.85
+        }
+
+        Rectangle {
+            anchors.fill: parent
+            visible: micaTheme
+            color: theme.shadow
+            opacity: 0.12
         }
     }
 
@@ -291,46 +324,79 @@ ApplicationWindow {
             id: appLayout
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.margins: 24
-            spacing: 24
+            Layout.margins: theme.paddingPanel
+            spacing: theme.spacing3xl
 
             Rectangle {
                 id: sidebar
-                Layout.preferredWidth: 220
+                Layout.preferredWidth: gtkTheme ? 208 : 220
                 Layout.fillHeight: true
-                radius: 24
-                color: "#181d2b"
-                border.color: "#1f2536"
+                radius: gtkTheme ? theme.radiusCard : theme.radiusPanel
+                color: micaTheme ? Qt.tint(theme.surface, Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.08)) : theme.surface
+                opacity: micaTheme ? 0.94 : 1
+                border.color: theme.surfaceBorder
+                border.width: gtkTheme ? theme.borderWidthThin : (micaTheme ? theme.borderWidthThin : 0)
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    height: theme.borderWidthThin
+                    color: theme.divider
+                    visible: gtkTheme
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(theme.toolbarBackground.r, theme.toolbarBackground.g, theme.toolbarBackground.b, micaTheme ? 0.4 : 0.2) }
+                        GradientStop { position: 0.4; color: "transparent" }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                    visible: micaTheme
+                    opacity: 0.7
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: theme.shadow
+                    opacity: micaTheme ? 0.25 : 0
+                    visible: micaTheme
+                    z: -1
+                }
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 24
-                    spacing: 24
+                    anchors.margins: gtkTheme ? theme.spacingXl : theme.paddingPanel
+                    spacing: gtkTheme ? theme.spacingXl : theme.spacing3xl
 
                     RowLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 40
-                        spacing: 8
+                        spacing: gtkTheme ? theme.spacingSm : theme.spacingMd
 
                         ToolButton {
                             id: sidebarBackButton
                             implicitWidth: 40
                             implicitHeight: 36
-                            background: Rectangle {
-                                anchors.fill: parent
-                                radius: 12
-                                color: sidebarBackButton.hovered ? "#242c40" : "transparent"
-                                border.color: sidebarBackButton.hovered ? "#3b4764" : "transparent"
-                            }
+                    background: Rectangle {
+                        anchors.fill: parent
+                        radius: theme.radiusButton
+                        color: gtkTheme ? "transparent" : sidebarBackButton.hovered ? theme.surfaceInteractive : "transparent"
+                        border.color: gtkTheme ? "transparent" : sidebarBackButton.hovered ? theme.surfaceInteractiveBorder : "transparent"
+                    }
                             padding: 0
-                            opacity: enabled ? 1.0 : 0.35
+                            opacity: enabled ? 1.0 : theme.opacityDisabled
                             hoverEnabled: true
-                            contentItem: Image {
+                            contentItem: Components.ColoredIcon {
                                 anchors.centerIn: parent
-                                source: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M14.5 6L8.5 12L14.5 18' stroke='%23FFFFFF' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>"
-                                width: 18
-                                height: 18
+                                source: "qrc:/qml/icons/chevron_left.svg"
+                                width: theme.iconSizeMedium
+                                height: theme.iconSizeMedium
                                 smooth: true
+                                color: sidebarBackButton.enabled ? theme.textPrimary : theme.textSecondary
                                 opacity: sidebarBackButton.enabled ? 1.0 : 0.35
                             }
                             ToolTip.visible: hovered
@@ -343,21 +409,22 @@ ApplicationWindow {
                             id: sidebarForwardButton
                             implicitWidth: 40
                             implicitHeight: 36
-                            background: Rectangle {
-                                anchors.fill: parent
-                                radius: 12
-                                color: sidebarForwardButton.hovered ? "#242c40" : "transparent"
-                                border.color: sidebarForwardButton.hovered ? "#3b4764" : "transparent"
-                            }
+                    background: Rectangle {
+                        anchors.fill: parent
+                        radius: theme.radiusButton
+                        color: gtkTheme ? "transparent" : sidebarForwardButton.hovered ? theme.surfaceInteractive : "transparent"
+                        border.color: gtkTheme ? "transparent" : sidebarForwardButton.hovered ? theme.surfaceInteractiveBorder : "transparent"
+                    }
                             padding: 0
-                            opacity: enabled ? 1.0 : 0.35
+                            opacity: enabled ? 1.0 : theme.opacityDisabled
                             hoverEnabled: true
-                            contentItem: Image {
+                            contentItem: Components.ColoredIcon {
                                 anchors.centerIn: parent
-                                source: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9.5 6L15.5 12L9.5 18' stroke='%23FFFFFF' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>"
-                                width: 18
-                                height: 18
+                                source: "qrc:/qml/icons/chevron_right.svg"
+                                width: theme.iconSizeMedium
+                                height: theme.iconSizeMedium
                                 smooth: true
+                                color: sidebarForwardButton.enabled ? theme.textPrimary : theme.textSecondary
                                 opacity: sidebarForwardButton.enabled ? 1.0 : 0.35
                             }
                             ToolTip.visible: hovered
@@ -373,7 +440,7 @@ ApplicationWindow {
                         id: sidebarList
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        spacing: 6
+                        spacing: theme.spacingSm
                         interactive: false
                         clip: true
                         model: win.navigationItems
@@ -391,33 +458,61 @@ ApplicationWindow {
                             height: 44
                             hoverEnabled: true
                             highlighted: modelData.target === win.currentSection
-                            background: Rectangle {
-                                radius: 12
-                                color: navItem.highlighted ? "#2d3650"
-                                       : navItem.hovered ? "#242c40" : "transparent"
-                                border.color: navItem.highlighted ? "#3b4764" : "transparent"
+                            background: Item {
+                                anchors.fill: parent
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: theme.radiusButton
+                                    color: navItem.highlighted ? (micaTheme ? Qt.tint(theme.listItemActive, Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.22)) : theme.listItemActive)
+                                           : navItem.hovered ? (micaTheme ? Qt.tint(theme.listItemHover, Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.16)) : theme.listItemHover)
+                                                             : (micaTheme ? Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.35) : "transparent")
+                                    border.color: navItem.highlighted ? theme.accent : "transparent"
+                                    border.width: navItem.highlighted ? theme.borderWidthThin : 0
+                                    visible: !gtkTheme
+                                }
+
+                                Rectangle {
+                                    anchors.fill: parent
+                                    radius: gtkTheme ? theme.radiusNone : theme.radiusButton
+                                    color: gtkTheme && navItem.hovered ? theme.listItemHover : "transparent"
+                                    border.width: gtkTheme ? theme.borderWidthThin : 0
+                                    border.color: gtkTheme ? (navItem.highlighted ? theme.accent : theme.divider) : "transparent"
+                                    visible: gtkTheme
+                                }
+
+                                Rectangle {
+                                    width: gtkTheme && navItem.highlighted ? 3 : 0
+                                    visible: gtkTheme && navItem.highlighted
+                                    anchors.top: parent.top
+                                    anchors.bottom: parent.bottom
+                                    anchors.left: parent.left
+                                    radius: 2
+                                    color: theme.accent
+                                }
                             }
                             contentItem: Item {
                                 anchors.fill: parent
-                                Row {
-                                    id: navRow
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-                                    anchors.leftMargin: 12
-                                    anchors.rightMargin: 12
-                                    spacing: 12
-                                    Image {
-                                        source: modelData.icon
-                                        sourceSize.width: 18
-                                        sourceSize.height: 18
-                                        antialiasing: true
+                                    Row {
+                                        id: navRow
                                         anchors.verticalCenter: parent.verticalCenter
+                                        anchors.left: parent.left
+                                        anchors.right: parent.right
+                                        anchors.leftMargin: theme.spacingLg
+                                        anchors.rightMargin: theme.spacingLg
+                                        spacing: gtkTheme ? theme.spacingMd : theme.spacingLg
+                                    Components.ColoredIcon {
+                                        source: modelData.icon
+                                        width: theme.iconSizeMedium
+                                        height: theme.iconSizeMedium
+                                        smooth: true
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        color: navItem.highlighted ? theme.accentLight : theme.textSecondary
                                     }
                                     Label {
                                         text: modelData.label
-                                        color: "#d9e0f2"
-                                        font.pixelSize: 15
+                                        color: navItem.highlighted ? theme.textPrimary : theme.textSecondary
+                                        font.pixelSize: theme.fontSizeSubtitle
                                         verticalAlignment: Text.AlignVCenter
                                         maximumLineCount: 1
                                         elide: Text.ElideRight
@@ -430,11 +525,23 @@ ApplicationWindow {
                         }
                     }
 
+                    Component {
+                        id: gtkButtonBackground
+                        Rectangle {
+                            radius: theme.radiusButton
+                            color: theme.surface
+                            border.width: theme.borderWidthThin
+                            border.color: theme.surfaceBorder
+                        }
+                    }
+
                     Button {
                         text: qsTr("Logout")
                         visible: api ? api.authenticated : false
                         Layout.fillWidth: true
                         Layout.preferredHeight: implicitHeight
+                        flat: gtkTheme
+                        background: gtkTheme ? gtkButtonBackground : null
                         onClicked: {
                             win.switchingServer = false
                             api.logout()
@@ -448,30 +555,63 @@ ApplicationWindow {
                 id: mainSurface
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                radius: 24
-                color: "#1b2031"
-                border.color: "#232a3f"
+                radius: gtkTheme ? theme.radiusCard : theme.radiusPanel
+                color: micaTheme ? Qt.tint(theme.surfaceElevated, Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.1)) : theme.surfaceElevated
+                opacity: micaTheme ? 0.95 : 1
+                border.color: theme.surfaceElevatedBorder
+                border.width: gtkTheme ? theme.borderWidthThin : (micaTheme ? theme.borderWidthThin : 0)
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(theme.toolbarBackground.r, theme.toolbarBackground.g, theme.toolbarBackground.b, micaTheme ? 0.55 : 0.25) }
+                        GradientStop { position: 0.28; color: "transparent" }
+                        GradientStop { position: 1.0; color: "transparent" }
+                    }
+                    visible: micaTheme
+                    opacity: 0.85
+                    z: -1
+                }
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    color: theme.shadow
+                    opacity: micaTheme ? 0.22 : 0
+                    visible: micaTheme
+                    z: -2
+                }
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.top: parent.top
+                    height: theme.borderWidthThin
+                    color: theme.divider
+                    visible: gtkTheme
+                }
 
                 ColumnLayout {
                     anchors.fill: parent
-                    anchors.margins: 32
-                    spacing: 24
+                    anchors.margins: gtkTheme ? theme.paddingPanel : theme.paddingPage
+                    spacing: gtkTheme ? theme.spacingXl : theme.spacing3xl
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 16
+                        spacing: gtkTheme ? theme.spacingLg : theme.spacingXl
 
                         ColumnLayout {
                             visible: win.savedServerProfiles.length > 0
                             Layout.preferredWidth: 280
                             Layout.maximumWidth: 340
                             Layout.alignment: Qt.AlignVCenter
-                            spacing: 4
+                            spacing: theme.spacingXs
 
                             Label {
                                 text: qsTr("Server")
-                                color: "#9aa4af"
-                                font.pixelSize: 12
+                                color: theme.textMuted
+                                font.pixelSize: theme.fontSizeCaption
                                 visible: parent.visible
                             }
 
@@ -490,48 +630,78 @@ ApplicationWindow {
                         TextField {
                             id: searchBox
                             Layout.fillWidth: true
-                            leftPadding: 32
-                            rightPadding: clearButton.visible ? clearButton.width + 8 : 16
+                            leftPadding: theme.paddingFieldHorizontal + theme.iconSizeSmall
+                            rightPadding: clearButton.visible ? clearButton.width + theme.spacingSm : theme.paddingFieldHorizontal
                             placeholderText: qsTr("Search songs, artists or albums")
-                            font.pixelSize: 14
+                            font.pixelSize: theme.fontSizeBody
                             background: Rectangle {
-                                radius: 18
-                                color: "#141925"
-                                border.color: "#2a3148"
+                                radius: theme.radiusInput
+                                color: micaTheme ? Qt.tint(theme.surface, Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.15)) : theme.surface
+                                border.color: micaTheme ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.25) : theme.surfaceBorder
+                                border.width: theme.borderWidthThin
+                                opacity: micaTheme ? 0.9 : 1
                             }
-                            Image {
+                            Components.ColoredIcon {
                                 anchors.left: parent.left
-                                anchors.leftMargin: 12
+                                anchors.leftMargin: theme.spacingLg
                                 anchors.verticalCenter: parent.verticalCenter
                                 source: "qrc:/qml/icons/search.svg"
-                                sourceSize.width: 16
-                                sourceSize.height: 16
-                                antialiasing: true
+                                width: theme.iconSizeSmall
+                                height: theme.iconSizeSmall
+                                smooth: true
+                                color: micaTheme ? Qt.tint(theme.textSecondary, Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.35)) : theme.textSecondary
                             }
                             ToolButton {
                                 id: clearButton
                                 anchors.right: parent.right
-                                anchors.rightMargin: 4
+                                anchors.rightMargin: theme.spacingXs
                                 anchors.verticalCenter: parent.verticalCenter
                                 icon.source: "qrc:/qml/icons/close.svg"
-                                icon.width: 16
-                                icon.height: 16
+                                icon.width: theme.iconSizeSmall
+                                icon.height: theme.iconSizeSmall
                                 visible: searchBox.text.length > 0
+                                background: Rectangle {
+                                    anchors.fill: parent
+                                    radius: theme.radiusBadge
+                                    color: micaTheme ? (clearButton.hovered ? Qt.tint(theme.surfaceInteractive, Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.2))
+                                                                  : Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.2))
+                                                     : "transparent"
+                                    border.width: 0
+                                }
                                 onClicked: {
                                     searchBox.clear()
                                     win.performSearch("")
                                 }
                             }
                             onAccepted: win.performSearch(text)
-                        }
+                    }
 
-                        Button {
-                            text: qsTr("Refresh")
-                            onClicked: {
-                                switch (win.currentSection) {
-                                    case "home":
-                                        api.fetchRandomSongs();
-                                        break;
+                    Button {
+                        id: refreshButton
+                        text: qsTr("Refresh")
+                        font.pixelSize: theme.fontSizeBody
+                        padding: theme.spacingSm
+                        implicitHeight: 36
+                        implicitWidth: 120
+                        background: Rectangle {
+                            radius: theme.radiusButton
+                            color: micaTheme ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, refreshButton.hovered ? 0.22 : 0.14)
+                                             : theme.accent
+                            border.width: micaTheme ? theme.borderWidthThin : 0
+                            border.color: micaTheme ? Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.45) : "transparent"
+                        }
+                        contentItem: Label {
+                            text: parent.text
+                            font: parent.font
+                            color: micaTheme ? theme.textPrimary : "white"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        onClicked: {
+                            switch (win.currentSection) {
+                                case "home":
+                                    api.fetchRandomSongs();
+                                    break;
                                     case "artists":
                                         api.fetchArtists();
                                         break;
@@ -552,10 +722,12 @@ ApplicationWindow {
                         Layout.fillHeight: true
                         clip: true
                         pushEnter: Transition {
+                            enabled: !gtkTheme
                             NumberAnimation { property: "opacity"; from: 0; to: 1; duration: 220 }
                             NumberAnimation { property: "x"; from: width * 0.08; to: 0; duration: 220; easing.type: Easing.OutCubic }
                         }
                         popExit: Transition {
+                            enabled: !gtkTheme
                             NumberAnimation { property: "opacity"; from: 1; to: 0; duration: 180 }
                             NumberAnimation { property: "x"; from: 0; to: width * 0.08; duration: 180; easing.type: Easing.InCubic }
                         }
@@ -606,19 +778,19 @@ ApplicationWindow {
             background: Rectangle { color: "transparent" }
             Column {
                 anchors.centerIn: parent
-                spacing: 12
+                spacing: theme.spacingLg
                 Label {
                     text: titleText
-                    font.pixelSize: 28
+                    font.pixelSize: theme.fontSizeDisplay + theme.spacingXs / 2
                     font.weight: Font.DemiBold
-                    color: "#f5f7ff"
+                    color: theme.textPrimary
                     horizontalAlignment: Text.AlignHCenter
                 }
                 Label {
                     text: descriptionText
-                    color: "#a0aac6"
-                    font.pixelSize: 14
-                    width: 360
+                    color: theme.textSecondary
+                    font.pixelSize: theme.fontSizeBody
+                    width: theme.placeholderTextWidth
                     wrapMode: Text.WordWrap
                     horizontalAlignment: Text.AlignHCenter
                 }
@@ -634,34 +806,35 @@ ApplicationWindow {
                 anchors.fill: parent
                 anchors.leftMargin: 0
                 anchors.rightMargin: 0
-                anchors.topMargin: 32
-                anchors.bottomMargin: 32
-                spacing: 18
+                anchors.topMargin: theme.paddingPage
+                anchors.bottomMargin: theme.paddingPage
+                spacing: theme.spacing2xl
                 Label {
                     text: qsTr("Your queue")
-                    font.pixelSize: 26
+                    font.pixelSize: theme.fontSizeDisplay
                     font.weight: Font.DemiBold
-                    color: "#f5f7ff"
-                    Layout.leftMargin: 32
+                    color: theme.textPrimary
+                    Layout.leftMargin: theme.paddingPage
                 }
                 Label {
                     visible: !player.queue || player.queue.length === 0
                     text: qsTr("No tracks in queue. Add songs using the + button.")
-                    color: "#a0aac6"
-                    font.pixelSize: 14
+                    color: theme.textSecondary
+                    font.pixelSize: theme.fontSizeBody
                 }
                 ListView {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
-                    spacing: 10
+                    spacing: theme.spacingMd + theme.spacingXs / 2
                     model: player && player.queue ? player.queue : []
                     delegate: Rectangle {
                         width: parent.width
-                        height: 64
-                        radius: 12
-                        color: mainQueueHover.hovered ? "#273040" : (index % 2 === 0 ? "#1b2336" : "#182030")
-                        border.color: mainQueueHover.hovered ? "#3b465f" : "#252e42"
+                        height: theme.queueItemHeight
+                        radius: theme.radiusButton
+                        color: mainQueueHover.hovered ? theme.listItemHover
+                              : (index % 2 === 0 ? theme.listItem : theme.listItemAlternate)
+                        border.color: mainQueueHover.hovered ? theme.surfaceInteractiveBorder : theme.cardBorder
                         Behavior on color { ColorAnimation { duration: 120 } }
                         
                         HoverHandler {
@@ -670,14 +843,14 @@ ApplicationWindow {
                         
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 12
+                            anchors.margins: theme.spacingLg
+                            spacing: theme.spacingLg
                             
                             Rectangle {
-                                Layout.preferredWidth: 40
-                                Layout.preferredHeight: 40
-                                radius: 8
-                                color: "#101622"
+                                Layout.preferredWidth: theme.queueArtworkSize
+                                Layout.preferredHeight: theme.queueArtworkSize
+                                radius: theme.radiusChip
+                                color: theme.surface
                                 clip: true
                                 
                                 Image {
@@ -692,36 +865,36 @@ ApplicationWindow {
                                     anchors.centerIn: parent
                                     visible: !modelData.coverArt
                                     source: "qrc:/qml/icons/music_note.svg"
-                                    sourceSize.width: 20
-                                    sourceSize.height: 20
+                                    sourceSize.width: theme.iconSizeMedium
+                                    sourceSize.height: theme.iconSizeMedium
                                     antialiasing: true
                                 }
                             }
                             
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 2
+                                spacing: theme.spacingXs / 2
                                 
                                 Label {
                                     Layout.fillWidth: true
-                                    text: modelData.title || "Faixa desconhecida"
-                                    font.pixelSize: 14
+                                    text: modelData.title || qsTr("Faixa desconhecida")
+                                    font.pixelSize: theme.fontSizeBody
                                     font.weight: Font.Medium
-                                    color: "#f5f7ff"
+                                    color: theme.textPrimary
                                     elide: Label.ElideRight
                                 }
                                 
                                 Label {
                                     Layout.fillWidth: true
                                     text: modelData.artist || "-"
-                                    color: "#8fa0c2"
-                                    font.pixelSize: 12
+                                    color: theme.textSecondary
+                                    font.pixelSize: theme.fontSizeCaption
                                     elide: Label.ElideRight
                                 }
                             }
                             
                             Row {
-                                spacing: 6
+                                spacing: theme.spacingSm
                                 
                                 ToolButton {
                                     icon.source: "qrc:/qml/icons/play_arrow.svg"
@@ -1136,9 +1309,21 @@ ApplicationWindow {
     Connections {
         target: updateChecker
         function onUpdateAvailableChanged() {
-            if (updateChecker.updateAvailable && api && api.authenticated) {
+            console.log("UpdateChecker: updateAvailable changed to", updateChecker.updateAvailable)
+            if (updateChecker.updateAvailable) {
+                console.log("UpdateChecker: Opening update dialog")
                 updateDialog.open()
             }
+        }
+        function onUpdateCheckFailed(error) {
+            console.warn("UpdateChecker: Check failed:", error)
+        }
+        function onIsCheckingChanged() {
+            console.log("UpdateChecker: isChecking changed to", updateChecker.isChecking)
+        }
+        function onAboutToQuit() {
+            console.log("UpdateChecker: Application closing for update installation...")
+            win.close()
         }
     }
 
@@ -1146,7 +1331,10 @@ ApplicationWindow {
         id: updateCheckTimer
         interval: 3000
         running: false
-        onTriggered: updateChecker.checkForUpdates()
+        onTriggered: {
+            console.log("UpdateChecker: Timer triggered, starting check...")
+            updateChecker.checkForUpdates()
+        }
     }
 
     Component.onCompleted: {

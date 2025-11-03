@@ -42,6 +42,7 @@ signals:
     void downloadProgressChanged();
     void updateCheckFailed(const QString &error);
     void downloadFailed(const QString &error);
+    void aboutToQuit();
 
 private slots:
     void onUpdateCheckFinished();

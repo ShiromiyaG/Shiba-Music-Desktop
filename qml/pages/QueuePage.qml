@@ -2,8 +2,10 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
+import "../components" as Components
 
 Item {
+    Components.ThemePalette { id: theme }
     id: queuePage
     signal closeRequested()
 
@@ -11,7 +13,7 @@ Item {
         id: queueContent
         width: parent.width
         height: parent.height
-        color: "#000000"
+        color: theme.shadow
         y: 0
 
         Component.onCompleted: {
@@ -58,7 +60,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            color: "#000000"
+            color: theme.shadow
             opacity: 0.7
         }
 
@@ -80,7 +82,7 @@ Item {
                     width: 500
                     height: 500
                     anchors.centerIn: parent
-                    color: "#1a1a1a"
+                    color: theme.surface
                     border.color: "#333"
                     border.width: 2
 
@@ -102,7 +104,7 @@ Item {
                     text: qsTr("Playback Queue")
                     font.pixelSize: 32
                     font.weight: Font.Bold
-                    color: "#ffffff"
+                    color: theme.surface
                 }
 
                 ScrollView {
@@ -117,8 +119,8 @@ Item {
                             width: ListView.view.width
                             height: 64
                             radius: 8
-                            color: index === player.currentIndex ? "#3a3a3a" : (queueHover.hovered ? "#353535" : "#2a2a2a")
-                            border.color: index === player.currentIndex ? "#5a5a5a" : (queueHover.hovered ? "#454545" : "transparent")
+                            color: index === player.currentIndex ? theme.listItemActive : (queueHover.hovered ? theme.listItemHover : theme.cardBackground)
+                            border.color: index === player.currentIndex ? theme.surfaceInteractiveBorder : (queueHover.hovered ? theme.surfaceInteractiveBorder : "transparent")
                             Behavior on color { ColorAnimation { duration: 120 } }
 
                             HoverHandler {
@@ -133,7 +135,7 @@ Item {
                                 Rectangle {
                                     Layout.preferredWidth: 40
                                     Layout.preferredHeight: 40
-                                    color: "#1a1a1a"
+                                    color: theme.surface
 
                                     Image {
                                         anchors.fill: parent
@@ -152,14 +154,14 @@ Item {
                                         text: modelData.title || "Faixa desconhecida"
                                         font.pixelSize: 14
                                         font.weight: Font.Medium
-                                        color: "#ffffff"
+                                        color: theme.surface
                                         elide: Text.ElideRight
                                     }
 
                                     Label {
                                         Layout.fillWidth: true
                                         text: modelData.artist || "-"
-                                        color: "#aaaaaa"
+                                        color: theme.textMuted
                                         font.pixelSize: 12
                                         elide: Text.ElideRight
                                     }

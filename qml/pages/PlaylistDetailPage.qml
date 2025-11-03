@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import "qrc:/qml/components" as Components
 
 Page {
+    Components.ThemePalette { id: theme }
     id: playlistPage
     property string playlistId: ""
     property string playlistName: ""
@@ -33,7 +34,7 @@ Page {
         boundsBehavior: Flickable.StopAtBounds
         flickDeceleration: 1200
         maximumFlickVelocity: 2500
-        ScrollBar.vertical: ScrollBar { }
+        ScrollBar.vertical: Components.ScrollBar { theme.manager: themeManager }
         
         MouseArea {
             anchors.fill: parent
@@ -55,10 +56,10 @@ Page {
                 height: 200
                 radius: 24
                 gradient: Gradient {
-                    GradientStop { position: 0.0; color: "#243047" }
-                    GradientStop { position: 1.0; color: "#1b2233" }
+                    GradientStop { position: 0.0; color: theme.cardBackground }
+                    GradientStop { position: 1.0; color: theme.cardBackground }
                 }
-                border.color: "#303a52"
+                border.color: theme.surfaceInteractiveBorder
 
                 RowLayout {
                     anchors.fill: parent
@@ -69,8 +70,8 @@ Page {
                         Layout.preferredWidth: 152
                         Layout.preferredHeight: 152
                         radius: 12
-                        color: "#101321"
-                        border.color: "#2b3246"
+                        color: theme.surface
+                        border.color: theme.surfaceInteractiveBorder
                         clip: true
                         Image {
                             anchors.fill: parent
@@ -99,7 +100,7 @@ Page {
                         }
                         Label {
                             text: songCount + " músicas"
-                            color: "#8b96a8"
+                            color: theme.textSecondary
                             font.pixelSize: 14
                         }
                         Row {

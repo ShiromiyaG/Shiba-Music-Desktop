@@ -78,7 +78,7 @@ endif()
 qt_standard_project_setup()
 set(CMAKE_AUTOMOC_COMPILER_PREDEFINES OFF)
 
-qt_add_executable(shibamusic WIN32
+qt_add_executable(shibamusic
     src/main.cpp
     src/core/SubsonicClient.h src/core/SubsonicClient.cpp
     src/core/CacheManager.h src/core/CacheManager.cpp
@@ -90,6 +90,7 @@ qt_add_executable(shibamusic WIN32
     src/core/SubsonicNetworkAccessManagerFactory.cpp
     src/core/WindowStateManager.h src/core/WindowStateManager.cpp
     src/core/AppInfo.h
+    src/core/ThemeManager.h src/core/ThemeManager.cpp
     src/discord/DiscordRPC.h src/discord/DiscordRPC.cpp
     src/updater/UpdateChecker.h src/updater/UpdateChecker.cpp
     src/i18n/TranslationManager.h src/i18n/TranslationManager.cpp
@@ -115,12 +116,15 @@ qt_add_resources(shibamusic "qml"
         qml/components/AlbumCard.qml
         qml/components/TrackRow.qml
         qml/components/SectionHeader.qml
+        qml/components/ColoredIcon.qml
         qml/components/EmptyState.qml
         qml/components/QueueDrawer.qml
         qml/components/NowPlayingPanel.qml
         qml/components/UpdateDialog.qml
         qml/components/LanguageSelector.qml
         qml/components/ScrollConfig.qml
+        qml/components/ScrollBar.qml
+        qml/components/ThemePalette.qml
         qml/components/qmldir
         qml/pages/LoginPage.qml
         qml/pages/HomePage.qml
@@ -137,6 +141,8 @@ qt_add_resources(shibamusic "qml"
         qml/icons/add.svg
         qml/icons/album.svg
         qml/icons/arrow_upward.svg
+        qml/icons/chevron_left.svg
+        qml/icons/chevron_right.svg
         qml/icons/auto_awesome.svg
         qml/icons/check_box_outline_blank.svg
         qml/icons/close.svg
@@ -160,6 +166,12 @@ qt_add_resources(shibamusic "qml"
         qml/icons/volume_off.svg
         qml/icons/volume_up.svg
         qml/icons/shiba_nobg_4k.ico
+)
+
+qt_add_resources(shibamusic "themes"
+    PREFIX "/themes"
+    FILES
+        themes/material.qss
 )
 
 # Add translations as resources

@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import "../components" as Components
 
 Page {
+    Components.ThemePalette { id: theme }
     id: artistsPage
     signal artistClicked(string artistId, string artistName, string coverArtId)
 
@@ -21,7 +22,7 @@ Page {
             text: qsTr("Artists")
             font.pixelSize: 26
             font.weight: Font.DemiBold
-            color: "#f5f7ff"
+            color: theme.textPrimary
             Layout.leftMargin: 32
         }
 
@@ -42,7 +43,8 @@ Page {
                 onClicked: artistsPage.artistClicked(modelData.id, modelData.name, modelData.coverArt)
             }
             
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: Components.ScrollBar {
+                theme.manager: themeManager
                 policy: ScrollBar.AsNeeded
                 visible: gridView.contentHeight > gridView.height
             }

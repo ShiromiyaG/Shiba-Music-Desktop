@@ -5,6 +5,7 @@ import Qt5Compat.GraphicalEffects
 import "qrc:/qml/components" as Components
 
 Page {
+    Components.ThemePalette { id: theme }
     id: artistPage
     signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId, string artistId)
 
@@ -72,7 +73,7 @@ Page {
         boundsBehavior: Flickable.StopAtBounds
         flickDeceleration: 1200
         maximumFlickVelocity: 2500
-        ScrollBar.vertical: ScrollBar { }
+    ScrollBar.vertical: Components.ScrollBar { theme.manager: themeManager }
         
         MouseArea {
             anchors.fill: parent
@@ -94,10 +95,10 @@ Page {
                 height: 240
                 radius: 24
                 gradient: Gradient {
-                    GradientStop { position: 0.0; color: "#243047" }
-                    GradientStop { position: 1.0; color: "#1b2233" }
+                    GradientStop { position: 0.0; color: theme.cardBackground }
+                    GradientStop { position: 1.0; color: theme.cardBackground }
                 }
-                border.color: "#303a52"
+                border.color: theme.surfaceInteractiveBorder
                 clip: true
 
                 Image {
@@ -124,7 +125,7 @@ Page {
                 Rectangle {
                     anchors.fill: parent
                     radius: 24
-                    color: "#14171f"
+                    color: theme.windowBackgroundStart
                     opacity: 0.35
                 }
 
@@ -137,8 +138,8 @@ Page {
                         Layout.preferredWidth: 180
                         Layout.preferredHeight: 180
                         radius: 18
-                        color: "#101321"
-                        border.color: "#2b3246"
+                        color: theme.surface
+                        border.color: theme.surfaceInteractiveBorder
                         clip: true
                         Image {
                             anchors.fill: parent
@@ -166,7 +167,7 @@ Page {
                         }
                         Label {
                             text: (api && api.albums) ? (api.albums.length + " álbuns disponíveis") : "0 álbuns disponíveis"
-                            color: "#8b96a8"
+                            color: theme.textSecondary
                             font.pixelSize: 14
                         }
                         Row {

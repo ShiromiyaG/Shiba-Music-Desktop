@@ -1,8 +1,10 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "." as Components
 
 Item {
+    Components.ThemePalette { id: theme }
     id: root
     width: parent ? parent.width : implicitWidth
     height: Math.max(titleLabel.implicitHeight, actionRow.implicitHeight)
@@ -23,11 +25,12 @@ Item {
                 text: root.title
                 font.pixelSize: 18
                 font.weight: Font.DemiBold
+                color: theme.textPrimary
             }
             Label {
                 text: root.subtitle
                 visible: text.length > 0
-                color: "#8b96a8"
+                color: theme.textSecondary
                 font.pixelSize: 12
             }
         }

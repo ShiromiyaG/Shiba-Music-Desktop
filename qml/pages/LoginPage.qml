@@ -1,8 +1,10 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "../components" as Components
 
 Page {
+    Components.ThemePalette { id: theme }
     id: loginPage
     objectName: "loginPage"
 
@@ -11,8 +13,8 @@ Page {
 
     background: Rectangle {
         gradient: Gradient {
-            GradientStop { position: 0.0; color: "#1a1f2b" }
-            GradientStop { position: 1.0; color: "#11141c" }
+            GradientStop { position: 0.0; color: theme.cardBackground }
+            GradientStop { position: 1.0; color: theme.windowBackgroundFallback }
         }
     }
 
@@ -34,7 +36,7 @@ Page {
             Label {
                 text: qsTr("Connect to your Navidrome or Subsonic server")
                 wrapMode: Text.WordWrap
-                color: "#9aa4af"
+                color: theme.textSecondary
                 horizontalAlignment: Text.AlignHCenter
                 Layout.fillWidth: true
             }
@@ -45,8 +47,8 @@ Page {
             padding: 20
             background: Rectangle {
                 radius: 16
-                color: "#1f2532"
-                border.color: "#2d3545"
+                color: theme.surface
+                border.color: theme.listItemHover
             }
 
             ColumnLayout {
@@ -59,7 +61,7 @@ Page {
 
                     Label {
                         text: qsTr("Saved connections")
-                        color: "#9aa4af"
+                        color: theme.textSecondary
                         font.pixelSize: 13
                         Layout.fillWidth: true
                         visible: savedCredentials.length > 0

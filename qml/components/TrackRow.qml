@@ -2,11 +2,14 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "qrc:/qml/js/utils.js" as Utils
+import "." as Components
 
 Item {
     id: root
     width: parent ? parent.width : 640
     height: 72
+
+    Components.ThemePalette { id: theme }
 
     property string title
     property string subtitle
@@ -22,30 +25,32 @@ Item {
     Rectangle {
         id: card
         anchors.fill: parent
-        radius: 12
-        color: cardHovered ? "#242c3a" : "#1b2029"
-        border.color: cardHovered ? "#3b465a" : "#252c36"
+        radius: theme.isGtk ? theme.radiusChip : theme.radiusCard
+        color: cardHovered ? (theme.isMica ? Qt.tint(theme.listItemHover, Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.18)) : theme.listItemHover)
+                             : (theme.isMica ? Qt.rgba(theme.cardBackground.r, theme.cardBackground.g, theme.cardBackground.b, 0.92) : theme.cardBackground)
+        border.color: cardHovered ? theme.surfaceInteractiveBorder : theme.cardBorder
+        border.width: theme.isGtk ? theme.borderWidthThin : (theme.isMica ? theme.borderWidthThin : 0)
         Behavior on color { ColorAnimation { duration: 120 } }
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: 12
-            spacing: 12
+            anchors.margins: theme.isGtk ? theme.spacingMd : theme.spacingLg
+            spacing: theme.isGtk ? theme.spacingMd : theme.spacingLg
 
             Label {
                 text: root.index >= 0 ? root.index + 1 : ""
                 visible: root.index >= 0
                 Layout.preferredWidth: visible ? 28 : 0
-                color: "#5f6a7c"
+                color: theme.textMuted
                 horizontalAlignment: Text.AlignHCenter
-                font.pixelSize: 13
+                font.pixelSize: theme.fontSizeSmall
             }
 
             Rectangle {
                 Layout.preferredWidth: 48
                 Layout.preferredHeight: 48
-                radius: 8
-                color: "#111"
+                radius: theme.isGtk ? theme.radiusBadge : theme.radiusChip
+                color: theme.surface
                 clip: true
                 Image {
                     id: coverImage
@@ -58,47 +63,50 @@ Item {
                     anchors.centerIn: parent
                     visible: coverImage.status !== Image.Ready
                     source: "qrc:/qml/icons/music_note.svg"
-                    sourceSize.width: 20
-                    sourceSize.height: 20
+                    sourceSize.width: theme.iconSizeMedium
+                    sourceSize.height: theme.iconSizeMedium
                     antialiasing: true
                 }
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 2
+                spacing: theme.isGtk ? theme.spacingXs : theme.spacingXs / 2
                 Label {
                     Layout.fillWidth: true
                     text: root.title
-                    font.pixelSize: 14
+                    font.pixelSize: theme.fontSizeBody
                     font.weight: Font.Medium
                     elide: Label.ElideRight
+                    color: theme.textPrimary
                 }
                 Label {
                     Layout.fillWidth: true
                     text: root.subtitle
                     elide: Label.ElideRight
-                    color: "#8b96a8"
-                    font.pixelSize: 12
+                    color: theme.textSecondary
+                    font.pixelSize: theme.fontSizeCaption
                 }
             }
 
             Label {
                 text: Utils.durationToText(root.duration || 0)
-                color: "#8b96a8"
-                font.pixelSize: 12
+                color: theme.textSecondary
+                font.pixelSize: theme.isGtk ? theme.fontSizeSmall : theme.fontSizeCaption
             }
 
             Row {
-                spacing: 6
+                spacing: theme.isGtk ? theme.spacingXs : theme.spacingSm
                 ToolButton {
                     icon.source: "qrc:/qml/icons/play_arrow.svg"
+                    flat: theme.isGtk
                     onClicked: root.playClicked()
                     ToolTip.visible: hovered
                     ToolTip.text: qsTr("Play now")
                 }
                 ToolButton {
                     text: "⋯"
+                    flat: theme.isGtk
                     onClicked: trackMenu.popup()
                     
                     Menu {
@@ -106,10 +114,10 @@ Item {
                         width: 200
                         
                         background: Rectangle {
-                            color: "#1d2330"
-                            radius: 12
-                            border.color: "#2a3040"
-                            border.width: 1
+                            color: theme.cardBackground
+                            radius: theme.radiusButton
+                            border.color: theme.cardBorder
+                            border.width: theme.borderWidthThin
                         }
                         
                         delegate: MenuItem {
@@ -119,15 +127,17 @@ Item {
                             
                             contentItem: Label {
                                 text: menuItem.text
-                                color: menuItem.highlighted ? "#f5f7ff" : "#b0b8c8"
-                                font.pixelSize: 13
-                                leftPadding: 16
+                                color: menuItem.highlighted ? theme.textPrimary : theme.textSecondary
+                                font.pixelSize: theme.fontSizeSmall
+                                leftPadding: theme.spacingXl
                                 verticalAlignment: Text.AlignVCenter
                             }
-                            
+                        
                             background: Rectangle {
-                                color: menuItem.highlighted ? "#2a3545" : "transparent"
-                                radius: 8
+                                color: menuItem.highlighted ? theme.listItemHover : "transparent"
+                                radius: theme.radiusChip
+                                border.width: theme.isGtk ? theme.borderWidthThin : 0
+                                border.color: theme.isGtk && menuItem.highlighted ? theme.accent : "transparent"
                             }
                         }
                         
@@ -141,8 +151,8 @@ Item {
                         }
                         MenuSeparator {
                             contentItem: Rectangle {
-                                implicitHeight: 1
-                                color: "#2a3040"
+                                implicitHeight: theme.borderWidthThin
+                                color: theme.divider
                             }
                         }
                         MenuItem {

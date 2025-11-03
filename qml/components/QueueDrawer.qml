@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import "." as Local
+import "." as Components
 import QtQuick.Layouts
 
 Drawer {
@@ -10,9 +11,11 @@ Drawer {
     implicitHeight: parent ? parent.height : 600
     modal: false
 
+    Components.ThemePalette { id: theme }
+
     background: Rectangle {
-        color: "#191C24"
-        border.color: "#222833"
+        color: theme.surface
+        border.color: theme.surfaceBorder
     }
 
     property alias listView: queueList
@@ -35,6 +38,7 @@ Drawer {
                 font.pixelSize: 18
                 font.weight: Font.DemiBold
                 Layout.fillWidth: true
+                color: theme.textPrimary
             }
             ToolButton {
                 text: "✕"
@@ -60,8 +64,8 @@ Drawer {
                     Rectangle {
                         anchors.fill: parent
                         radius: 10
-                        color: modelData.id === root.currentTrackId ? "#273140" : (hoverHandler.hovered ? "#242B38" : "#1B2028")
-                        border.color: modelData.id === root.currentTrackId ? "#3D4A5F" : "#252C36"
+                        color: modelData.id === root.currentTrackId ? theme.listItemActive : (hoverHandler.hovered ? theme.listItemHover : theme.cardBackground)
+                        border.color: modelData.id === root.currentTrackId ? theme.accent : theme.cardBorder
                         Behavior on color { ColorAnimation { duration: 160 } }
                     }
 
@@ -75,7 +79,7 @@ Drawer {
                             Layout.preferredWidth: 48
                             Layout.preferredHeight: 48
                             radius: 8
-                            color: "#111"
+                            color: theme.surface
                             clip: true
                             
                             Image {
@@ -96,6 +100,7 @@ Drawer {
                                 text: modelData.title
                                 font.pixelSize: 14
                                 font.weight: Font.Medium
+                                color: theme.textPrimary
                                 elide: Label.ElideRight
                             }
                             
@@ -103,7 +108,7 @@ Drawer {
                                 Layout.fillWidth: true
                                 text: modelData.artist
                                 font.pixelSize: 12
-                                color: "#8b96a8"
+                                color: theme.textSecondary
                                 elide: Label.ElideRight
                             }
                         }
@@ -134,7 +139,7 @@ Drawer {
                         onTapped: root.requestPlay(index)
                     }
                 }
-                ScrollBar.vertical: ScrollBar { }
+                ScrollBar.vertical: Components.ScrollBar { theme.manager: themeManager }
             }
         }
 
@@ -159,9 +164,9 @@ Drawer {
             onClicked: root.requestClear()
             
             background: Rectangle {
-                color: parent.enabled ? (parent.hovered ? "#2D3541" : "#242B38") : "#1B2028"
+                color: parent.enabled ? (parent.hovered ? theme.surfaceInteractive : theme.cardBackground) : theme.cardBackground
                 radius: 8
-                border.color: "#2D3541"
+                border.color: theme.surfaceInteractiveBorder
             }
         }
     }

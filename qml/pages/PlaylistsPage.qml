@@ -5,6 +5,7 @@ import "../components" as Components
 
 Page {
     background: Rectangle { color: "transparent" }
+    Components.ThemePalette { id: theme }
 
     Component.onCompleted: {
         api.fetchPlaylists()
@@ -18,13 +19,13 @@ Page {
             text: "Playlists"
             font.pixelSize: 32
             font.weight: Font.Bold
-            color: "#f5f7ff"
+            color: theme.textPrimary
         }
 
         Label {
             visible: !api.playlists || api.playlists.length === 0
             text: qsTr("No playlists found")
-            color: "#a0aac6"
+            color: theme.textSecondary
             font.pixelSize: 14
         }
 
@@ -40,7 +41,8 @@ Page {
             maximumFlickVelocity: 2500
             model: api.playlists
             
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: Components.ScrollBar {
+                theme.manager: themeManager
                 policy: ScrollBar.AsNeeded
                 visible: playlistGrid.contentHeight > playlistGrid.height
             }
@@ -48,8 +50,8 @@ Page {
                     width: 200
                     height: 260
                     radius: 12
-                    color: "#1b2336"
-                    border.color: "#252e42"
+                    color: theme.cardBackground
+                    border.color: theme.cardBorder
 
                     ColumnLayout {
                         anchors.fill: parent
@@ -61,7 +63,7 @@ Page {
                             Layout.preferredHeight: 176
                             Layout.alignment: Qt.AlignHCenter
                             radius: 8
-                            color: "#101622"
+                            color: theme.surface
                             clip: true
 
                             Image {
@@ -85,14 +87,14 @@ Page {
                             text: modelData.name || "Playlist"
                             font.pixelSize: 14
                             font.weight: Font.Medium
-                            color: "#f5f7ff"
+                            color: theme.textPrimary
                             elide: Text.ElideRight
                         }
 
                         Label {
                             Layout.fillWidth: true
                             text: modelData.songCount + " músicas"
-                            color: "#8fa0c2"
+                            color: theme.textSecondary
                             font.pixelSize: 12
                         }
                     }

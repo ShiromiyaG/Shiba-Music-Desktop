@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import "../components" as Components
 
 Page {
+    Components.ThemePalette { id: theme }
     id: albumsPage
     signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId, string artistId)
 
@@ -30,7 +31,7 @@ Page {
             text: qsTr("Albums")
             font.pixelSize: 26
             font.weight: Font.DemiBold
-            color: "#f5f7ff"
+            color: theme.textPrimary
             Layout.leftMargin: 32
         }
 
@@ -50,7 +51,8 @@ Page {
             reuseItems: false
             model: (api && api.albumList) ? api.albumList : []
             
-            ScrollBar.vertical: ScrollBar {
+            ScrollBar.vertical: Components.ScrollBar {
+                theme.manager: themeManager
                 policy: ScrollBar.AsNeeded
                 visible: gridView.contentHeight > gridView.height
             }

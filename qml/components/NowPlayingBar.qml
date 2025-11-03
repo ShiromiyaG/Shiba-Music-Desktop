@@ -3,15 +3,18 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects
 import "qrc:/qml/js/utils.js" as Utils
+import "." as Components
 
 Rectangle {
     id: bar
     width: parent ? parent.width : 800
     height: 110
+
+    Components.ThemePalette { id: theme }
     
     gradient: Gradient {
-        GradientStop { position: 0.0; color: "#161b22" }
-        GradientStop { position: 1.0; color: "#0d1117" }
+        GradientStop { position: 0.0; color: theme.toolbarBackground }
+        GradientStop { position: 1.0; color: theme.surface }
     }
     signal queueRequested()
     readonly property bool hasQueue: (player && player.queue) ? (player.queue.length > 0) : false
@@ -34,8 +37,8 @@ Rectangle {
                 width: 78
                 height: 78
                 radius: 0
-                color: "#0d1117"
-                border.color: "#21262d"
+                color: theme.surface
+                border.color: theme.surfaceBorder
                 border.width: 2
                 clip: true
 
@@ -62,7 +65,7 @@ Rectangle {
                 // Overlay de seta para cima
                 Rectangle {
                     anchors.fill: parent
-                    color: "#000000"
+                    color: theme.shadow
                     opacity: coverMouseArea.containsMouse ? 0.5 : 0
                     Behavior on opacity { NumberAnimation { duration: 150 } }
                     
@@ -106,7 +109,7 @@ Rectangle {
                     elide: Label.ElideRight
                     font.pixelSize: 16
                     font.weight: Font.Bold
-                    color: bar.hasTrack ? "#f0f6fc" : "#8b949e"
+                    color: bar.hasTrack ? theme.textPrimary : theme.textSecondary
                     
                     MouseArea {
                         anchors.fill: parent
@@ -127,7 +130,7 @@ Rectangle {
                         if (player.currentTrack.album) txt += " • " + player.currentTrack.album;
                         return txt;
                     }
-                    color: "#8b949e"
+                    color: theme.textSecondary
                     font.pixelSize: 13
                     elide: Label.ElideRight
                 }
@@ -137,9 +140,9 @@ Rectangle {
                     width: 200
                     
                     background: Rectangle {
-                        color: "#1d2330"
+                        color: theme.cardBackground
                         radius: 12
-                        border.color: "#2a3040"
+                        border.color: theme.cardBorder
                         border.width: 1
                     }
                     
@@ -150,14 +153,14 @@ Rectangle {
                         
                         contentItem: Label {
                             text: menuItem.text
-                            color: menuItem.highlighted ? "#f5f7ff" : "#b0b8c8"
+                            color: menuItem.highlighted ? theme.textPrimary : theme.textSecondary
                             font.pixelSize: 13
                             leftPadding: 16
                             verticalAlignment: Text.AlignVCenter
                         }
                         
                         background: Rectangle {
-                            color: menuItem.highlighted ? "#2a3545" : "transparent"
+                            color: menuItem.highlighted ? theme.listItemHover : "transparent"
                             radius: 8
                         }
                     }
@@ -193,7 +196,7 @@ Rectangle {
                     MenuSeparator {
                         contentItem: Rectangle {
                             implicitHeight: 1
-                            color: "#2a3040"
+                            color: theme.divider
                         }
                     }
                     MenuItem {
@@ -217,7 +220,7 @@ Rectangle {
 
                 Label {
                     text: player ? Utils.durationToText(player.position) : "0:00"
-                    color: "#8b949e"
+                    color: theme.textSecondary
                     font.pixelSize: 11
                     font.family: "monospace"
                     Layout.minimumWidth: 45
@@ -234,8 +237,8 @@ Rectangle {
                         width: parent.width
                         height: 7
                         radius: 3.5
-                        color: "#161b22"
-                        border.color: "#21262d"
+                        color: theme.surface
+                        border.color: theme.surfaceBorder
                         border.width: 1
                         
                         Rectangle {
@@ -243,7 +246,7 @@ Rectangle {
                             width: parent.width * ((player && player.duration > 0) ? player.position / player.duration : 0)
                             height: parent.height
                             radius: parent.radius
-                            color: "#30363d"
+                            color: theme.surfaceInteractiveBorder
                         }
                         
                         Rectangle {
@@ -253,9 +256,9 @@ Rectangle {
                             radius: parent.radius
                             gradient: Gradient {
                                 orientation: Gradient.Horizontal
-                                GradientStop { position: 0.0; color: "#0969da" }
-                                GradientStop { position: 0.5; color: "#1f6feb" }
-                                GradientStop { position: 1.0; color: "#58a6ff" }
+                                GradientStop { position: 0.0; color: theme.accentDark }
+                                GradientStop { position: 0.5; color: theme.accent }
+                                GradientStop { position: 1.0; color: theme.accentLight }
                             }
                             
                             Rectangle {
@@ -265,8 +268,8 @@ Rectangle {
                                 width: 14
                                 height: 14
                                 radius: 7
-                                color: "#58a6ff"
-                                border.color: "#0d1117"
+                                color: theme.accentLight
+                                border.color: theme.surface
                                 border.width: 2
                             }
                         }
@@ -300,14 +303,14 @@ Rectangle {
                         width: timeTooltip.width + 12
                         height: 24
                         radius: 4
-                        color: "#1f2937"
-                        border.color: "#374151"
+                        color: theme.surfaceInteractive
+                        border.color: theme.surfaceInteractiveBorder
                         
                         Label {
                             id: timeTooltip
                             anchors.centerIn: parent
                             text: player ? Utils.durationToText((seekMouseArea.mouseX / seekMouseArea.width) * player.duration) : "0:00"
-                            color: "#e6edf3"
+                            color: theme.textPrimary
                             font.pixelSize: 11
                             font.family: "monospace"
                         }
@@ -316,7 +319,7 @@ Rectangle {
 
                 Label {
                     text: player ? Utils.durationToText(player.duration) : "0:00"
-                    color: "#8b949e"
+                    color: theme.textSecondary
                     font.pixelSize: 11
                     font.family: "monospace"
                     Layout.minimumWidth: 45
@@ -339,17 +342,15 @@ Rectangle {
                 
                 background: Rectangle {
                     radius: 20
-                    color: parent.hovered ? "#1f2937" : "transparent"
-                    border.color: parent.hovered ? "#374151" : "transparent"
+                    color: parent.hovered ? theme.surfaceInteractive : "transparent"
+                    border.color: parent.hovered ? theme.surfaceInteractiveBorder : "transparent"
                 }
                 
-                contentItem: Image {
-                    source: "../icons/skip_previous.svg"
-                    width: 18
-                    height: 18
-                    anchors.centerIn: parent
-                    fillMode: Image.PreserveAspectFit
-                }
+                display: AbstractButton.IconOnly
+                icon.source: "../icons/skip_previous.svg"
+                icon.width: 18
+                icon.height: 18
+                icon.color: theme.textPrimary
                 
                 onClicked: player.previous()
                 
@@ -367,22 +368,20 @@ Rectangle {
                 background: Rectangle {
                     radius: 26
                     gradient: Gradient {
-                        GradientStop { position: 0.0; color: parent.parent.pressed ? "#0969da" : "#1f6feb" }
-                        GradientStop { position: 0.5; color: parent.parent.pressed ? "#1f6feb" : "#388bfd" }
-                        GradientStop { position: 1.0; color: parent.parent.pressed ? "#0969da" : "#58a6ff" }
+                        GradientStop { position: 0.0; color: parent.parent.pressed ? theme.accentDark : theme.accent }
+                        GradientStop { position: 0.5; color: parent.parent.pressed ? theme.accent : theme.accentLight }
+                        GradientStop { position: 1.0; color: parent.parent.pressed ? theme.accentDark : theme.accentLight }
                     }
                     
                     // Borda interna brilhante
                     border.color: Qt.rgba(1, 1, 1, 0.15)
                     border.width: 1
                 }
-                contentItem: Image {
-                    source: (player && player.playing) ? "../icons/pause.svg" : "../icons/play_arrow.svg"
-                    width: 22
-                    height: 22
-                    anchors.centerIn: parent
-                    fillMode: Image.PreserveAspectFit
-                }
+                display: AbstractButton.IconOnly
+                icon.source: (player && player.playing) ? "../icons/pause.svg" : "../icons/play_arrow.svg"
+                icon.width: 22
+                icon.height: 22
+                icon.color: theme.textPrimary
                 
                 onClicked: if (player) player.toggle()
                 
@@ -401,17 +400,15 @@ Rectangle {
                 
                 background: Rectangle {
                     radius: 20
-                    color: parent.hovered ? "#1f2937" : "transparent"
-                    border.color: parent.hovered ? "#374151" : "transparent"
+                    color: parent.hovered ? theme.surfaceInteractive : "transparent"
+                    border.color: parent.hovered ? theme.surfaceInteractiveBorder : "transparent"
                 }
                 
-                contentItem: Image {
-                    source: "../icons/skip_next.svg"
-                    width: 18
-                    height: 18
-                    anchors.centerIn: parent
-                    fillMode: Image.PreserveAspectFit
-                }
+                display: AbstractButton.IconOnly
+                icon.source: "../icons/skip_next.svg"
+                icon.width: 18
+                icon.height: 18
+                icon.color: theme.textPrimary
                 
                 onClicked: player.next()
                 
@@ -437,17 +434,15 @@ Rectangle {
                     
                     background: Rectangle {
                         radius: 18
-                        color: parent.hovered ? "#1f2937" : "transparent"
-                        border.color: parent.hovered ? "#374151" : "transparent"
+                        color: parent.hovered ? theme.surfaceInteractive : "transparent"
+                        border.color: parent.hovered ? theme.surfaceInteractiveBorder : "transparent"
                     }
                     
-                    contentItem: Image {
-                        source: (player && player.muted) ? "../icons/volume_off.svg" : (player && player.volume > 0.5 ? "../icons/volume_up.svg" : (player && player.volume > 0 ? "../icons/volume_down.svg" : "../icons/volume_mute.svg"))
-                        width: 16
-                        height: 16
-                        anchors.centerIn: parent
-                        fillMode: Image.PreserveAspectFit
-                    }
+                    display: AbstractButton.IconOnly
+                    icon.source: (player && player.muted) ? "../icons/volume_off.svg" : (player && player.volume > 0.5 ? "../icons/volume_up.svg" : (player && player.volume > 0 ? "../icons/volume_down.svg" : "../icons/volume_mute.svg"))
+                    icon.width: 16
+                    icon.height: 16
+                    icon.color: theme.textPrimary
                     
                     onClicked: if (player) player.muted = !player.muted
                     
@@ -466,8 +461,8 @@ Rectangle {
                         width: parent.width
                         height: 5
                         radius: 2.5
-                        color: "#161b22"
-                        border.color: "#21262d"
+                        color: theme.surface
+                        border.color: theme.surfaceBorder
                         border.width: 1
                         
                         Rectangle {
@@ -476,17 +471,9 @@ Rectangle {
                             radius: parent.radius
                             gradient: Gradient {
                                 orientation: Gradient.Horizontal
-                                GradientStop { position: 0.0; color: "#0969da" }
-                                GradientStop { position: 0.5; color: "#1f6feb" }
-                                GradientStop { position: 1.0; color: "#58a6ff" }
-                            }
-                            
-                            layer.enabled: true
-                            layer.effect: MultiEffect {
-                                shadowEnabled: true
-                                shadowColor: "#1f6feb"
-                                shadowBlur: 0.3
-                                shadowOpacity: 0.6
+                                GradientStop { position: 0.0; color: theme.accentDark }
+                                GradientStop { position: 0.5; color: theme.accent }
+                                GradientStop { position: 1.0; color: theme.accentLight }
                             }
                             
                             Rectangle {
@@ -496,8 +483,8 @@ Rectangle {
                                 width: 12
                                 height: 12
                                 radius: 6
-                                color: "#58a6ff"
-                                border.color: "#0d1117"
+                                color: theme.accentLight
+                                border.color: theme.surface
                                 border.width: 2
                             }
                         }
@@ -536,14 +523,14 @@ Rectangle {
                         width: volumeTooltip.width + 12
                         height: 24
                         radius: 4
-                        color: "#1f2937"
-                        border.color: "#374151"
+                        color: theme.surfaceInteractive
+                        border.color: theme.surfaceInteractiveBorder
                         
                         Label {
                             id: volumeTooltip
                             anchors.centerIn: parent
                             text: player ? (Math.round(player.volume * 100) + "%") : "0%"
-                            color: "#e6edf3"
+                            color: theme.textPrimary
                             font.pixelSize: 11
                         }
                     }

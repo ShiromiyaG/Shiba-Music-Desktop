@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import "qrc:/qml/components" as Components
 
 Page {
+    Components.ThemePalette { id: theme }
     background: Rectangle { color: "transparent" }
 
     Component.onCompleted: {
@@ -22,7 +23,7 @@ Page {
             text: qsTr("Favorites")
             font.pixelSize: 26
             font.weight: Font.DemiBold
-            color: "#f5f7ff"
+            color: theme.textPrimary
             Layout.leftMargin: 32
         }
 

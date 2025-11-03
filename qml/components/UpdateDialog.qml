@@ -1,8 +1,10 @@
 import QtQuick
 import QtQuick.Controls.Material
 import QtQuick.Layouts
+import "." as Components
 
 Dialog {
+    Components.ThemePalette { id: theme }
     id: updateDialog
     title: qsTr(qsTr("Update Available"))
     modal: true
@@ -170,5 +172,4 @@ Dialog {
         }
     }
 }
-
 

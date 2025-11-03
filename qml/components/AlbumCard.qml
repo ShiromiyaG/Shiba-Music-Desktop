@@ -2,11 +2,13 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
+import "." as Components
 
 Item {
     id: root
     width: 200
     height: 270
+    Components.ThemePalette { id: theme }
     property string title
     property string subtitle
     property url cover
@@ -19,16 +21,18 @@ Item {
         id: frame
         anchors.fill: parent
         anchors.margins: 0
-        radius: 16
-        color: hoverArea.containsMouse ? "#273040" : "#1d222c"
-        border.color: hoverArea.containsMouse ? "#3b465f" : "#2a303c"
+        radius: theme.isGtk ? theme.radiusChip : theme.radiusCard
+        color: hoverArea.containsMouse ? (theme.isMica ? Qt.tint(theme.listItemHover, Qt.rgba(theme.accent.r, theme.accent.g, theme.accent.b, 0.16)) : theme.listItemHover)
+                                     : (theme.isMica ? Qt.rgba(theme.cardBackground.r, theme.cardBackground.g, theme.cardBackground.b, 0.94) : theme.cardBackground)
+        border.color: hoverArea.containsMouse ? theme.surfaceInteractiveBorder : theme.cardBorder
+        border.width: theme.isGtk ? theme.borderWidthThin : (theme.isMica ? theme.borderWidthThin : 0)
         Behavior on color { ColorAnimation { duration: 120 } }
         antialiasing: true
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 12
-            spacing: 8
+            anchors.margins: theme.isGtk ? theme.spacingMd : theme.spacingLg
+            spacing: theme.isGtk ? theme.spacingSm : theme.spacingMd
 
             Item {
                 Layout.fillWidth: true
@@ -37,9 +41,10 @@ Item {
                 
                 Rectangle {
                     anchors.fill: parent
-                    radius: 8
-                    color: "#111"
-                    border.color: "#2a313f"
+                    radius: theme.isGtk ? theme.radiusBadge : theme.radiusChip
+                    color: theme.surface
+                    border.color: theme.cardBorder
+                    border.width: theme.isGtk ? theme.borderWidthThin : 0
                     clip: true
                     antialiasing: true
                     
@@ -75,13 +80,13 @@ Item {
                     Rectangle {
                         id: fallback
                         anchors.fill: parent
-                        color: "#1f2530"
+                        color: theme.surface
                         visible: coverImage.status !== Image.Ready && coverImage.status !== Image.Loading
                         Image {
                             anchors.centerIn: parent
                             source: "qrc:/qml/icons/album.svg"
-                            sourceSize.width: 42
-                            sourceSize.height: 42
+                            sourceSize.width: theme.iconSizeLarge * 1.75
+                            sourceSize.height: theme.iconSizeLarge * 1.75
                             antialiasing: true
                             smooth: true
                         }
@@ -92,14 +97,14 @@ Item {
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignLeft | Qt.AlignTop
-                spacing: 4
+                spacing: theme.spacingXs
 
                 Label {
                     Layout.fillWidth: true
                     text: root.title
-                    font.pixelSize: 14
+                    font.pixelSize: theme.fontSizeBody
                     font.weight: Font.Medium
-                    color: "#f5f7ff"
+                    color: theme.textPrimary
                     elide: Text.ElideRight
                     maximumLineCount: 1
                     wrapMode: Text.NoWrap
@@ -107,8 +112,8 @@ Item {
                 Label {
                     Layout.fillWidth: true
                     text: root.subtitle
-                    font.pixelSize: 12
-                    color: "#8b96a8"
+                    font.pixelSize: theme.fontSizeCaption
+                    color: theme.textSecondary
                     elide: Text.ElideRight
                     maximumLineCount: 1
                     visible: text.length > 0
@@ -158,10 +163,10 @@ Item {
                 width: 200
                 
                 background: Rectangle {
-                    color: "#1d2330"
-                    radius: 12
-                    border.color: "#2a3040"
-                    border.width: 1
+                    color: theme.cardBackground
+                    radius: theme.radiusButton
+                    border.color: theme.cardBorder
+                    border.width: theme.borderWidthThin
                 }
                 
                 delegate: MenuItem {
@@ -171,15 +176,15 @@ Item {
                     
                     contentItem: Label {
                         text: menuItem.text
-                        color: menuItem.highlighted ? "#f5f7ff" : "#b0b8c8"
-                        font.pixelSize: 13
-                        leftPadding: 16
+                        color: menuItem.highlighted ? theme.textPrimary : theme.textSecondary
+                        font.pixelSize: theme.fontSizeSmall
+                        leftPadding: theme.spacingXl
                         verticalAlignment: Text.AlignVCenter
                     }
                     
                     background: Rectangle {
-                        color: menuItem.highlighted ? "#2a3545" : "transparent"
-                        radius: 8
+                        color: menuItem.highlighted ? theme.listItemHover : "transparent"
+                        radius: theme.radiusChip
                     }
                 }
                 
@@ -201,8 +206,8 @@ Item {
                 }
                 MenuSeparator {
                     contentItem: Rectangle {
-                        implicitHeight: 1
-                        color: "#2a3040"
+                        implicitHeight: theme.borderWidthThin
+                        color: theme.cardBorder
                     }
                 }
                 MenuItem {
@@ -219,7 +224,7 @@ Item {
                 id: playBtn
                 anchors.right: parent.right
                 anchors.top: parent.top
-                anchors.margins: 8
+                anchors.margins: theme.spacingMd
                 icon.source: "qrc:/qml/icons/play_arrow.svg"
                 visible: hoverArea.containsMouse && albumId.length > 0
                 property string pendingAlbumId: ""

@@ -1,8 +1,10 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Controls.Material
+import "." as Components
 
 ComboBox {
+    Components.ThemePalette { id: theme }
     id: languageCombo
     
     model: translationManager ? translationManager.availableLanguages() : []

@@ -1,8 +1,10 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import "." as Components
 
 Item {
+    Components.ThemePalette { id: theme }
     id: root
     width: parent ? parent.width : 320
     height: Math.max(implicitHeight, 160)
@@ -22,12 +24,13 @@ Item {
             text: root.title
             font.pixelSize: 16
             font.weight: Font.Medium
+            color: theme.textPrimary
             Layout.alignment: Qt.AlignHCenter
         }
         Label {
             text: root.description
             visible: text.length > 0
-            color: "#8b96a8"
+            color: theme.textSecondary
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignHCenter
             Layout.preferredWidth: Math.min(root.width, 420)

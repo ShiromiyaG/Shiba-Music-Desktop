@@ -5,6 +5,7 @@ import "qrc:/qml/components" as Components
 
 Page {
     id: homePage
+    Components.ThemePalette { id: theme }
     objectName: "homePage"
     signal albumClicked(string albumId, string albumTitle, string artistName, string coverArtId, string artistId)
     signal artistClicked(string artistId, string artistName, string coverArtId)
@@ -86,7 +87,9 @@ Page {
         flickableDirection: Flickable.VerticalFlick
         flickDeceleration: 1200
         maximumFlickVelocity: 2500
-        ScrollBar.vertical: ScrollBar { }
+        ScrollBar.vertical: Components.ScrollBar {
+            theme.manager: themeManager
+        }
         
         MouseArea {
             anchors.fill: parent
@@ -118,7 +121,7 @@ Page {
                         text: searchQuery.length ? ("Resultados para \"" + searchQuery + "\"") : "Resultados da busca"
                         font.pixelSize: 26
                         font.weight: Font.DemiBold
-                        color: "#f5f7ff"
+                        color: theme.textPrimary
                     }
                     
                     Loader {
@@ -135,7 +138,7 @@ Page {
                         
                         Label {
                             text: qsTr("Artists")
-                            color: "#8da0c0"
+                            color: theme.textSecondary
                             font.pixelSize: 11
                             font.letterSpacing: 3
                             font.weight: Font.DemiBold
@@ -194,7 +197,7 @@ Page {
                         
                         Label {
                             text: qsTr("Albums")
-                            color: "#8da0c0"
+                            color: theme.textSecondary
                             font.pixelSize: 11
                             font.letterSpacing: 3
                             font.weight: Font.DemiBold
@@ -254,7 +257,7 @@ Page {
                         
                         Label {
                             text: qsTr("SONGS")
-                            color: "#8da0c0"
+                            color: theme.textSecondary
                             font.pixelSize: 11
                             font.letterSpacing: 3
                             font.weight: Font.DemiBold
@@ -281,13 +284,13 @@ Page {
                 text: qsTr("Discover")
                 font.pixelSize: 30
                 font.weight: Font.DemiBold
-                color: "#f5f7ff"
+                color: theme.textPrimary
             }
 
             Label {
                 visible: !searchActive
                 text: qsTr("RECENTLY PLAYED")
-                color: "#8da0c0"
+                color: theme.textSecondary
                 font.pixelSize: 12
                 font.letterSpacing: 4
                 font.weight: Font.DemiBold
@@ -302,7 +305,7 @@ Page {
             Label {
                 visible: !searchActive
                 text: qsTr("MADE FOR YOU")
-                color: "#8da0c0"
+                color: theme.textSecondary
                 font.pixelSize: 12
                 font.letterSpacing: 4
                 font.weight: Font.DemiBold
@@ -402,8 +405,8 @@ Page {
                         width: resultsColumn.width
                         height: 72
                         radius: 16
-                        color: trackHover.hovered ? "#273040" : (index % 2 === 0 ? "#1b2336" : "#182030")
-                        border.color: trackHover.hovered ? "#3b465f" : "transparent"
+                        color: trackHover.hovered ? theme.listItemHover : (index % 2 === 0 ? theme.listItem : theme.listItemAlternate)
+                        border.color: trackHover.hovered ? theme.surfaceInteractiveBorder : "transparent"
                         Behavior on color { ColorAnimation { duration: 120 } }
 
                         HoverHandler {
@@ -423,7 +426,7 @@ Page {
                                 Layout.preferredHeight: 48
                                 Layout.alignment: Qt.AlignVCenter
                                 radius: 8
-                                color: "#101622"
+                                color: theme.surface
                                 clip: true
                                 
                                 Image {
@@ -452,7 +455,7 @@ Page {
                                 Label {
                                     Layout.fillWidth: true
                                     text: track.title || "-"
-                                    color: "#f5f7ff"
+                                    color: theme.textPrimary
                                     font.pixelSize: 14
                                     font.weight: Font.Medium
                                     elide: Text.ElideRight
@@ -461,7 +464,7 @@ Page {
                                 Label {
                                     Layout.fillWidth: true
                                     text: track.artist || "-"
-                                    color: "#8fa0c2"
+                                    color: theme.textSecondary
                                     font.pixelSize: 12
                                     elide: Text.ElideRight
                                 }
@@ -469,7 +472,7 @@ Page {
                             
                             Label {
                                 text: track.album || "-"
-                                color: "#8fa0c2"
+                                color: theme.textSecondary
                                 font.pixelSize: 12
                                 elide: Text.ElideRight
                                 Layout.preferredWidth: 180
@@ -534,8 +537,8 @@ Page {
                     width: madeList.width
                     height: 60
                     radius: 16
-                    color: madeTrackHover.hovered ? "#273040" : (index % 2 === 0 ? "#1b2336" : "#182030")
-                    border.color: madeTrackHover.hovered ? "#3b465f" : "transparent"
+                    color: madeTrackHover.hovered ? theme.listItemHover : (index % 2 === 0 ? theme.listItem : theme.listItemAlternate)
+                    border.color: madeTrackHover.hovered ? theme.surfaceInteractiveBorder : "transparent"
                     Behavior on color { ColorAnimation { duration: 120 } }
 
                     HoverHandler {
@@ -552,7 +555,7 @@ Page {
 
                         Label {
                             text: "#" + (index + 1)
-                            color: "#8da0c0"
+                            color: theme.textSecondary
                             font.pixelSize: 13
                             Layout.alignment: Qt.AlignVCenter
                             Layout.preferredWidth: 28
@@ -564,7 +567,7 @@ Page {
                             Layout.preferredHeight: 46
                             Layout.alignment: Qt.AlignVCenter
                             radius: 12
-                            color: "#101622"
+                            color: theme.surface
                             clip: true
                             Image {
                                 anchors.fill: parent
@@ -577,7 +580,7 @@ Page {
                                 anchors.centerIn: parent
                                 visible: !track.coverArt
                                 text: "♪"
-                                color: "#55617b"
+                                color: theme.textMuted
                             }
                         }
 
@@ -597,7 +600,7 @@ Page {
                             Label {
                                 Layout.fillWidth: true
                                 text: track.artist || "-"
-                                color: "#8fa0c2"
+                                color: theme.textSecondary
                                 font.pixelSize: 12
                                 elide: Text.ElideRight
                             }
@@ -605,7 +608,7 @@ Page {
 
                         Label {
                             text: track.album || "-"
-                            color: "#8fa0c2"
+                            color: theme.textSecondary
                             font.pixelSize: 12
                             Layout.fillWidth: true
                             Layout.minimumWidth: 180
@@ -621,7 +624,7 @@ Page {
                                 property bool isFavorite: track.starred || false
                                 display: AbstractButton.IconOnly
                                 icon.source: isFavorite ? "qrc:/qml/icons/favorite.svg" : "qrc:/qml/icons/favorite_border.svg"
-                                icon.color: isFavorite ? "#ff6b6b" : "#8da0c0"
+                                icon.color: isFavorite ? "#ff6b6b" : theme.textSecondary
                                 icon.width: 20
                                 icon.height: 20
                                 onClicked: {
@@ -642,9 +645,9 @@ Page {
                                     width: 200
                                     
                                     background: Rectangle {
-                                        color: "#1d2330"
+                                        color: theme.cardBackground
                                         radius: 12
-                                        border.color: "#2a3040"
+                                        border.color: theme.cardBorder
                                         border.width: 1
                                     }
                                     
@@ -655,14 +658,14 @@ Page {
                                         
                                         contentItem: Label {
                                             text: menuItem.text
-                                            color: menuItem.highlighted ? "#f5f7ff" : "#b0b8c8"
+                                            color: menuItem.highlighted ? theme.textPrimary : theme.textSecondary
                                             font.pixelSize: 13
                                             leftPadding: 16
                                             verticalAlignment: Text.AlignVCenter
                                         }
                                         
                                         background: Rectangle {
-                                            color: menuItem.highlighted ? "#2a3545" : "transparent"
+                                            color: menuItem.highlighted ? theme.listItemHover : "transparent"
                                             radius: 8
                                         }
                                     }

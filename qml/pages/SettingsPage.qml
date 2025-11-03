@@ -7,11 +7,13 @@ Page {
     id: settingsPage
     background: Rectangle { color: "transparent" }
 
+    Components.ThemePalette { id: theme }
+
     Flickable {
         anchors.fill: parent
         contentHeight: contentCol.height
         clip: true
-        ScrollBar.vertical: ScrollBar { }
+        ScrollBar.vertical: Components.ScrollBar { theme.manager: themeManager }
 
         Column {
             id: contentCol
@@ -23,6 +25,7 @@ Page {
                 text: qsTr("Settings")
                 font.pixelSize: 32
                 font.weight: Font.Bold
+                color: theme.textPrimary
             }
 
             // Seção Idioma
@@ -30,8 +33,8 @@ Page {
                 width: parent.width - parent.padding * 2
                 height: languageSection.height + 32
                 radius: 16
-                color: "#1b2336"
-                border.color: "#252e42"
+                color: theme.cardBackground
+                border.color: theme.cardBorder
 
                 Column {
                     id: languageSection
@@ -43,9 +46,84 @@ Page {
                         text: qsTr("Language")
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
+                        color: theme.textPrimary
                     }
 
                     Components.LanguageSelector {
+                        width: parent.width
+                    }
+                }
+            }
+
+            Rectangle {
+                width: parent.width - parent.padding * 2
+                height: appearanceSection.height + 32
+                radius: 16
+                color: theme.cardBackground
+                border.color: theme.cardBorder
+
+                Column {
+                    id: appearanceSection
+                    anchors.centerIn: parent
+                    width: parent.width - 32
+                    spacing: 16
+
+                    Label {
+                        text: qsTr("Appearance")
+                        font.pixelSize: 18
+                        font.weight: Font.DemiBold
+                        color: theme.textPrimary
+                    }
+
+                    ComboBox {
+                        id: themeCombo
+                        width: parent.width
+                        enabled: themeManager && themeManager.availableThemes && themeManager.availableThemes.length > 0
+                        model: themeManager ? themeManager.availableThemes : []
+                        textRole: "title"
+                        valueRole: "id"
+                        currentIndex: {
+                            if (!themeManager || !themeManager.availableThemes || !themeManager.availableThemes.length)
+                                return -1
+                            var target = (themeManager.selectedThemeId || "").toLowerCase()
+                            for (var i = 0; i < themeManager.availableThemes.length; ++i) {
+                                var item = themeManager.availableThemes[i]
+                                if (!item || typeof item.id !== "string")
+                                    continue
+                                if (item.id.toLowerCase() === target)
+                                    return i
+                            }
+                            return themeManager.availableThemes.length > 0 ? 0 : -1
+                        }
+                        displayText: {
+                            if (!themeManager || currentIndex < 0)
+                                return ""
+                            var item = themeManager.availableThemes[currentIndex]
+                            return item && item.title ? item.title : ""
+                        }
+                        onActivated: {
+                            if (!themeManager)
+                                return
+                            var value = currentValue || ""
+                            if (value && value !== themeManager.selectedThemeId)
+                                themeManager.setSelectedThemeId(value)
+                        }
+                        delegate: ItemDelegate {
+                            width: themeCombo.width
+                            highlighted: themeCombo.highlightedIndex === index
+                            contentItem: Label {
+                                text: modelData && modelData.title ? modelData.title : ""
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                        }
+                    }
+
+                    Label {
+                        visible: themeManager ? themeManager.restartRequired : false
+                        text: qsTr("Restart the application to apply the selected theme.")
+                        color: theme.textSecondary
+                        font.pixelSize: 12
+                        wrapMode: Text.WordWrap
                         width: parent.width
                     }
                 }
@@ -56,8 +134,8 @@ Page {
                 width: parent.width - parent.padding * 2
                 height: playerSection.height + 32
                 radius: 16
-                color: "#1b2336"
-                border.color: "#252e42"
+                color: theme.cardBackground
+                border.color: theme.cardBorder
 
                 Column {
                     id: playerSection
@@ -69,6 +147,7 @@ Page {
                         text: qsTr("Player")
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
+                        color: theme.textPrimary
                     }
 
                     RowLayout {
@@ -76,6 +155,7 @@ Page {
                         Label {
                             text: qsTr("ReplayGain")
                             Layout.fillWidth: true
+                            color: theme.textSecondary
                         }
                         Switch {
                             checked: player ? player.replayGainEnabled : false
@@ -89,6 +169,7 @@ Page {
                         Label {
                             text: qsTr("ReplayGain Mode")
                             Layout.fillWidth: true
+                            color: theme.textSecondary
                         }
                         ComboBox {
                             model: ["Track", "Album"]
@@ -104,8 +185,8 @@ Page {
                 width: parent.width - parent.padding * 2
                 height: discordSection.height + 32
                 radius: 16
-                color: "#1b2336"
-                border.color: "#252e42"
+                color: theme.cardBackground
+                border.color: theme.cardBorder
 
                 Column {
                     id: discordSection
@@ -117,6 +198,7 @@ Page {
                         text: qsTr("Discord")
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
+                        color: theme.textPrimary
                     }
 
                     RowLayout {
@@ -124,6 +206,7 @@ Page {
                         Label {
                             text: qsTr("Rich Presence")
                             Layout.fillWidth: true
+                            color: theme.textSecondary
                         }
                         Switch {
                             checked: discord ? discord.enabled : false
@@ -133,7 +216,7 @@ Page {
 
                     Label {
                         text: qsTr("Shows current song in your Discord profile")
-                        color: "#8b96a8"
+                        color: theme.textMuted
                         font.pixelSize: 12
                         wrapMode: Text.WordWrap
                         width: parent.width
@@ -144,6 +227,7 @@ Page {
                         Label {
                             text: qsTr("Show when paused")
                             Layout.fillWidth: true
+                            color: theme.textSecondary
                         }
                         Switch {
                             checked: discord ? discord.showPaused : false
@@ -158,8 +242,8 @@ Page {
                 width: parent.width - parent.padding * 2
                 height: serverSection.height + 32
                 radius: 16
-                color: "#1b2336"
-                border.color: "#252e42"
+                color: theme.cardBackground
+                border.color: theme.cardBorder
 
                 Column {
                     id: serverSection
@@ -171,6 +255,7 @@ Page {
                         text: qsTr("Server")
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
+                        color: theme.textPrimary
                     }
 
                     RowLayout {
@@ -178,10 +263,11 @@ Page {
                         Label {
                             text: qsTr("URL")
                             Layout.fillWidth: true
+                            color: theme.textSecondary
                         }
                         Label {
                             text: api ? api.serverUrl : "" || "-"
-                            color: "#8b96a8"
+                            color: theme.textMuted
                             elide: Label.ElideRight
                             Layout.maximumWidth: 300
                         }
@@ -201,8 +287,8 @@ Page {
                 width: parent.width - parent.padding * 2
                 height: aboutSection.height + 32
                 radius: 16
-                color: "#1b2336"
-                border.color: "#252e42"
+                color: theme.cardBackground
+                border.color: theme.cardBorder
 
                 Column {
                     id: aboutSection
@@ -214,22 +300,24 @@ Page {
                         text: qsTr("About")
                         font.pixelSize: 18
                         font.weight: Font.DemiBold
+                        color: theme.textPrimary
                     }
 
                     Label {
                         text: appInfo ? appInfo.appName : "Shiba Music"
                         font.pixelSize: 16
+                        color: theme.textPrimary
                     }
 
                     Label {
                         text: qsTr("Version") + " " + (appInfo ? appInfo.version : "-")
-                        color: "#8b96a8"
+                        color: theme.textMuted
                         font.pixelSize: 12
                     }
 
                     Label {
                         text: qsTr("Native Navidrome/Subsonic player in Qt")
-                        color: "#8b96a8"
+                        color: theme.textMuted
                         font.pixelSize: 13
                         wrapMode: Text.WordWrap
                         width: parent.width

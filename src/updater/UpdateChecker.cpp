@@ -9,6 +9,8 @@
 #include <QDebug>
 #include <QDir>
 #include <QCoreApplication>
+#include <QGuiApplication>
+#include <QTimer>
 #include <QTextStream>
 
 UpdateChecker::UpdateChecker(QObject *parent)
@@ -25,14 +27,22 @@ UpdateChecker::UpdateChecker(QObject *parent)
 void UpdateChecker::checkForUpdates()
 {
     if (m_isChecking) {
+        qDebug() << "UpdateChecker: Already checking for updates";
         return;
     }
 
+    qDebug() << "UpdateChecker: Starting update check...";
+    qDebug() << "UpdateChecker: Current version:" << APP_VERSION;
+    
     m_isChecking = true;
     emit isCheckingChanged();
 
-    QNetworkRequest request(QUrl("https://api.github.com/repos/ShiromiyaG/Shiba-Music-Desktop/releases/latest"));
+    QUrl url("https://api.github.com/repos/ShiromiyaG/Shiba-Music-Desktop/releases/latest");
+    qDebug() << "UpdateChecker: Requesting" << url;
+    
+    QNetworkRequest request(url);
     request.setHeader(QNetworkRequest::UserAgentHeader, "ShibaMusic-Updater");
+    request.setRawHeader("Accept", "application/vnd.github.v3+json");
     
     m_currentReply = m_networkManager->get(request);
     connect(m_currentReply, &QNetworkReply::finished, this, &UpdateChecker::onUpdateCheckFinished);
@@ -44,11 +54,15 @@ void UpdateChecker::onUpdateCheckFinished()
     emit isCheckingChanged();
 
     if (!m_currentReply) {
+        qDebug() << "UpdateChecker: No reply object";
         return;
     }
 
+    qDebug() << "UpdateChecker: Response status:" << m_currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    
     if (m_currentReply->error() != QNetworkReply::NoError) {
-        qWarning() << "Update check failed:" << m_currentReply->errorString();
+        qWarning() << "UpdateChecker: Network error:" << m_currentReply->errorString();
+        qWarning() << "UpdateChecker: Error code:" << m_currentReply->error();
         emit updateCheckFailed(m_currentReply->errorString());
         m_currentReply->deleteLater();
         m_currentReply = nullptr;
@@ -56,17 +70,21 @@ void UpdateChecker::onUpdateCheckFinished()
     }
 
     QByteArray data = m_currentReply->readAll();
+    qDebug() << "UpdateChecker: Received" << data.size() << "bytes";
     m_currentReply->deleteLater();
     m_currentReply = nullptr;
 
     QJsonDocument doc = QJsonDocument::fromJson(data);
     if (!doc.isObject()) {
+        qWarning() << "UpdateChecker: Invalid JSON response";
+        qDebug() << "UpdateChecker: Response data:" << QString::fromUtf8(data.left(500));
         emit updateCheckFailed("Invalid JSON response");
         return;
     }
 
     QJsonObject release = doc.object();
     QString tagName = release["tag_name"].toString();
+    qDebug() << "UpdateChecker: Latest release tag:" << tagName;
     
     // Remove 'v' prefix if exists
     if (tagName.startsWith('v')) {
@@ -93,12 +111,15 @@ void UpdateChecker::onUpdateCheckFinished()
     }
 
     QString currentVersion = APP_VERSION;
+    qDebug() << "UpdateChecker: Comparing versions - Current:" << currentVersion << "Latest:" << m_latestVersion;
+    qDebug() << "UpdateChecker: Download URL:" << m_downloadUrl;
+    
     if (compareVersions(currentVersion, m_latestVersion)) {
         m_updateAvailable = true;
         emit updateAvailableChanged();
-        qDebug() << "Update available:" << currentVersion << "->" << m_latestVersion;
+        qDebug() << "UpdateChecker: ✓ Update available:" << currentVersion << "->" << m_latestVersion;
     } else {
-        qDebug() << "No update available. Current:" << currentVersion << "Latest:" << m_latestVersion;
+        qDebug() << "UpdateChecker: ✗ No update available. Current:" << currentVersion << "Latest:" << m_latestVersion;
     }
 }
 
@@ -225,12 +246,24 @@ void UpdateChecker::installUpdate(const QString &zipPath)
     args << zipPath << appDir << "shibamusic.exe";
     
     qDebug() << "UpdateChecker: Starting updater:" << updaterPath << args;
+    qDebug() << "UpdateChecker: Working directory:" << appDir;
     
-    if (QProcess::startDetached(updaterPath, args)) {
-        qDebug() << "UpdateChecker: Updater started. Exiting app...";
-        QCoreApplication::quit();
+    qint64 pid;
+    if (QProcess::startDetached(updaterPath, args, appDir, &pid)) {
+        qDebug() << "UpdateChecker: Updater started with PID:" << pid;
+        qDebug() << "UpdateChecker: Exiting application in 1 second...";
+        
+        m_isDownloading = false;
+        emit isDownloadingChanged();
+        emit aboutToQuit();
+        
+        // Give the updater time to start before quitting
+        QTimer::singleShot(1000, []() {
+            qDebug() << "UpdateChecker: Calling QGuiApplication::exit(0)";
+            QGuiApplication::exit(0);
+        });
     } else {
-        qWarning() << "UpdateChecker: Failed to start updater";
+        qWarning() << "UpdateChecker: Failed to start updater process";
         m_isDownloading = false;
         emit isDownloadingChanged();
         emit downloadFailed("Failed to start updater");

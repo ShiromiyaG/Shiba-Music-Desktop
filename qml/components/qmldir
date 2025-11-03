@@ -1,1 +1,3 @@
 singleton ScrollConfig 1.0 ScrollConfig.qml
+ThemePalette 1.0 ThemePalette.qml
+ScrollBar 1.0 ScrollBar.qml
