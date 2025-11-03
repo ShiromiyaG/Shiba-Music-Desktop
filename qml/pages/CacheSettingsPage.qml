@@ -13,16 +13,16 @@ Page {
     
     ScrollView {
         anchors.fill: parent
-        anchors.margins: 24
+        anchors.margins: theme.paddingPanel
         
         ColumnLayout {
-            width: parent.width - 48
-            spacing: 24
+            width: parent.width - theme.paddingPanel * 2
+            spacing: theme.spacing3xl
             
             // Header
             Label {
                 text: qsTr("Cache Settings")
-                font.pixelSize: 32
+                font.pixelSize: theme.fontSizeHero
                 font.weight: Font.Bold
                 color: theme.textPrimary
             }
@@ -30,8 +30,8 @@ Page {
             // Cache Statistics
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: statsColumn.implicitHeight + 32
-                radius: 16
+                Layout.preferredHeight: statsColumn.implicitHeight + theme.spacing4xl
+                radius: theme.radiusCard
                 color: theme.cardBackground
                 border.color: theme.cardBorder
                 border.width: 1
@@ -39,20 +39,20 @@ Page {
                 ColumnLayout {
                     id: statsColumn
                     anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 12
+                    anchors.margins: theme.paddingCard
+                    spacing: theme.spacingLg
                     
                     Label {
                         text: qsTr("Cache Statistics")
-                        font.pixelSize: 18
+                        font.pixelSize: theme.fontSizeSection
                         font.weight: Font.DemiBold
                         color: theme.textPrimary
                     }
                     
                     GridLayout {
                         columns: 2
-                        rowSpacing: 8
-                        columnSpacing: 16
+                        rowspacing: theme.spacingMd
+                        columnspacing: theme.spacingXl
                         Layout.fillWidth: true
                         
                         Label {
@@ -92,8 +92,8 @@ Page {
             // Cache Management Actions
             Rectangle {
                 Layout.fillWidth: true
-                Layout.preferredHeight: actionsColumn.implicitHeight + 32
-                radius: 16
+                Layout.preferredHeight: actionsColumn.implicitHeight + theme.spacing4xl
+                radius: theme.radiusCard
                 color: theme.cardBackground
                 border.color: theme.cardBorder
                 border.width: 1
@@ -101,12 +101,12 @@ Page {
                 ColumnLayout {
                     id: actionsColumn
                     anchors.fill: parent
-                    anchors.margins: 16
-                    spacing: 16
+                    anchors.margins: theme.paddingCard
+                    spacing: theme.spacingXl
                     
                     Label {
                         text: qsTr("Cache Management")
-                        font.pixelSize: 18
+                        font.pixelSize: theme.fontSizeSection
                         font.weight: Font.DemiBold
                         color: theme.textPrimary
                     }
@@ -186,3 +186,15 @@ Page {
         return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i]
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+

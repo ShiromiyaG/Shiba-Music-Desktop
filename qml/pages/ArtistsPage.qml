@@ -12,25 +12,22 @@ Page {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.leftMargin: 0
-        anchors.rightMargin: 0
-        anchors.topMargin: 32
-        anchors.bottomMargin: 32
-        spacing: 18
+        anchors.margins: theme.paddingPage
+        spacing: theme.spacing2xl
 
         Label {
             text: qsTr("Artists")
-            font.pixelSize: 26
+            font.pixelSize: theme.fontSizeDisplay
             font.weight: Font.DemiBold
             color: theme.textPrimary
-            Layout.leftMargin: 32
+            Layout.leftMargin: 0
         }
 
         GridView {
             id: gridView
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.rightMargin: 20
+            Layout.rightMargin: theme.spacingXl
             clip: true
             cellWidth: 196
             cellHeight: 244
@@ -38,7 +35,7 @@ Page {
             maximumFlickVelocity: 2500
             model: (api && api.artists) ? api.artists : []
             delegate: Components.ArtistCard {
-                name: modelData.name || "Artista Desconhecido"
+                name: modelData.name || qsTr("Artista desconhecido")
                 cover: (modelData.coverArt && api) ? api.coverArtUrl(modelData.coverArt, 256) : ""
                 onClicked: artistsPage.artistClicked(modelData.id, modelData.name, modelData.coverArt)
             }
@@ -61,3 +58,15 @@ Page {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+

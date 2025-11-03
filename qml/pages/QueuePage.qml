@@ -55,7 +55,7 @@ Item {
         FastBlur {
             anchors.fill: bgImage
             source: bgImage
-            radius: 80
+            radius: theme.radiusQueueHero
         }
 
         Rectangle {
@@ -66,8 +66,8 @@ Item {
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: 64
-            spacing: 64
+            anchors.margins: theme.paddingPage * 2
+            spacing: theme.spacing4xl
 
             Item {
                 Layout.preferredWidth: 200
@@ -98,11 +98,11 @@ Item {
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                spacing: 16
+                spacing: theme.spacingXl
 
                 Label {
                     text: qsTr("Playback Queue")
-                    font.pixelSize: 32
+                    font.pixelSize: theme.fontSizeHero
                     font.weight: Font.Bold
                     color: theme.textPrimary
                 }
@@ -114,11 +114,11 @@ Item {
 
                     ListView {
                         model: player.queue
-                        spacing: 8
+                        spacing: theme.spacingMd
                         delegate: Rectangle {
                             width: ListView.view.width
                             height: 64
-                            radius: 8
+                            radius: theme.radiusChip
                             color: index === player.currentIndex ? theme.listItemActive : (queueHover.hovered ? theme.listItemHover : theme.cardBackground)
                             border.color: index === player.currentIndex ? theme.surfaceInteractiveBorder : (queueHover.hovered ? theme.surfaceInteractiveBorder : "transparent")
                             Behavior on color { ColorAnimation { duration: 120 } }
@@ -129,8 +129,8 @@ Item {
 
                             RowLayout {
                                 anchors.fill: parent
-                                anchors.margins: 12
-                                spacing: 12
+                                anchors.margins: theme.spacingLg
+                                spacing: theme.spacingLg
 
                                 Rectangle {
                                     Layout.preferredWidth: 40
@@ -147,12 +147,12 @@ Item {
 
                                 ColumnLayout {
                                     Layout.fillWidth: true
-                                    spacing: 2
+                                    spacing: theme.spacingXs
 
                                     Label {
                                         Layout.fillWidth: true
-                                        text: modelData.title || "Faixa desconhecida"
-                                        font.pixelSize: 14
+                                        text: modelData.title || qsTr("Faixa desconhecida")
+                                        font.pixelSize: theme.fontSizeBody
                                         font.weight: Font.Medium
                                         color: theme.textPrimary
                                         elide: Text.ElideRight
@@ -162,7 +162,7 @@ Item {
                                         Layout.fillWidth: true
                                         text: modelData.artist || "-"
                                         color: theme.textMuted
-                                        font.pixelSize: 12
+                                        font.pixelSize: theme.fontSizeCaption
                                         elide: Text.ElideRight
                                     }
                                 }
@@ -191,10 +191,23 @@ Item {
         RoundButton {
             anchors.top: parent.top
             anchors.right: parent.right
-            anchors.margins: 24
+            anchors.margins: theme.paddingPanel
             icon.source: "qrc:/qml/icons/close.svg"
             z: 10
             onClicked: queueContent.slideOut()
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

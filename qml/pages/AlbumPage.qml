@@ -92,13 +92,13 @@ Page {
                 Column {
             id: contentCol
             width: scrollArea.width
-            spacing: 20
-            padding: 24
+            spacing: theme.spacing2xl
+            padding: theme.paddingPage
 
                         Rectangle {
                 width: contentCol.width - contentCol.padding * 2
                 height: 240
-                radius: 24
+                radius: theme.radiusPanel
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: theme.cardBackground }
                     GradientStop { position: 1.0; color: theme.cardBackground }
@@ -121,7 +121,7 @@ Page {
                     maskSource: Rectangle {
                         width: bgImage.width
                         height: bgImage.height
-                        radius: 24
+                        radius: theme.radiusPanel
                     }
                     opacity: 0.15
                     visible: !!coverArtId && bgImage.status !== Image.Error
@@ -129,20 +129,20 @@ Page {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: 24
+                    radius: theme.radiusPanel
                     color: theme.windowBackgroundStart
                     opacity: 0.35
                 }
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 24
-                    spacing: 20
+                    anchors.margins: theme.paddingPanel
+                    spacing: theme.spacing2xl
 
                     Rectangle {
                         Layout.preferredWidth: 180
                         Layout.preferredHeight: 180
-                        radius: 18
+                        radius: theme.radiusCard
                         color: theme.surface
                         border.color: theme.surfaceInteractiveBorder
                         clip: true
@@ -164,11 +164,12 @@ Page {
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 6
+                        spacing: theme.spacingSm
                         Label {
                             text: albumTitle.length > 0 ? albumTitle : "Álbum"
-                            font.pixelSize: 30
+                            font.pixelSize: theme.fontSizeHeroTitle
                             font.weight: Font.DemiBold
+                            font.family: theme.fontFamily
                             wrapMode: Text.WordWrap
                         }
                         Item {
@@ -182,7 +183,8 @@ Page {
                             Text {
                                 id: artistText
                                 text: artistName
-                                font.pixelSize: 14
+                                font.pixelSize: theme.fontSizeBody
+                                font.family: theme.fontFamily
                                 color: (artistLink.hovered && artistLink.enabled) ? theme.accentLight : theme.textSecondary
                             }
 
@@ -196,7 +198,7 @@ Page {
                             }
                         }
                         Row {
-                            spacing: 12
+                            spacing: theme.spacingLg
                             ToolButton {
                                 text: qsTr("Play")
                                 icon.source: "qrc:/qml/icons/play_arrow.svg"
@@ -280,7 +282,9 @@ Page {
                         Components.SectionHeader {
                 width: contentCol.width - contentCol.padding * 2
                 title: qsTr("Tracks")
-                subtitle: (api && api.tracks && api.tracks.length > 0) ? (api.tracks.length + " músicas") : "Álbum vazio"
+                subtitle: (api && api.tracks && api.tracks.length > 0)
+                          ? qsTr("%1 músicas").arg(api.tracks.length)
+                          : qsTr("Álbum vazio")
             }
 
                         Loader {
@@ -294,7 +298,7 @@ Page {
         id: trackList
         Column {
             width: parent.width
-            spacing: 10
+            spacing: theme.spacingLg
             Repeater {
                 model: (api && api.tracks) ? api.tracks : []
                 delegate: Components.TrackRow {
@@ -316,7 +320,7 @@ Page {
             width: parent.width
             emoji: "qrc:/qml/icons/music_note.svg"
             title: qsTr("No tracks returned")
-            description: "Tente atualizar o álbum ou verifique sua conexão."
+            description: qsTr("Tente atualizar o álbum ou verifique sua conexão.")
         }
     }
 
@@ -324,7 +328,7 @@ Page {
         id: albumInfoDialog
         parent: Overlay.overlay
         anchors.centerIn: parent
-        width: Math.min(500, parent.width - 40)
+        width: Math.min(500, parent.width - theme.paddingPage)
         modal: true
         
         Overlay.modal: Rectangle {
@@ -336,47 +340,52 @@ Page {
                 GradientStop { position: 0.0; color: theme.cardBackground }
                 GradientStop { position: 1.0; color: theme.cardBackground }
             }
-            radius: 16
+            radius: theme.radiusDialog
         }
         
         header: Label {
             text: qsTr("Album Info")
-            font.pixelSize: 18
+            font.pixelSize: theme.fontSizeSection
             font.weight: Font.DemiBold
-            padding: 20
-            bottomPadding: 10
+            font.family: theme.fontFamily
+            padding: theme.paddingPanel
+            bottomPadding: theme.spacingMd
         }
         
         contentItem: ColumnLayout {
-            spacing: 12
+            spacing: theme.spacingLg
             
             Label {
-                text: "<b>Título:</b> " + albumTitle
+                text: qsTr("<b>Título:</b> %1").arg(albumTitle)
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
+                font.family: theme.fontFamily
             }
             Label {
-                text: "<b>Artista:</b> " + artistName
+                text: qsTr("<b>Artista:</b> %1").arg(artistName)
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
+                font.family: theme.fontFamily
             }
             Label {
-                text: "<b>Faixas:</b> " + (api && api.tracks ? api.tracks.length : 0)
+                text: qsTr("<b>Faixas:</b> %1").arg(api && api.tracks ? api.tracks.length : 0)
                 Layout.fillWidth: true
+                font.family: theme.fontFamily
             }
             Label {
-                text: "<b>ID:</b> " + albumId
+                text: qsTr("<b>ID:</b> %1").arg(albumId)
                 wrapMode: Text.WordWrap
                 Layout.fillWidth: true
-                font.pixelSize: 11
+                font.pixelSize: theme.fontSizeExtraSmall
                 color: theme.textSecondary
+                font.family: theme.fontFamily
             }
         }
         
         footer: DialogButtonBox {
             background: Rectangle { color: "transparent" }
-            padding: 20
-            topPadding: 10
+            padding: theme.paddingPanel
+            topPadding: theme.spacingMd
             Button {
                 text: qsTr("Close")
                 DialogButtonBox.buttonRole: DialogButtonBox.RejectRole
@@ -384,3 +393,16 @@ Page {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

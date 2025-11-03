@@ -13,18 +13,15 @@ Page {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.leftMargin: 0
-        anchors.rightMargin: 0
-        anchors.topMargin: 32
-        anchors.bottomMargin: 32
-        spacing: 18
+        anchors.margins: theme.paddingPage
+        spacing: theme.spacing2xl
 
         Label {
             text: qsTr("Favorites")
-            font.pixelSize: 26
+            font.pixelSize: theme.fontSizeDisplay
             font.weight: Font.DemiBold
             color: theme.textPrimary
-            Layout.leftMargin: 32
+            Layout.leftMargin: 0
         }
 
         ListView {
@@ -32,7 +29,7 @@ Page {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            spacing: 10
+            spacing: theme.spacingLg
             flickDeceleration: 1200
             maximumFlickVelocity: 2500
             model: api.favorites
@@ -58,3 +55,16 @@ Page {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -21,25 +21,22 @@ Page {
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.leftMargin: 0
-        anchors.rightMargin: 0
-        anchors.topMargin: 32
-        anchors.bottomMargin: 32
-        spacing: 18
+        anchors.margins: theme.paddingPage
+        spacing: theme.spacing2xl
 
         Label {
             text: qsTr("Albums")
-            font.pixelSize: 26
+            font.pixelSize: theme.fontSizeDisplay
             font.weight: Font.DemiBold
             color: theme.textPrimary
-            Layout.leftMargin: 32
+            Layout.leftMargin: 0
         }
 
         GridView {
             id: gridView
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.rightMargin: 20
+            Layout.rightMargin: theme.spacingXl
             clip: true
             cellWidth: 220
             cellHeight: 300
@@ -62,9 +59,9 @@ Page {
                 
                 Components.AlbumCard {
                     anchors.fill: parent
-                    anchors.margins: 10
+                    anchors.margins: theme.spacingLg
                     visible: true
-                    title: (modelData && modelData.name) ? modelData.name : "Álbum Desconhecido"
+                    title: (modelData && modelData.name) ? modelData.name : qsTr("Álbum Desconhecido")
                     subtitle: (modelData && modelData.artist) ? modelData.artist : "Artista desconhecido"
                     cover: (modelData && modelData.coverArt && api) ? api.coverArtUrl(modelData.coverArt, 256) : ""
                     albumId: (modelData && modelData.id) ? modelData.id : ""
@@ -144,4 +141,16 @@ Page {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
 

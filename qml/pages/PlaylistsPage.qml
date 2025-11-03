@@ -13,11 +13,11 @@ Page {
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 24
+        spacing: theme.spacing3xl
 
         Label {
-            text: "Playlists"
-            font.pixelSize: 32
+            text: qsTr("Playlists")
+            font.pixelSize: theme.fontSizeHero
             font.weight: Font.Bold
             color: theme.textPrimary
         }
@@ -26,14 +26,14 @@ Page {
             visible: !api.playlists || api.playlists.length === 0
             text: qsTr("No playlists found")
             color: theme.textSecondary
-            font.pixelSize: 14
+            font.pixelSize: theme.fontSizeBody
         }
 
         GridView {
             id: playlistGrid
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Layout.rightMargin: 20
+            Layout.rightMargin: theme.spacingXl
             clip: true
             cellWidth: 220
             cellHeight: 280
@@ -49,20 +49,20 @@ Page {
                 delegate: Rectangle {
                     width: 200
                     height: 260
-                    radius: 12
+                    radius: theme.radiusButton
                     color: theme.cardBackground
                     border.color: theme.cardBorder
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: 12
-                        spacing: 8
+                        anchors.margins: theme.spacingLg
+                        spacing: theme.spacingMd
 
                         Rectangle {
                             Layout.preferredWidth: 176
                             Layout.preferredHeight: 176
                             Layout.alignment: Qt.AlignHCenter
-                            radius: 8
+                            radius: theme.radiusChip
                             color: theme.surface
                             clip: true
 
@@ -84,8 +84,8 @@ Page {
 
                         Label {
                             Layout.fillWidth: true
-                            text: modelData.name || "Playlist"
-                            font.pixelSize: 14
+                            text: modelData.name || qsTr("Playlist")
+                            font.pixelSize: theme.fontSizeBody
                             font.weight: Font.Medium
                             color: theme.textPrimary
                             elide: Text.ElideRight
@@ -93,9 +93,9 @@ Page {
 
                         Label {
                             Layout.fillWidth: true
-                            text: modelData.songCount + " músicas"
+                        text: qsTr("%1 músicas").arg(modelData.songCount)
                             color: theme.textSecondary
-                            font.pixelSize: 12
+                            font.pixelSize: theme.fontSizeCaption
                         }
                     }
 
@@ -111,7 +111,7 @@ Page {
                             id: playBtn
                             anchors.right: parent.right
                             anchors.top: parent.top
-                            anchors.margins: 8
+                            anchors.margins: theme.spacingMd
                             icon.source: "qrc:/qml/icons/play_arrow.svg"
                             property string pendingPlaylistId: ""
                             
@@ -145,3 +145,16 @@ Page {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

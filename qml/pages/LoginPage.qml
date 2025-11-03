@@ -20,15 +20,15 @@ Page {
 
     ColumnLayout {
         anchors.centerIn: parent
-        spacing: 24
-        width: Math.min(460, parent.width - 40)
+        spacing: theme.spacing3xl
+        width: Math.min(460, parent.width - theme.spacing4xl)
 
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 6
+            spacing: theme.spacingSm
             Label {
                 text: qsTr("Shiba Music")
-                font.pixelSize: 28
+                font.pixelSize: theme.fontSizeDisplay
                 font.weight: Font.DemiBold
                 horizontalAlignment: Text.AlignHCenter
                 Layout.alignment: Qt.AlignHCenter
@@ -37,6 +37,8 @@ Page {
                 text: qsTr("Connect to your Navidrome or Subsonic server")
                 wrapMode: Text.WordWrap
                 color: theme.textSecondary
+                font.pixelSize: theme.fontSizeBody
+                font.family: theme.fontFamily
                 horizontalAlignment: Text.AlignHCenter
                 Layout.fillWidth: true
             }
@@ -44,25 +46,26 @@ Page {
 
         Frame {
             Layout.fillWidth: true
-            padding: 20
+            padding: theme.paddingPanel
             background: Rectangle {
-                radius: 16
+                radius: theme.radiusCard
                 color: theme.surface
                 border.color: theme.listItemHover
             }
 
             ColumnLayout {
                 anchors.fill: parent
-                spacing: 12
+                spacing: theme.spacingLg
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    spacing: 6
+                    spacing: theme.spacingSm
 
                     Label {
                         text: qsTr("Saved connections")
                         color: theme.textSecondary
-                        font.pixelSize: 13
+                        font.pixelSize: theme.fontSizeSmall
+                        font.family: theme.fontFamily
                         Layout.fillWidth: true
                         visible: savedCredentials.length > 0
                     }
@@ -83,7 +86,7 @@ Page {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 8
+                    spacing: theme.spacingMd
 
                     Button {
                         text: qsTr("New credential")
@@ -352,3 +355,15 @@ Page {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+

@@ -21,6 +21,7 @@ ApplicationWindow {
     title: qsTr("Shiba Music")
     Material.theme: darkTheme ? Material.Dark : Material.Light
     Material.accent: currentThemeId === "material" ? Material.Indigo : Material.BlueGrey
+    font.family: theme.fontFamily
 
     readonly property url homePageUrl: Qt.resolvedUrl("qrc:/qml/pages/HomePage.qml")
     readonly property url loginPageUrl: Qt.resolvedUrl("qrc:/qml/pages/LoginPage.qml")
@@ -1401,3 +1402,4 @@ ApplicationWindow {
         event.accepted = true
     }
 }
+

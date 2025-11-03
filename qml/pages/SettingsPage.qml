@@ -11,6 +11,7 @@ Page {
 
     Flickable {
         anchors.fill: parent
+        anchors.margins: theme.paddingPage
         contentHeight: contentCol.height
         clip: true
         ScrollBar.vertical: Components.ScrollBar { theme.manager: themeManager }
@@ -18,35 +19,37 @@ Page {
         Column {
             id: contentCol
             width: parent.width
-            spacing: 24
-            padding: 24
+            spacing: theme.spacing3xl
+            padding: theme.paddingPanel
 
             Label {
                 text: qsTr("Settings")
-                font.pixelSize: 32
+                font.pixelSize: theme.fontSizeHero
                 font.weight: Font.Bold
                 color: theme.textPrimary
+                font.family: theme.fontFamily
             }
 
             // Seção Idioma
             Rectangle {
                 width: parent.width - parent.padding * 2
-                height: languageSection.height + 32
-                radius: 16
+                height: languageSection.height + theme.spacing4xl
+                radius: theme.radiusCard
                 color: theme.cardBackground
                 border.color: theme.cardBorder
 
                 Column {
                     id: languageSection
                     anchors.centerIn: parent
-                    width: parent.width - 32
-                    spacing: 16
+                    width: parent.width - theme.spacing4xl
+                    spacing: theme.spacingXl
 
                     Label {
                         text: qsTr("Language")
-                        font.pixelSize: 18
+                        font.pixelSize: theme.fontSizeSection
                         font.weight: Font.DemiBold
                         color: theme.textPrimary
+                        font.family: theme.fontFamily
                     }
 
                     Components.LanguageSelector {
@@ -57,22 +60,23 @@ Page {
 
             Rectangle {
                 width: parent.width - parent.padding * 2
-                height: appearanceSection.height + 32
-                radius: 16
+                height: appearanceSection.height + theme.spacing4xl
+                radius: theme.radiusCard
                 color: theme.cardBackground
                 border.color: theme.cardBorder
 
                 Column {
                     id: appearanceSection
                     anchors.centerIn: parent
-                    width: parent.width - 32
-                    spacing: 16
+                    width: parent.width - theme.spacing4xl
+                    spacing: theme.spacingXl
 
                     Label {
                         text: qsTr("Appearance")
-                        font.pixelSize: 18
+                        font.pixelSize: theme.fontSizeSection
                         font.weight: Font.DemiBold
                         color: theme.textPrimary
+                        font.family: theme.fontFamily
                     }
 
                     ComboBox {
@@ -122,7 +126,7 @@ Page {
                         visible: themeManager ? themeManager.restartRequired : false
                         text: qsTr("Restart the application to apply the selected theme.")
                         color: theme.textSecondary
-                        font.pixelSize: 12
+                        font.pixelSize: theme.fontSizeCaption
                         wrapMode: Text.WordWrap
                         width: parent.width
                     }
@@ -132,20 +136,20 @@ Page {
             // Seção Player
             Rectangle {
                 width: parent.width - parent.padding * 2
-                height: playerSection.height + 32
-                radius: 16
+                height: playerSection.height + theme.spacing4xl
+                radius: theme.radiusCard
                 color: theme.cardBackground
                 border.color: theme.cardBorder
 
                 Column {
                     id: playerSection
                     anchors.centerIn: parent
-                    width: parent.width - 32
-                    spacing: 16
+                    width: parent.width - theme.spacing4xl
+                    spacing: theme.spacingXl
 
                     Label {
                         text: qsTr("Player")
-                        font.pixelSize: 18
+                        font.pixelSize: theme.fontSizeSection
                         font.weight: Font.DemiBold
                         color: theme.textPrimary
                     }
@@ -183,20 +187,20 @@ Page {
             // Seção Discord
             Rectangle {
                 width: parent.width - parent.padding * 2
-                height: discordSection.height + 32
-                radius: 16
+                height: discordSection.height + theme.spacing4xl
+                radius: theme.radiusCard
                 color: theme.cardBackground
                 border.color: theme.cardBorder
 
                 Column {
                     id: discordSection
                     anchors.centerIn: parent
-                    width: parent.width - 32
-                    spacing: 16
+                    width: parent.width - theme.spacing4xl
+                    spacing: theme.spacingXl
 
                     Label {
                         text: qsTr("Discord")
-                        font.pixelSize: 18
+                        font.pixelSize: theme.fontSizeSection
                         font.weight: Font.DemiBold
                         color: theme.textPrimary
                     }
@@ -217,7 +221,7 @@ Page {
                     Label {
                         text: qsTr("Shows current song in your Discord profile")
                         color: theme.textMuted
-                        font.pixelSize: 12
+                        font.pixelSize: theme.fontSizeCaption
                         wrapMode: Text.WordWrap
                         width: parent.width
                     }
@@ -240,20 +244,20 @@ Page {
             // Seção Servidor
             Rectangle {
                 width: parent.width - parent.padding * 2
-                height: serverSection.height + 32
-                radius: 16
+                height: serverSection.height + theme.spacing4xl
+                radius: theme.radiusCard
                 color: theme.cardBackground
                 border.color: theme.cardBorder
 
                 Column {
                     id: serverSection
                     anchors.centerIn: parent
-                    width: parent.width - 32
-                    spacing: 16
+                    width: parent.width - theme.spacing4xl
+                    spacing: theme.spacingXl
 
                     Label {
                         text: qsTr("Server")
-                        font.pixelSize: 18
+                        font.pixelSize: theme.fontSizeSection
                         font.weight: Font.DemiBold
                         color: theme.textPrimary
                     }
@@ -285,40 +289,40 @@ Page {
             // Seção Sobre
             Rectangle {
                 width: parent.width - parent.padding * 2
-                height: aboutSection.height + 32
-                radius: 16
+                height: aboutSection.height + theme.spacing4xl
+                radius: theme.radiusCard
                 color: theme.cardBackground
                 border.color: theme.cardBorder
 
                 Column {
                     id: aboutSection
                     anchors.centerIn: parent
-                    width: parent.width - 32
-                    spacing: 12
+                    width: parent.width - theme.spacing4xl
+                    spacing: theme.spacingLg
 
                     Label {
                         text: qsTr("About")
-                        font.pixelSize: 18
+                        font.pixelSize: theme.fontSizeSection
                         font.weight: Font.DemiBold
                         color: theme.textPrimary
                     }
 
                     Label {
                         text: appInfo ? appInfo.appName : "Shiba Music"
-                        font.pixelSize: 16
+                        font.pixelSize: theme.fontSizeTitle
                         color: theme.textPrimary
                     }
 
                     Label {
                         text: qsTr("Version") + " " + (appInfo ? appInfo.version : "-")
                         color: theme.textMuted
-                        font.pixelSize: 12
+                        font.pixelSize: theme.fontSizeCaption
                     }
 
                     Label {
                         text: qsTr("Native Navidrome/Subsonic player in Qt")
                         color: theme.textMuted
-                        font.pixelSize: 13
+                        font.pixelSize: theme.fontSizeSmall
                         wrapMode: Text.WordWrap
                         width: parent.width
                     }
@@ -327,5 +331,3 @@ Page {
         }
     }
 }
-
-

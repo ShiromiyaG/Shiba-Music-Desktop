@@ -39,8 +39,12 @@ QtObject {
         fontSizeExtraSmall: 11,
         fontSizeSubtitle: 15,
         fontSizeTitle: 16,
+        fontSizeSection: 18,
         fontSizeHeading: 20,
         fontSizeDisplay: 26,
+        fontSizePageTitle: 28,
+        fontSizeHeroTitle: 30,
+        fontSizeHero: 32,
         iconSizeSmall: 16,
         iconSizeMedium: 20,
         iconSizeLarge: 24,
@@ -131,8 +135,12 @@ QtObject {
     readonly property real fontSizeExtraSmall: metric("fontSizeExtraSmall", 11)
     readonly property real fontSizeSubtitle: metric("fontSizeSubtitle", 15)
     readonly property real fontSizeTitle: metric("fontSizeTitle", 16)
+    readonly property real fontSizeSection: metric("fontSizeSection", 18)
     readonly property real fontSizeHeading: metric("fontSizeHeading", 20)
     readonly property real fontSizeDisplay: metric("fontSizeDisplay", 26)
+    readonly property real fontSizePageTitle: metric("fontSizePageTitle", 28)
+    readonly property real fontSizeHeroTitle: metric("fontSizeHeroTitle", 30)
+    readonly property real fontSizeHero: metric("fontSizeHero", 32)
 
     readonly property real iconSizeSmall: metric("iconSizeSmall", 16)
     readonly property real iconSizeMedium: metric("iconSizeMedium", 20)

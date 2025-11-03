@@ -87,13 +87,13 @@ Page {
                 Column {
             id: contentCol
             width: scrollArea.width
-            spacing: 24
-            padding: 24
+            spacing: theme.spacing3xl
+            padding: theme.paddingPage
 
                         Rectangle {
                 width: contentCol.width - contentCol.padding * 2
                 height: 240
-                radius: 24
+                radius: theme.radiusPanel
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: theme.cardBackground }
                     GradientStop { position: 1.0; color: theme.cardBackground }
@@ -116,7 +116,7 @@ Page {
                     maskSource: Rectangle {
                         width: bgImage.width
                         height: bgImage.height
-                        radius: 24
+                        radius: theme.radiusPanel
                     }
                     opacity: 0.25
                     visible: !!coverArtId && bgImage.status !== Image.Error
@@ -124,20 +124,20 @@ Page {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: 24
+                    radius: theme.radiusPanel
                     color: theme.windowBackgroundStart
                     opacity: 0.35
                 }
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 24
-                    spacing: 24
+                    anchors.margins: theme.paddingPanel
+                    spacing: theme.spacing3xl
 
                                         Rectangle {
                         Layout.preferredWidth: 180
                         Layout.preferredHeight: 180
-                        radius: 18
+                        radius: theme.radiusCard
                         color: theme.surface
                         border.color: theme.surfaceInteractiveBorder
                         clip: true
@@ -159,19 +159,23 @@ Page {
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 6
+                        spacing: theme.spacingSm
                         Label {
                             text: artistName.length > 0 ? artistName : "Artista"
-                            font.pixelSize: 30
-                            font.weight: Font.DemiBold
+                              font.pixelSize: theme.fontSizeHeroTitle
+                              font.weight: Font.DemiBold
+                              font.family: theme.fontFamily
                         }
                         Label {
-                            text: (api && api.albums) ? (api.albums.length + " álbuns disponíveis") : "0 álbuns disponíveis"
-                            color: theme.textSecondary
-                            font.pixelSize: 14
+                            text: (api && api.albums && api.albums.length > 0)
+                              ? qsTr("%1 álbuns disponíveis").arg(api.albums.length)
+                              : qsTr("0 álbuns disponíveis")
+                              color: theme.textSecondary
+                              font.pixelSize: theme.fontSizeBody
+                              font.family: theme.fontFamily
                         }
-                        Row {
-                            spacing: 12
+                          Row {
+                            spacing: theme.spacingLg
                             ToolButton {
                                 text: qsTr("Shuffle")
                                 icon.source: "qrc:/qml/icons/shuffle.svg"
@@ -215,7 +219,7 @@ Page {
         id: albumFlow
         Flow {
             width: parent ? parent.width : 0
-            spacing: 16
+            spacing: theme.spacingXl
             
             Repeater {
                 model: (api && api.albums) ? api.albums : []
@@ -239,8 +243,21 @@ Page {
             width: parent.width
             emoji: "qrc:/qml/icons/album.svg"
             title: qsTr("No albums found")
-            description: "Talvez este artista ainda esteja sincronizando. Tente atualizar."
+            description: qsTr("Talvez este artista ainda esteja sincronizando. Tente atualizar.")
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 

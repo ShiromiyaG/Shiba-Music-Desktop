@@ -103,8 +103,8 @@ Page {
         Column {
             id: column
             width: scrollArea.width
-            spacing: 24
-            padding: 32
+            spacing: theme.spacing3xl
+            padding: theme.paddingPage
 
             // Search results - shown exclusively when search is active
             Item {
@@ -118,8 +118,10 @@ Page {
                     spacing: 0
                     
                     Label {
-                        text: searchQuery.length ? ("Resultados para \"" + searchQuery + "\"") : "Resultados da busca"
-                        font.pixelSize: 26
+                        text: searchQuery.length
+                        ? qsTr("Resultados para \"%1\"").arg(searchQuery)
+                        : qsTr("Resultados da busca")
+                        font.pixelSize: theme.fontSizeDisplay
                         font.weight: Font.DemiBold
                         color: theme.textPrimary
                     }
@@ -132,14 +134,14 @@ Page {
                     // Artists section
                     Column {
                         width: parent.width
-                        spacing: 4
+                        spacing: theme.spacingXs
                         topPadding: 4
                         visible: !searchLoading && searchArtistsResults.length > 0
                         
                         Label {
                             text: qsTr("Artists")
                             color: theme.textSecondary
-                            font.pixelSize: 11
+                            font.pixelSize: theme.fontSizeExtraSmall
                             font.letterSpacing: 3
                             font.weight: Font.DemiBold
                         }
@@ -159,11 +161,11 @@ Page {
                                 
                                 Row {
                                     id: artistsRow
-                                    spacing: 16
+                                    spacing: theme.spacingXl
                                     Repeater {
                                         model: searchArtistsResults
                                         delegate: Components.ArtistCard {
-                                            name: modelData.name || "Artista Desconhecido"
+                                            name: modelData.name || qsTr("Artista Desconhecido")
                                             albumCount: modelData.albumCount || 0
                                             cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
                                             artistId: modelData.id
@@ -192,14 +194,14 @@ Page {
                     // Albums section
                     Column {
                         width: parent.width
-                        spacing: 8
+                        spacing: theme.spacingMd
                         topPadding: 28
                         visible: !searchLoading && searchAlbumsResults.length > 0
                         
                         Label {
                             text: qsTr("Albums")
                             color: theme.textSecondary
-                            font.pixelSize: 11
+                            font.pixelSize: theme.fontSizeExtraSmall
                             font.letterSpacing: 3
                             font.weight: Font.DemiBold
                         }
@@ -219,11 +221,11 @@ Page {
                                 
                                 Row {
                                     id: albumsRow
-                                    spacing: 16
+                                    spacing: theme.spacingXl
                                     Repeater {
                                         model: searchAlbumsResults
                                         delegate: Components.AlbumCard {
-                                            title: modelData.name || "Álbum Desconhecido"
+                                            title: modelData.name || qsTr("Álbum Desconhecido")
                                             subtitle: modelData.artist || "Artista desconhecido"
                                             cover: modelData.coverArt ? api.coverArtUrl(modelData.coverArt, 256) : ""
                                             albumId: modelData.id
@@ -253,14 +255,14 @@ Page {
                     // Songs section
                     Column {
                         width: parent.width
-                        spacing: 8
+                        spacing: theme.spacingMd
                         topPadding: 28
                         visible: !searchLoading && searchResults.length > 0
                         
                         Label {
                             text: qsTr("SONGS")
                             color: theme.textSecondary
-                            font.pixelSize: 11
+                            font.pixelSize: theme.fontSizeExtraSmall
                             font.letterSpacing: 3
                             font.weight: Font.DemiBold
                         }
@@ -284,7 +286,7 @@ Page {
             Label {
                 visible: !searchActive
                 text: qsTr("Discover")
-                font.pixelSize: 30
+                font.pixelSize: theme.fontSizeHeroTitle
                 font.weight: Font.DemiBold
                 color: theme.textPrimary
             }
@@ -293,8 +295,8 @@ Page {
                 visible: !searchActive
                 text: qsTr("RECENTLY PLAYED")
                 color: theme.textSecondary
-                font.pixelSize: 12
-                font.letterSpacing: 4
+                font.pixelSize: theme.fontSizeCaption
+                font.letterSpacing: theme.spacingXs
                 font.weight: Font.DemiBold
             }
 
@@ -308,8 +310,8 @@ Page {
                 visible: !searchActive
                 text: qsTr("MADE FOR YOU")
                 color: theme.textSecondary
-                font.pixelSize: 12
-                font.letterSpacing: 4
+                font.pixelSize: theme.fontSizeCaption
+                font.letterSpacing: theme.spacingXs
                 font.weight: Font.DemiBold
             }
 
@@ -325,7 +327,7 @@ Page {
         id: recentlyPlayed
         Column {
             width: parent.width
-            spacing: 8
+            spacing: theme.spacingMd
             
             Item {
                 id: recentWrapper
@@ -345,11 +347,11 @@ Page {
 
                     Row {
                         id: recentRow
-                        spacing: 16
+                        spacing: theme.spacingXl
                         Repeater {
                             model: (api && api.recentlyPlayedAlbums) ? api.recentlyPlayedAlbums : []
                             delegate: Components.AlbumCard {
-                                title: modelData.name || "Álbum Desconhecido"
+                                title: modelData.name || qsTr("Álbum Desconhecido")
                                 subtitle: modelData.artist || "Artista desconhecido"
                                 cover: (modelData.coverArt && api) ? api.coverArtUrl(modelData.coverArt, 256) : ""
                                 albumId: modelData.id
@@ -398,7 +400,7 @@ Page {
             Column {
                 id: resultsColumn
                 width: parent.width
-                spacing: 8
+                spacing: theme.spacingMd
 
                 Repeater {
                     model: homePage.searchResults
@@ -406,7 +408,7 @@ Page {
                         property var track: modelData
                         width: resultsColumn.width
                         height: 72
-                        radius: 16
+                        radius: theme.radiusCard
                         color: trackHover.hovered ? theme.listItemHover : (index % 2 === 0 ? theme.listItem : theme.listItemAlternate)
                         border.color: trackHover.hovered ? theme.surfaceInteractiveBorder : "transparent"
                         Behavior on color { ColorAnimation { duration: 120 } }
@@ -419,15 +421,15 @@ Page {
                             anchors.verticalCenter: parent.verticalCenter
                             anchors.left: parent.left
                             anchors.right: parent.right
-                            anchors.leftMargin: 12
-                            anchors.rightMargin: 12
-                            spacing: 14
+                            anchors.leftMargin: theme.spacingLg
+                            anchors.rightMargin: theme.spacingLg
+                            spacing: theme.spacingXl
 
                             Rectangle {
                                 Layout.preferredWidth: 48
                                 Layout.preferredHeight: 48
                                 Layout.alignment: Qt.AlignVCenter
-                                radius: 8
+                                radius: theme.radiusChip
                                 color: theme.surface
                                 clip: true
                                 
@@ -452,13 +454,13 @@ Page {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 Layout.minimumWidth: 180
-                                spacing: 2
+                                spacing: theme.spacingXs
                                 
                                 Label {
                                     Layout.fillWidth: true
                                     text: track.title || "-"
                                     color: theme.textPrimary
-                                    font.pixelSize: 14
+                                    font.pixelSize: theme.fontSizeBody
                                     font.weight: Font.Medium
                                     elide: Text.ElideRight
                                 }
@@ -467,7 +469,7 @@ Page {
                                     Layout.fillWidth: true
                                     text: track.artist || "-"
                                     color: theme.textSecondary
-                                    font.pixelSize: 12
+                                    font.pixelSize: theme.fontSizeCaption
                                     elide: Text.ElideRight
                                 }
                             }
@@ -475,14 +477,14 @@ Page {
                             Label {
                                 text: track.album || "-"
                                 color: theme.textSecondary
-                                font.pixelSize: 12
+                                font.pixelSize: theme.fontSizeCaption
                                 elide: Text.ElideRight
                                 Layout.preferredWidth: 180
                                 Layout.maximumWidth: 220
                             }
                             
                             RowLayout {
-                                spacing: 4
+                                spacing: theme.spacingXs
                                 
                                 ToolButton {
                                     icon.source: "qrc:/qml/icons/add.svg"
@@ -517,7 +519,7 @@ Page {
             width: parent ? parent.width : 0
             emoji: "qrc:/qml/icons/search.svg"
             title: qsTr("Nothing found")
-            description: "Tente outro termo ou verifique a grafia."
+            description: qsTr("Tente outro termo ou verifique a grafia.")
         }
     }
 
@@ -525,20 +527,20 @@ Page {
         id: madeForYou
         Column {
             width: parent.width
-            spacing: 10
+            spacing: theme.spacingLg
             ListView {
                 id: madeList
                 height: contentHeight
                 width: parent.width
                 clip: true
-                spacing: 8
+                spacing: theme.spacingMd
                 interactive: false
                 model: (api && api.randomSongs) ? api.randomSongs : []
                 delegate: Rectangle {
                     property var track: modelData
                     width: madeList.width
                     height: 60
-                    radius: 16
+                    radius: theme.radiusCard
                     color: madeTrackHover.hovered ? theme.listItemHover : (index % 2 === 0 ? theme.listItem : theme.listItemAlternate)
                     border.color: madeTrackHover.hovered ? theme.surfaceInteractiveBorder : "transparent"
                     Behavior on color { ColorAnimation { duration: 120 } }
@@ -553,12 +555,12 @@ Page {
                         anchors.right: parent.right
                         anchors.leftMargin: 14
                         anchors.rightMargin: 14
-                        spacing: 18
+                        spacing: theme.spacing2xl
 
                         Label {
                             text: "#" + (index + 1)
                             color: theme.textSecondary
-                            font.pixelSize: 13
+                            font.pixelSize: theme.fontSizeSmall
                             Layout.alignment: Qt.AlignVCenter
                             Layout.preferredWidth: 28
                             horizontalAlignment: Text.AlignLeft
@@ -568,7 +570,7 @@ Page {
                             Layout.preferredWidth: 46
                             Layout.preferredHeight: 46
                             Layout.alignment: Qt.AlignVCenter
-                            radius: 12
+                            radius: theme.radiusButton
                             color: theme.surface
                             clip: true
                             Image {
@@ -591,11 +593,11 @@ Page {
                             Layout.minimumWidth: 200
                             Layout.preferredWidth: 300
                             Layout.alignment: Qt.AlignVCenter
-                            spacing: 2
+                            spacing: theme.spacingXs
                             Label {
                                 Layout.fillWidth: true
-                                text: track.title || "Faixa desconhecida"
-                                font.pixelSize: 14
+                                text: track.title || qsTr("Faixa desconhecida")
+                                font.pixelSize: theme.fontSizeBody
                                 font.weight: Font.Medium
                                 elide: Text.ElideRight
                             }
@@ -603,7 +605,7 @@ Page {
                                 Layout.fillWidth: true
                                 text: track.artist || "-"
                                 color: theme.textSecondary
-                                font.pixelSize: 12
+                                font.pixelSize: theme.fontSizeCaption
                                 elide: Text.ElideRight
                             }
                         }
@@ -611,7 +613,7 @@ Page {
                         Label {
                             text: track.album || "-"
                             color: theme.textSecondary
-                            font.pixelSize: 12
+                            font.pixelSize: theme.fontSizeCaption
                             Layout.fillWidth: true
                             Layout.minimumWidth: 180
                             Layout.preferredWidth: 300
@@ -621,7 +623,7 @@ Page {
 
                         RowLayout {
                             Layout.alignment: Qt.AlignVCenter
-                            spacing: 8
+                            spacing: theme.spacingMd
                             ToolButton {
                                 property bool isFavorite: track.starred || false
                                 display: AbstractButton.IconOnly
@@ -648,7 +650,7 @@ Page {
                                     
                                     background: Rectangle {
                                         color: theme.cardBackground
-                                        radius: 12
+                                        radius: theme.radiusButton
                                         border.color: theme.cardBorder
                                         border.width: 1
                                     }
@@ -661,14 +663,14 @@ Page {
                                         contentItem: Label {
                                             text: menuItem.text
                                             color: menuItem.highlighted ? theme.textPrimary : theme.textSecondary
-                                            font.pixelSize: 13
-                                            leftPadding: 16
+                                            font.pixelSize: theme.fontSizeSmall
+                                            leftPadding: theme.paddingCard
                                             verticalAlignment: Text.AlignVCenter
                                         }
                                         
                                         background: Rectangle {
                                             color: menuItem.highlighted ? theme.listItemHover : "transparent"
-                                            radius: 8
+                                            radius: theme.radiusChip
                                         }
                                     }
                                     
@@ -704,8 +706,21 @@ Page {
             width: parent.width
             emoji: "🎧"
             title: qsTr("Nothing here yet")
-            description: "Busque ou atualize sua biblioteca para preencher estas seções."
+            description: qsTr("Busque ou atualize sua biblioteca para preencher estas seções.")
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 

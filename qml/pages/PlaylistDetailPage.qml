@@ -48,13 +48,13 @@ Page {
         Column {
             id: contentCol
             width: scrollArea.width
-            spacing: 20
-            padding: 24
+            spacing: theme.spacing2xl
+            padding: theme.paddingPanel
 
             Rectangle {
                 width: contentCol.width - contentCol.padding * 2
                 height: 200
-                radius: 24
+                radius: theme.radiusPanel
                 gradient: Gradient {
                     GradientStop { position: 0.0; color: theme.cardBackground }
                     GradientStop { position: 1.0; color: theme.cardBackground }
@@ -63,13 +63,13 @@ Page {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 24
-                    spacing: 20
+                    anchors.margins: theme.paddingPanel
+                    spacing: theme.spacing2xl
 
                     Rectangle {
                         Layout.preferredWidth: 152
                         Layout.preferredHeight: 152
-                        radius: 12
+                        radius: theme.radiusButton
                         color: theme.surface
                         border.color: theme.surfaceInteractiveBorder
                         clip: true
@@ -91,20 +91,20 @@ Page {
 
                     ColumnLayout {
                         Layout.fillWidth: true
-                        spacing: 6
+                        spacing: theme.spacingSm
                         Label {
-                            text: playlistName || "Playlist"
-                            font.pixelSize: 28
+                            text: playlistName || qsTr("Playlist")
+                            font.pixelSize: theme.fontSizePageTitle
                             font.weight: Font.DemiBold
                             wrapMode: Text.WordWrap
                         }
                         Label {
-                            text: songCount + " músicas"
+                            text: qsTr("%1 músicas").arg(songCount)
                             color: theme.textSecondary
-                            font.pixelSize: 14
+                            font.pixelSize: theme.fontSizeBody
                         }
                         Row {
-                            spacing: 12
+                            spacing: theme.spacingLg
                             ToolButton {
                                 text: qsTr("Play")
                                 icon.source: "qrc:/qml/icons/play_arrow.svg"
@@ -131,7 +131,7 @@ Page {
             Components.SectionHeader {
                 width: contentCol.width - contentCol.padding * 2
                 title: qsTr("Tracks")
-                subtitle: api.tracks.length > 0 ? (api.tracks.length + " músicas") : "Playlist vazia"
+                subtitle: api.tracks.length > 0 ? qsTr("%1 músicas").arg(api.tracks.length) : qsTr("Playlist vazia")
             }
 
             Loader {
@@ -145,7 +145,7 @@ Page {
         id: trackList
         Column {
             width: parent.width
-            spacing: 10
+            spacing: theme.spacingLg
             Repeater {
                 model: api.tracks
                 delegate: Components.TrackRow {
@@ -168,7 +168,23 @@ Page {
             width: parent.width
             emoji: "qrc:/qml/icons/music_note.svg"
             title: "Nenhuma faixa encontrada"
-            description: "Esta playlist está vazia."
+            description: qsTr("Esta playlist está vazia.")
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
