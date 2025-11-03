@@ -104,7 +104,7 @@ Item {
                     text: qsTr("Playback Queue")
                     font.pixelSize: 32
                     font.weight: Font.Bold
-                    color: theme.surface
+                    color: theme.textPrimary
                 }
 
                 ScrollView {
@@ -154,7 +154,7 @@ Item {
                                         text: modelData.title || "Faixa desconhecida"
                                         font.pixelSize: 14
                                         font.weight: Font.Medium
-                                        color: theme.surface
+                                        color: theme.textPrimary
                                         elide: Text.ElideRight
                                     }
 
