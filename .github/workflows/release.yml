@@ -207,11 +207,20 @@ jobs:
         New-Item -ItemType Directory -Path $deployDir | Out-Null
 
         Copy-Item "build\shibamusic.exe" -Destination $deployDir -Force
-        $updaterExe = Join-Path (Resolve-Path build) "updater\updater.exe"
-        if (Test-Path $updaterExe) {
+
+        $buildRoot = Resolve-Path build
+        $updaterCandidates = @(
+          Join-Path $buildRoot "updater\updater.exe",
+          Join-Path $buildRoot "updater\Release\updater.exe",
+          Join-Path $buildRoot "Release\updater.exe",
+          Join-Path $buildRoot "updater.exe"
+        )
+
+        $updaterExe = $updaterCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if ($null -ne $updaterExe) {
           Copy-Item $updaterExe -Destination $deployDir -Force
         } else {
-          Write-Warning "Updater executable not found at $updaterExe"
+          throw "Updater executable not found. Checked paths:`n  - $($updaterCandidates -join ([Environment]::NewLine + '  - '))"
         }
 
         $mpvDll = "libs\mpv\bin\libmpv-2.dll"
