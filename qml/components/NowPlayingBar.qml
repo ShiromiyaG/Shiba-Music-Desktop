@@ -136,65 +136,84 @@ Rectangle {
                     spacing: 6
                     visible: bar.hasTrack
 
-                    Label {
-                        id: artistLabel
-                        Layout.fillWidth: !albumLabel.visible
+                    Item {
+                        Layout.fillWidth: !albumWrapper.visible
+                        Layout.preferredWidth: artistLabel.implicitWidth
+                        height: artistLabel.implicitHeight
                         visible: !!(player.currentTrack && player.currentTrack.artist)
-                        text: player.currentTrack ? (player.currentTrack.artist || "") : ""
-                        color: (artistMouseArea.containsMouse && artistMouseArea.enabled) ? theme.textPrimary : theme.textSecondary
-                        font.pixelSize: 13
-                        elide: Label.ElideRight
-                        background: Item {
-                            MouseArea {
-                                id: artistMouseArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                enabled: bar.hasTrack && !!player.currentTrack.artistId
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: {
-                                    if (!enabled) return;
-                                    showArtistPage(
-                                        player.currentTrack.artistId,
-                                        player.currentTrack.artist || "",
-                                        player.currentTrack.coverArt || ""
-                                    )
-                                }
+
+                        Label {
+                            id: artistLabel
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            text: player.currentTrack ? (player.currentTrack.artist || "") : ""
+                            color: (artistMouseArea.containsMouse && artistMouseArea.enabled) ? theme.textPrimary : theme.textSecondary
+                            font.pixelSize: 13
+                            elide: Label.ElideRight
+                        }
+
+                        MouseArea {
+                            id: artistMouseArea
+                            anchors.left: parent.left
+                            anchors.verticalCenter: artistLabel.verticalCenter
+                            width: Math.min(artistLabel.implicitWidth, parent.width)
+                            height: artistLabel.height
+                            hoverEnabled: true
+                            enabled: bar.hasTrack && !!player.currentTrack.artistId
+                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onClicked: {
+                                if (!enabled) return;
+                                showArtistPage(
+                                    player.currentTrack.artistId,
+                                    player.currentTrack.artist || "",
+                                    player.currentTrack.coverArt || ""
+                                )
                             }
                         }
                     }
 
                     Label {
-                        visible: artistLabel.visible && albumLabel.visible
+                        visible: artistLabel.visible && albumWrapper.visible
                         text: qsTr("•")
                         color: theme.textSecondary
                         font.pixelSize: 13
                     }
 
-                    Label {
-                        id: albumLabel
+                    Item {
+                        id: albumWrapper
                         Layout.fillWidth: true
+                        Layout.preferredWidth: albumLabel.implicitWidth
+                        height: albumLabel.implicitHeight
                         visible: !!(player.currentTrack && player.currentTrack.album)
-                        text: player.currentTrack ? (player.currentTrack.album || "") : ""
-                        color: (albumMouseArea.containsMouse && albumMouseArea.enabled) ? theme.textPrimary : theme.textSecondary
-                        font.pixelSize: 13
-                        elide: Label.ElideRight
-                        background: Item {
-                            MouseArea {
-                                id: albumMouseArea
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                enabled: bar.hasTrack && !!player.currentTrack.albumId
-                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                onClicked: {
-                                    if (!enabled) return;
-                                    showAlbumPage(
-                                        player.currentTrack.albumId,
-                                        player.currentTrack.album || "",
-                                        player.currentTrack.artist || "",
-                                        player.currentTrack.coverArt || "",
-                                        player.currentTrack.artistId || ""
-                                    )
-                                }
+
+                        Label {
+                            id: albumLabel
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            text: player.currentTrack ? (player.currentTrack.album || "") : ""
+                            color: (albumMouseArea.containsMouse && albumMouseArea.enabled) ? theme.textPrimary : theme.textSecondary
+                            font.pixelSize: 13
+                            elide: Label.ElideRight
+                        }
+
+                        MouseArea {
+                            id: albumMouseArea
+                            anchors.left: parent.left
+                            anchors.verticalCenter: albumLabel.verticalCenter
+                            width: Math.min(albumLabel.implicitWidth, parent.width)
+                            height: albumLabel.height
+                            hoverEnabled: true
+                            enabled: bar.hasTrack && !!player.currentTrack.albumId
+                            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            onClicked: {
+                                if (!enabled) return;
+                                showAlbumPage(
+                                    player.currentTrack.albumId,
+                                    player.currentTrack.album || "",
+                                    player.currentTrack.artist || "",
+                                    player.currentTrack.coverArt || "",
+                                    player.currentTrack.artistId || ""
+                                )
                             }
                         }
                     }
