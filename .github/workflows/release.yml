@@ -208,11 +208,11 @@ jobs:
 
         Copy-Item "build\shibamusic.exe" -Destination $deployDir -Force
 
-        $buildRoot = Resolve-Path build
+        $buildRoot = (Resolve-Path build).Path
         $updaterCandidates = @(
-          Join-Path $buildRoot "updater\updater.exe",
-          Join-Path $buildRoot "updater\Release\updater.exe",
-          Join-Path $buildRoot "Release\updater.exe",
+          Join-Path $buildRoot "updater\\updater.exe"
+          Join-Path $buildRoot "updater\\Release\\updater.exe"
+          Join-Path $buildRoot "Release\\updater.exe"
           Join-Path $buildRoot "updater.exe"
         )
 
