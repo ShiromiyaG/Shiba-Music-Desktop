@@ -124,15 +124,80 @@ Rectangle {
                 
                 Label {
                     Layout.fillWidth: true
-                    text: {
-                        if (!bar.hasTrack) return "Selecione uma música para começar";
-                        var txt = player.currentTrack.artist;
-                        if (player.currentTrack.album) txt += " • " + player.currentTrack.album;
-                        return txt;
-                    }
+                    visible: !bar.hasTrack
+                    text: qsTr("Selecione uma música para começar")
                     color: theme.textSecondary
                     font.pixelSize: 13
                     elide: Label.ElideRight
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 6
+                    visible: bar.hasTrack
+
+                    Label {
+                        id: artistLabel
+                        Layout.fillWidth: !albumLabel.visible
+                        visible: !!(player.currentTrack && player.currentTrack.artist)
+                        text: player.currentTrack ? (player.currentTrack.artist || "") : ""
+                        color: (artistMouseArea.containsMouse && artistMouseArea.enabled) ? theme.textPrimary : theme.textSecondary
+                        font.pixelSize: 13
+                        elide: Label.ElideRight
+                        background: Item {
+                            MouseArea {
+                                id: artistMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: bar.hasTrack && !!player.currentTrack.artistId
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                onClicked: {
+                                    if (!enabled) return;
+                                    showArtistPage(
+                                        player.currentTrack.artistId,
+                                        player.currentTrack.artist || "",
+                                        player.currentTrack.coverArt || ""
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Label {
+                        visible: artistLabel.visible && albumLabel.visible
+                        text: qsTr("•")
+                        color: theme.textSecondary
+                        font.pixelSize: 13
+                    }
+
+                    Label {
+                        id: albumLabel
+                        Layout.fillWidth: true
+                        visible: !!(player.currentTrack && player.currentTrack.album)
+                        text: player.currentTrack ? (player.currentTrack.album || "") : ""
+                        color: (albumMouseArea.containsMouse && albumMouseArea.enabled) ? theme.textPrimary : theme.textSecondary
+                        font.pixelSize: 13
+                        elide: Label.ElideRight
+                        background: Item {
+                            MouseArea {
+                                id: albumMouseArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: bar.hasTrack && !!player.currentTrack.albumId
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                onClicked: {
+                                    if (!enabled) return;
+                                    showAlbumPage(
+                                        player.currentTrack.albumId,
+                                        player.currentTrack.album || "",
+                                        player.currentTrack.artist || "",
+                                        player.currentTrack.coverArt || "",
+                                        player.currentTrack.artistId || ""
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
                 
                 Menu {
