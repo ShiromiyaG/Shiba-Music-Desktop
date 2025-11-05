@@ -96,6 +96,10 @@ qt_add_executable(shibamusic WIN32
     src/i18n/TranslationManager.h src/i18n/TranslationManager.cpp
 )
 
+if (WIN32)
+    add_subdirectory(updater)
+endif()
+
 # Define APP_VERSION and DISCORD_CLIENT_ID as preprocessor macros
 target_compile_definitions(shibamusic PRIVATE 
     APP_VERSION="${APP_VERSION}"
