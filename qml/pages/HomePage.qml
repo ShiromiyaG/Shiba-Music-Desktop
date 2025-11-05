@@ -611,15 +611,37 @@ Page {
                             }
                         }
 
-                        Label {
-                            text: track.album || "-"
-                            color: theme.textSecondary
-                            font.pixelSize: theme.fontSizeCaption
+                        Item {
                             Layout.fillWidth: true
                             Layout.minimumWidth: 180
                             Layout.preferredWidth: 300
                             Layout.alignment: Qt.AlignVCenter
-                            elide: Text.ElideRight
+                            implicitHeight: albumLabel.implicitHeight
+                            property bool hasAlbumNavigation: track && track.albumId && track.albumId.length > 0
+
+                            Label {
+                                id: albumLabel
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: parent.width
+                                text: track.album || "-"
+                                color: albumArea.enabled && albumArea.containsMouse ? theme.textPrimary : theme.textSecondary
+                                font.pixelSize: theme.fontSizeCaption
+                                elide: Text.ElideRight
+                                verticalAlignment: Text.AlignVCenter
+                            }
+
+                            MouseArea {
+                                id: albumArea
+                                x: 0
+                                anchors.verticalCenter: albumLabel.verticalCenter
+                                width: Math.min(albumLabel.contentWidth, albumLabel.width)
+                                height: albumLabel.implicitHeight
+                                hoverEnabled: true
+                                enabled: parent.hasAlbumNavigation && width > 0
+                                cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                onPressed: mouse.accepted = true
+                                onClicked: homePage.albumClicked(track.albumId || "", track.album || "", track.artist || "", track.coverArt || "", track.artistId || "")
+                            }
                         }
 
                         RowLayout {
