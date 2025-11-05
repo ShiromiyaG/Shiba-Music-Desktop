@@ -49,6 +49,7 @@ public:
     Q_INVOKABLE void fetchRandomSongs();
     Q_INVOKABLE void fetchFavorites();
     Q_INVOKABLE void fetchPlaylists();
+    Q_INVOKABLE void fetchRecentlyPlayedAlbums();
     Q_INVOKABLE void fetchPlaylist(const QString &playlistId);
     Q_INVOKABLE void search(const QString &term);
     Q_INVOKABLE void star(const QString &id);
@@ -161,6 +162,7 @@ private:
     QNetworkReply *m_favoritesReply = nullptr;
     QNetworkReply *m_playlistsReply = nullptr;
     QNetworkReply *m_playlistReply = nullptr;
+    QNetworkReply *m_recentlyPlayedReply = nullptr;
 
     QVariantList m_artists, m_albums, m_albumList, m_searchArtists, m_searchAlbums, m_recentlyPlayedAlbums, m_playlists;
     TrackList m_tracks;

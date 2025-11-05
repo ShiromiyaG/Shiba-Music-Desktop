@@ -75,6 +75,7 @@ Page {
 
     Component.onCompleted: {
         api.fetchRandomSongs();
+        api.fetchRecentlyPlayedAlbums();
     }
 
     Flickable {

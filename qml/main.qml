@@ -702,16 +702,17 @@ ApplicationWindow {
                             switch (win.currentSection) {
                                 case "home":
                                     api.fetchRandomSongs();
+                                    api.fetchRecentlyPlayedAlbums();
                                     break;
-                                    case "artists":
-                                        api.fetchArtists();
-                                        break;
-                                    case "albums":
-                                        api.fetchAlbumList();
-                                        break;
-                                    case "favorites":
-                                        api.fetchFavorites();
-                                        break;
+                                case "artists":
+                                    api.fetchArtists();
+                                    break;
+                                case "albums":
+                                    api.fetchAlbumList();
+                                    break;
+                                case "favorites":
+                                    api.fetchFavorites();
+                                    break;
                                 }
                             }
                         }

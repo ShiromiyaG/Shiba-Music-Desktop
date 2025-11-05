@@ -581,7 +581,8 @@ void SubsonicClient::login(const QString &url, const QString &user, const QStrin
                 context->password.clear();
                 context->retries = 0;
                 setAuthenticated(true);
-                fetchArtists(); });
+                fetchArtists();
+                fetchRecentlyPlayedAlbums(); });
         };
 
         issueRequest();
@@ -614,6 +615,7 @@ void SubsonicClient::logout()
     abortReply(m_favoritesReply);
     abortReply(m_playlistsReply);
     abortReply(m_playlistReply);
+    abortReply(m_recentlyPlayedReply);
 
     if (!m_artistCover.isEmpty())
     {
@@ -992,6 +994,77 @@ void SubsonicClient::fetchRandomSongs()
         if (m_cacheManager) {
             m_cacheManager->saveList(cacheKey("randomSongs"), tracksToVariantList(m_randomSongs));
         } });
+}
+
+void SubsonicClient::fetchRecentlyPlayedAlbums()
+{
+    if (!m_authenticated)
+        return;
+
+    if (m_recentlyPlayedReply)
+    {
+        m_recentlyPlayedReply->abort();
+    }
+
+    QUrlQuery ex;
+    ex.addQueryItem(QStringLiteral("type"), QStringLiteral("recent"));
+    ex.addQueryItem(QStringLiteral("size"), QString::number(RECENTLY_PLAYED_ALBUM_LIMIT));
+
+    QNetworkRequest req(buildUrl(QStringLiteral("getAlbumList2"), ex, true));
+    auto *reply = m_nam.get(req);
+    m_recentlyPlayedReply = reply;
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+            {
+        if (reply != m_recentlyPlayedReply) {
+            reply->deleteLater();
+            return;
+        }
+        m_recentlyPlayedReply = nullptr;
+
+        const auto error = reply->error();
+        const QString errorString = reply->errorString();
+        const QByteArray payload = (error == QNetworkReply::NoError) ? reply->readAll() : QByteArray();
+        reply->deleteLater();
+
+        if (error != QNetworkReply::NoError) {
+            if (error != QNetworkReply::OperationCanceledError) {
+                emit errorOccurred(errorString);
+            }
+            return;
+        }
+
+        const auto doc = QJsonDocument::fromJson(payload);
+        QString err;
+        if (!checkOk(doc, &err)) {
+            emit errorOccurred(err);
+            return;
+        }
+
+        const auto root = doc.object().value(QStringLiteral("subsonic-response")).toObject();
+        const auto albums = root.value(QStringLiteral("albumList2")).toObject().value(QStringLiteral("album")).toArray();
+
+        QVariantList fetched;
+        fetched.reserve(albums.size());
+
+        for (const auto &av : albums) {
+            const auto albumObj = av.toObject();
+            QVariantMap album;
+            album.insert(QStringLiteral("id"), internString(albumObj.value(QStringLiteral("id")).toString()));
+            album.insert(QStringLiteral("name"), internString(albumObj.value(QStringLiteral("name")).toString()));
+            album.insert(QStringLiteral("artistId"), internString(albumObj.value(QStringLiteral("artistId")).toString()));
+            album.insert(QStringLiteral("artist"), internString(albumObj.value(QStringLiteral("artist")).toString()));
+            album.insert(QStringLiteral("coverArt"), internString(albumObj.value(QStringLiteral("coverArt")).toString()));
+            fetched.append(album);
+        }
+
+        if (m_recentlyPlayedAlbums != fetched) {
+            m_recentlyPlayedAlbums = fetched;
+            pruneRecentlyPlayed();
+            saveRecentlyPlayed();
+            emit recentlyPlayedAlbumsChanged();
+        }
+    });
 }
 
 void SubsonicClient::fetchPlaylists()
