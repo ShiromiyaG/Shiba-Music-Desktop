@@ -5,6 +5,14 @@
 #include <QDebug>
 #include <QtMath>
 #include <QRandomGenerator>
+#include <QVector>
+
+namespace {
+QString trackIdFromVariant(const QVariant &variant)
+{
+    return variant.toMap().value(QStringLiteral("id")).toString();
+}
+}
 
 PlayerController::PlayerController(SubsonicClient *api, DiscordRPC *discord, QObject *parent)
     : QObject(parent), m_api(api), m_mpv(new MpvPlayer(this)), m_discord(discord), m_mediaControls(nullptr)
@@ -345,28 +353,17 @@ void PlayerController::setShuffleEnabled(bool enabled) {
     } else {
         if (!m_originalQueue.isEmpty() && !m_queue.isEmpty()) {
             const QString currentId = m_current.value("id").toString();
-            m_queue = m_originalQueue;
-            emit queueChanged();
-
+            const QVariantList targetOrder = m_originalQueue;
+            int targetIndex = 0;
             if (!currentId.isEmpty()) {
-                for (int i = 0; i < m_queue.size(); ++i) {
-                    if (m_queue[i].toMap().value("id").toString() == currentId) {
-                        m_index = i;
+                for (int i = 0; i < targetOrder.size(); ++i) {
+                    if (targetOrder[i].toMap().value("id").toString() == currentId) {
+                        targetIndex = i;
                         break;
                     }
                 }
             }
-            if (m_index < 0 || m_index >= m_queue.size())
-                m_index = 0;
-            if (!m_queue.isEmpty()) {
-                m_current = m_queue[m_index].toMap();
-                emit currentTrackChanged();
-                if (m_mediaControls) {
-                    m_mediaControls->updateMetadata(m_current);
-                }
-                rebuildPlaylist();
-                updateDiscordPresence();
-            }
+            applyQueueOrder(targetOrder, targetIndex);
         }
         m_originalQueue = m_queue;
     }
@@ -498,16 +495,72 @@ void PlayerController::applyShuffleOrder() {
         shuffled.append(entry);
     }
 
-    m_queue = shuffled;
+    applyQueueOrder(shuffled, 0);
+}
+
+void PlayerController::applyQueueOrder(const QVariantList &newOrder, int newCurrentIndex) {
+    const int newSize = newOrder.size();
+
+    QVector<QString> oldOrderIds;
+    oldOrderIds.reserve(m_queue.size());
+    for (const QVariant &entry : m_queue) {
+        oldOrderIds.append(trackIdFromVariant(entry));
+    }
+
+    QVector<QString> newOrderIds;
+    newOrderIds.reserve(newSize);
+    for (const QVariant &entry : newOrder) {
+        newOrderIds.append(trackIdFromVariant(entry));
+    }
+
+    if (!newOrderIds.isEmpty() && oldOrderIds.size() == newOrderIds.size()) {
+        syncMpvPlaylistOrder(oldOrderIds, newOrderIds);
+    }
+
+    m_queue = newOrder;
     emit queueChanged();
 
-    m_index = 0;
-    m_current = currentVariant.toMap();
+    if (newSize == 0) {
+        m_index = -1;
+        m_current.clear();
+        emit currentTrackChanged();
+        updateDiscordPresence();
+        return;
+    }
+
+    m_index = qBound(0, newCurrentIndex, newSize - 1);
+    m_current = m_queue[m_index].toMap();
     emit currentTrackChanged();
     if (m_mediaControls) {
         m_mediaControls->updateMetadata(m_current);
     }
-
-    rebuildPlaylist();
     updateDiscordPresence();
+}
+
+void PlayerController::syncMpvPlaylistOrder(const QVector<QString> &oldOrderIds, const QVector<QString> &newOrderIds) {
+    if (!m_mpv)
+        return;
+    if (oldOrderIds.size() != newOrderIds.size())
+        return;
+
+    QVector<QString> workingOrder = oldOrderIds;
+
+    for (int target = 0; target < newOrderIds.size(); ++target) {
+        const QString &desiredId = newOrderIds.at(target);
+        if (desiredId.isEmpty())
+            continue;
+
+        const int currentIndex = workingOrder.indexOf(desiredId);
+        if (currentIndex < 0 || currentIndex == target)
+            continue;
+
+        m_mpv->command(QVariantList{
+            QStringLiteral("playlist-move"),
+            QString::number(currentIndex),
+            QString::number(target)
+        });
+
+        const QString movedId = workingOrder.takeAt(currentIndex);
+        workingOrder.insert(target, movedId);
+    }
 }

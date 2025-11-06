@@ -85,6 +85,8 @@ private:
     void updateVolume();
     void updateDiscordPresence();
     void applyShuffleOrder();
+    void applyQueueOrder(const QVariantList &newOrder, int newCurrentIndex);
+    void syncMpvPlaylistOrder(const QVector<QString> &oldOrderIds, const QVector<QString> &newOrderIds);
 
     SubsonicClient *m_api;
     MpvPlayer *m_mpv;
