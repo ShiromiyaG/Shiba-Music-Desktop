@@ -76,6 +76,7 @@ Page {
     Component.onCompleted: {
         api.fetchRandomSongs();
         api.fetchRecentlyPlayedAlbums();
+        api.fetchMostPlayedAlbums();
     }
 
     Flickable {
@@ -321,6 +322,21 @@ Page {
                 width: column.width - column.padding * 2
                 sourceComponent: (api && api.randomSongs && api.randomSongs.length > 0) ? madeForYou : emptyState
             }
+
+            Label {
+                visible: !searchActive
+                text: qsTr("MOST PLAYED")
+                color: theme.textSecondary
+                font.pixelSize: theme.fontSizeCaption
+                font.letterSpacing: theme.spacingXs
+                font.weight: Font.DemiBold
+            }
+
+            Loader {
+                visible: !searchActive
+                width: column.width - column.padding * 2
+                sourceComponent: (api && api.mostPlayedAlbums && api.mostPlayedAlbums.length > 0) ? mostPlayed : emptyState
+            }
         }
     }
 
@@ -374,6 +390,62 @@ Page {
                 onPositionChanged: {
                     if (pressed) {
                         recentScroll.contentX = position * recentScroll.contentWidth
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: mostPlayed
+        Column {
+            width: parent.width
+            spacing: theme.spacingMd
+
+            Item {
+                id: mostWrapper
+                width: parent.width
+                height: 270
+                clip: false
+
+                Flickable {
+                    id: mostScroll
+                    anchors.fill: parent
+                    clip: true
+                    contentWidth: mostRow.width
+                    contentHeight: mostRow.height
+                    boundsBehavior: Flickable.StopAtBounds
+                    flickableDirection: Flickable.HorizontalFlick
+                    interactive: false
+
+                    Row {
+                        id: mostRow
+                        spacing: theme.spacingXl
+                        Repeater {
+                            model: (api && api.mostPlayedAlbums) ? api.mostPlayedAlbums : []
+                            delegate: Components.AlbumCard {
+                                title: modelData.name || qsTr("Álbum Desconhecido")
+                                subtitle: modelData.artist || qsTr("Artista desconhecido")
+                                cover: (modelData.coverArt && api) ? api.coverArtUrl(modelData.coverArt, 256) : ""
+                                albumId: modelData.id
+                                artistId: modelData.artistId || ""
+                                onClicked: homePage.albumClicked(modelData.id, modelData.name, modelData.artist, modelData.coverArt, modelData.artistId || "")
+                            }
+                        }
+                    }
+                }
+            }
+
+            Components.ScrollBar {
+                theme.manager: themeManager
+                width: parent.width
+                orientation: Qt.Horizontal
+                size: mostScroll.width / mostScroll.contentWidth
+                position: mostScroll.contentX / mostScroll.contentWidth
+                active: true
+                onPositionChanged: {
+                    if (pressed) {
+                        mostScroll.contentX = position * mostScroll.contentWidth
                     }
                 }
             }

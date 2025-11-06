@@ -20,6 +20,7 @@ class SubsonicClient : public QObject
     Q_PROPERTY(QVariantList searchArtists READ searchArtists NOTIFY searchArtistsChanged)
     Q_PROPERTY(QVariantList searchAlbums READ searchAlbums NOTIFY searchAlbumsChanged)
     Q_PROPERTY(QVariantList recentlyPlayedAlbums READ recentlyPlayedAlbums NOTIFY recentlyPlayedAlbumsChanged)
+    Q_PROPERTY(QVariantList mostPlayedAlbums READ mostPlayedAlbums NOTIFY mostPlayedAlbumsChanged)
     Q_PROPERTY(QVariantList randomSongs READ randomSongs NOTIFY randomSongsChanged)
     Q_PROPERTY(QVariantList favorites READ favorites NOTIFY favoritesChanged)
     Q_PROPERTY(QVariantList playlists READ playlists NOTIFY playlistsChanged)
@@ -47,6 +48,7 @@ public:
     Q_INVOKABLE void fetchAlbumList(const QString &type = "random");
     Q_INVOKABLE void fetchMoreAlbums();
     Q_INVOKABLE void fetchRandomSongs();
+    Q_INVOKABLE void fetchMostPlayedAlbums();
     Q_INVOKABLE void fetchFavorites();
     Q_INVOKABLE void fetchPlaylists();
     Q_INVOKABLE void fetchRecentlyPlayedAlbums();
@@ -70,6 +72,7 @@ public:
     Q_INVOKABLE QVariantList searchArtists() const { return m_searchArtists; }
     Q_INVOKABLE QVariantList searchAlbums() const { return m_searchAlbums; }
     Q_INVOKABLE QVariantList recentlyPlayedAlbums() const { return m_recentlyPlayedAlbums; }
+    Q_INVOKABLE QVariantList mostPlayedAlbums() const { return m_mostPlayedAlbums; }
     Q_INVOKABLE QVariantList randomSongs() const;
     Q_INVOKABLE QVariantList favorites() const;
     Q_INVOKABLE QVariantList playlists() const { return m_playlists; }
@@ -99,6 +102,7 @@ signals:
     void searchArtistsChanged();
     void searchAlbumsChanged();
     void recentlyPlayedAlbumsChanged();
+    void mostPlayedAlbumsChanged();
     void randomSongsChanged();
     void favoritesChanged();
     void playlistsChanged();
@@ -163,8 +167,9 @@ private:
     QNetworkReply *m_playlistsReply = nullptr;
     QNetworkReply *m_playlistReply = nullptr;
     QNetworkReply *m_recentlyPlayedReply = nullptr;
+    QNetworkReply *m_mostPlayedReply = nullptr;
 
-    QVariantList m_artists, m_albums, m_albumList, m_searchArtists, m_searchAlbums, m_recentlyPlayedAlbums, m_playlists;
+    QVariantList m_artists, m_albums, m_albumList, m_searchArtists, m_searchAlbums, m_recentlyPlayedAlbums, m_mostPlayedAlbums, m_playlists;
     TrackList m_tracks;
     TrackList m_randomSongs;
     TrackList m_favorites;

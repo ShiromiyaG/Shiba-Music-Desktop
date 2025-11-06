@@ -24,6 +24,7 @@ static constexpr auto API_VERSION = "1.16.1";
 static constexpr auto CLIENT_NAME = "ShibaMusicQt";
 static constexpr int ALBUM_LIST_PAGE_SIZE = 50;
 static constexpr int RECENTLY_PLAYED_ALBUM_LIMIT = 20;
+static constexpr int MOST_PLAYED_ALBUM_LIMIT = 10;
 
 static QHash<QString, QString> g_stringPool;
 static QString internString(const QString &str) {
@@ -582,7 +583,8 @@ void SubsonicClient::login(const QString &url, const QString &user, const QStrin
                 context->retries = 0;
                 setAuthenticated(true);
                 fetchArtists();
-                fetchRecentlyPlayedAlbums(); });
+                fetchRecentlyPlayedAlbums();
+                fetchMostPlayedAlbums(); });
         };
 
         issueRequest();
@@ -616,6 +618,7 @@ void SubsonicClient::logout()
     abortReply(m_playlistsReply);
     abortReply(m_playlistReply);
     abortReply(m_recentlyPlayedReply);
+    abortReply(m_mostPlayedReply);
 
     if (!m_artistCover.isEmpty())
     {
@@ -630,6 +633,7 @@ void SubsonicClient::logout()
     const bool hadSearchArtists = !m_searchArtists.isEmpty();
     const bool hadSearchAlbums = !m_searchAlbums.isEmpty();
     const bool hadRecentlyPlayed = !m_recentlyPlayedAlbums.isEmpty();
+    const bool hadMostPlayed = !m_mostPlayedAlbums.isEmpty();
     const bool hadRandomSongs = !m_randomSongs.isEmpty();
     const bool hadFavorites = !m_favorites.isEmpty();
     const bool hadPlaylists = !m_playlists.isEmpty();
@@ -641,6 +645,7 @@ void SubsonicClient::logout()
     clearAndShrink(m_searchArtists);
     clearAndShrink(m_searchAlbums);
     clearAndShrink(m_recentlyPlayedAlbums);
+    clearAndShrink(m_mostPlayedAlbums);
     clearAndShrink(m_randomSongs);
     clearAndShrink(m_favorites);
     clearAndShrink(m_playlists);
@@ -663,6 +668,8 @@ void SubsonicClient::logout()
         emit searchAlbumsChanged();
     if (hadRecentlyPlayed)
         emit recentlyPlayedAlbumsChanged();
+    if (hadMostPlayed)
+        emit mostPlayedAlbumsChanged();
     if (hadRandomSongs)
         emit randomSongsChanged();
     if (hadFavorites)
@@ -1063,6 +1070,76 @@ void SubsonicClient::fetchRecentlyPlayedAlbums()
             pruneRecentlyPlayed();
             saveRecentlyPlayed();
             emit recentlyPlayedAlbumsChanged();
+        }
+    });
+}
+
+void SubsonicClient::fetchMostPlayedAlbums()
+{
+    if (!m_authenticated)
+        return;
+
+    if (m_mostPlayedReply)
+    {
+        m_mostPlayedReply->abort();
+    }
+
+    QUrlQuery ex;
+    ex.addQueryItem(QStringLiteral("type"), QStringLiteral("frequent"));
+    ex.addQueryItem(QStringLiteral("size"), QString::number(MOST_PLAYED_ALBUM_LIMIT));
+
+    QNetworkRequest req(buildUrl(QStringLiteral("getAlbumList2"), ex, true));
+    auto *reply = m_nam.get(req);
+    m_mostPlayedReply = reply;
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply]
+            {
+        if (reply != m_mostPlayedReply) {
+            reply->deleteLater();
+            return;
+        }
+        m_mostPlayedReply = nullptr;
+
+        const auto error = reply->error();
+        const QString errorString = reply->errorString();
+        const QByteArray payload = (error == QNetworkReply::NoError) ? reply->readAll() : QByteArray();
+        reply->deleteLater();
+
+        if (error != QNetworkReply::NoError) {
+            if (error != QNetworkReply::OperationCanceledError) {
+                emit errorOccurred(errorString);
+            }
+            return;
+        }
+
+        const auto doc = QJsonDocument::fromJson(payload);
+        QString err;
+        if (!checkOk(doc, &err)) {
+            emit errorOccurred(err);
+            return;
+        }
+
+        const auto root = doc.object().value(QStringLiteral("subsonic-response")).toObject();
+        const auto albums = root.value(QStringLiteral("albumList2")).toObject().value(QStringLiteral("album")).toArray();
+
+        QVariantList fetched;
+        fetched.reserve(albums.size());
+
+        for (const auto &av : albums) {
+            const auto albumObj = av.toObject();
+            QVariantMap album;
+            album.insert(QStringLiteral("id"), internString(albumObj.value(QStringLiteral("id")).toString()));
+            album.insert(QStringLiteral("name"), internString(albumObj.value(QStringLiteral("name")).toString()));
+            album.insert(QStringLiteral("artistId"), internString(albumObj.value(QStringLiteral("artistId")).toString()));
+            album.insert(QStringLiteral("artist"), internString(albumObj.value(QStringLiteral("artist")).toString()));
+            album.insert(QStringLiteral("coverArt"), internString(albumObj.value(QStringLiteral("coverArt")).toString()));
+            album.insert(QStringLiteral("playCount"), albumObj.value(QStringLiteral("playCount")).toInt());
+            fetched.append(album);
+        }
+
+        if (m_mostPlayedAlbums != fetched) {
+            m_mostPlayedAlbums = fetched;
+            emit mostPlayedAlbumsChanged();
         }
     });
 }
