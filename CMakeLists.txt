@@ -155,6 +155,8 @@ qt_add_resources(shibamusic "qml"
         qml/icons/music_note.svg
         qml/icons/pause.svg
         qml/icons/play_arrow.svg
+        qml/icons/repeat.svg
+        qml/icons/repeat_one.svg
         qml/icons/queue_music.svg
         qml/icons/refresh.svg
         qml/icons/search.svg

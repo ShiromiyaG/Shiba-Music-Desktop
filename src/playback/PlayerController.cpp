@@ -4,6 +4,7 @@
 #include "MediaControls.h"
 #include <QDebug>
 #include <QtMath>
+#include <QRandomGenerator>
 
 PlayerController::PlayerController(SubsonicClient *api, DiscordRPC *discord, QObject *parent)
     : QObject(parent), m_api(api), m_mpv(new MpvPlayer(this)), m_discord(discord), m_mediaControls(nullptr)
@@ -31,6 +32,10 @@ PlayerController::PlayerController(SubsonicClient *api, DiscordRPC *discord, QOb
     m_volume = settings.value("player/volume", 1.0).toDouble();
     m_replayGainEnabled = settings.value("player/replayGainEnabled", true).toBool();
     m_replayGainMode = settings.value("player/replayGainMode", 1).toInt();
+    m_shuffleEnabled = settings.value("player/shuffleEnabled", false).toBool();
+    const int storedRepeat = settings.value("player/repeatMode", static_cast<int>(RepeatOff)).toInt();
+    m_repeatMode = RepeatOff;
+    setRepeatMode(storedRepeat);
     
     // Initialize ReplayGain in MPV
     if (m_replayGainEnabled) {
@@ -48,6 +53,13 @@ void PlayerController::playAlbum(const QVariantList& tracks, int index) {
         return;
     }
     m_queue = tracks;
+    m_originalQueue = m_queue;
+    if (m_shuffleEnabled && m_queue.size() > 1) {
+        m_index = index;
+        m_current = m_queue[m_index].toMap();
+        applyShuffleOrder();
+        return;
+    }
     emit queueChanged();
     m_index = index;
     m_current = tracks.at(index).toMap();
@@ -61,6 +73,24 @@ void PlayerController::playAlbum(const QVariantList& tracks, int index) {
 
 void PlayerController::addToQueue(const QVariantMap& track) {
     m_queue.push_back(track);
+    if (m_shuffleEnabled) {
+        m_originalQueue.push_back(track);
+        if (m_queue.size() > 1) {
+            if (!m_current.isEmpty()) {
+                const QString currentId = m_current.value("id").toString();
+                for (int i = 0; i < m_queue.size(); ++i) {
+                    if (m_queue[i].toMap().value("id").toString() == currentId) {
+                        m_index = i;
+                        break;
+                    }
+                }
+            }
+            applyShuffleOrder();
+            return;
+        }
+    } else {
+        m_originalQueue = m_queue;
+    }
     emit queueChanged();
     if (m_index < 0) {
         m_index = 0;
@@ -159,9 +189,21 @@ void PlayerController::playFromQueue(int index) {
 void PlayerController::removeFromQueue(int index) {
     if (index < 0 || index >= m_queue.size()) return;
 
+    const QString removedId = m_queue[index].toMap().value("id").toString();
     const bool wasCurrent = (index == m_index);
     const bool beforeCurrent = (index < m_index);
     m_queue.removeAt(index);
+    if (!removedId.isEmpty()) {
+        for (int i = 0; i < m_originalQueue.size(); ++i) {
+            if (m_originalQueue[i].toMap().value("id").toString() == removedId) {
+                m_originalQueue.removeAt(i);
+                break;
+            }
+        }
+    }
+    if (!m_shuffleEnabled) {
+        m_originalQueue = m_queue;
+    }
     emit queueChanged();
 
     if (m_queue.isEmpty()) {
@@ -188,6 +230,7 @@ void PlayerController::removeFromQueue(int index) {
 void PlayerController::clearQueue() {
     if (m_queue.isEmpty()) return;
     m_queue.clear();
+    m_originalQueue.clear();
     m_index = -1;
     m_current.clear();
     m_mpv->command(QVariantList{"stop"});
@@ -222,6 +265,17 @@ void PlayerController::playTrack(const QVariantMap &track, int indexHint)
     QVariantList singleTrackList;
     singleTrackList.append(track);
     playAlbum(singleTrackList, 0);
+}
+
+void PlayerController::toggleShuffle() {
+    setShuffleEnabled(!m_shuffleEnabled);
+}
+
+void PlayerController::cycleRepeatMode() {
+    int nextMode = m_repeatMode + 1;
+    if (nextMode > RepeatOne)
+        nextMode = RepeatOff;
+    setRepeatMode(nextMode);
 }
 
 void PlayerController::setVolume(qreal v) {
@@ -273,6 +327,80 @@ void PlayerController::setReplayGainMode(int mode) {
     
     updateVolume();
     emit replayGainModeChanged();
+}
+
+void PlayerController::setShuffleEnabled(bool enabled) {
+    if (m_shuffleEnabled == enabled)
+        return;
+
+    m_shuffleEnabled = enabled;
+    QSettings settings;
+    settings.setValue("player/shuffleEnabled", m_shuffleEnabled);
+
+    if (m_shuffleEnabled) {
+        if (m_originalQueue.isEmpty()) {
+            m_originalQueue = m_queue;
+        }
+        applyShuffleOrder();
+    } else {
+        if (!m_originalQueue.isEmpty() && !m_queue.isEmpty()) {
+            const QString currentId = m_current.value("id").toString();
+            m_queue = m_originalQueue;
+            emit queueChanged();
+
+            if (!currentId.isEmpty()) {
+                for (int i = 0; i < m_queue.size(); ++i) {
+                    if (m_queue[i].toMap().value("id").toString() == currentId) {
+                        m_index = i;
+                        break;
+                    }
+                }
+            }
+            if (m_index < 0 || m_index >= m_queue.size())
+                m_index = 0;
+            if (!m_queue.isEmpty()) {
+                m_current = m_queue[m_index].toMap();
+                emit currentTrackChanged();
+                if (m_mediaControls) {
+                    m_mediaControls->updateMetadata(m_current);
+                }
+                rebuildPlaylist();
+                updateDiscordPresence();
+            }
+        }
+        m_originalQueue = m_queue;
+    }
+
+    emit shuffleEnabledChanged();
+}
+
+void PlayerController::setRepeatMode(int mode) {
+    const int clamped = qBound(static_cast<int>(RepeatOff), mode, static_cast<int>(RepeatOne));
+    const bool changed = (m_repeatMode != clamped);
+    m_repeatMode = clamped;
+
+    if (m_mpv) {
+        switch (m_repeatMode) {
+        case RepeatOff:
+            m_mpv->setProperty("loop-file", "no");
+            m_mpv->setProperty("loop-playlist", "no");
+            break;
+        case RepeatAll:
+            m_mpv->setProperty("loop-file", "no");
+            m_mpv->setProperty("loop-playlist", "inf");
+            break;
+        case RepeatOne:
+            m_mpv->setProperty("loop-playlist", "no");
+            m_mpv->setProperty("loop-file", "inf");
+            break;
+        }
+    }
+
+    if (changed) {
+        QSettings settings;
+        settings.setValue("player/repeatMode", m_repeatMode);
+        emit repeatModeChanged();
+    }
 }
 
 void PlayerController::updateVolume() {
@@ -339,4 +467,47 @@ void PlayerController::updateDiscordPresence() {
     const QString trackId = m_current.value("id").toString();
     
     m_discord->updatePresence(title, artist, album, playing(), position(), duration(), coverUrl, trackId);
+}
+
+void PlayerController::applyShuffleOrder() {
+    if (!m_shuffleEnabled || m_queue.size() <= 1 || m_index < 0 || m_index >= m_queue.size()) {
+        return;
+    }
+
+    const QVariant currentVariant = m_queue.at(m_index);
+    QVariantList remaining;
+    remaining.reserve(m_queue.size() - 1);
+    for (int i = 0; i < m_queue.size(); ++i) {
+        if (i == m_index) {
+            continue;
+        }
+        remaining.append(m_queue.at(i));
+    }
+
+    for (int i = remaining.size() - 1; i > 0; --i) {
+        const int j = QRandomGenerator::global()->bounded(i + 1);
+        if (i != j) {
+            remaining.swapItemsAt(i, j);
+        }
+    }
+
+    QVariantList shuffled;
+    shuffled.reserve(m_queue.size());
+    shuffled.append(currentVariant);
+    for (const QVariant &entry : remaining) {
+        shuffled.append(entry);
+    }
+
+    m_queue = shuffled;
+    emit queueChanged();
+
+    m_index = 0;
+    m_current = currentVariant.toMap();
+    emit currentTrackChanged();
+    if (m_mediaControls) {
+        m_mediaControls->updateMetadata(m_current);
+    }
+
+    rebuildPlaylist();
+    updateDiscordPresence();
 }

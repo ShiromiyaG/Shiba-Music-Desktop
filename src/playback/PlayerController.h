@@ -19,6 +19,8 @@ class PlayerController : public QObject {
     Q_PROPERTY(bool muted READ muted WRITE setMuted NOTIFY mutedChanged)
     Q_PROPERTY(bool replayGainEnabled READ replayGainEnabled WRITE setReplayGainEnabled NOTIFY replayGainEnabledChanged)
     Q_PROPERTY(int replayGainMode READ replayGainMode WRITE setReplayGainMode NOTIFY replayGainModeChanged)
+    Q_PROPERTY(bool shuffleEnabled READ shuffleEnabled WRITE setShuffleEnabled NOTIFY shuffleEnabledChanged)
+    Q_PROPERTY(int repeatMode READ repeatMode WRITE setRepeatMode NOTIFY repeatModeChanged)
 public:
     explicit PlayerController(SubsonicClient *api, DiscordRPC *discord, QObject *parent=nullptr);
 
@@ -35,6 +37,10 @@ public:
     void setReplayGainEnabled(bool enabled);
     int replayGainMode() const { return m_replayGainMode; }
     void setReplayGainMode(int mode);
+    bool shuffleEnabled() const { return m_shuffleEnabled; }
+    void setShuffleEnabled(bool enabled);
+    int repeatMode() const { return m_repeatMode; }
+    void setRepeatMode(int mode);
 
     Q_INVOKABLE void playAlbum(const QVariantList& tracks, int index = 0);
     Q_INVOKABLE void addToQueue(const QVariantMap& track);
@@ -47,6 +53,15 @@ public:
     Q_INVOKABLE void clearQueue();
     Q_INVOKABLE void playCurrentTracks(int index = 0);
     Q_INVOKABLE void playTrack(const QVariantMap &track, int indexHint = -1);
+    Q_INVOKABLE void toggleShuffle();
+    Q_INVOKABLE void cycleRepeatMode();
+
+    enum RepeatMode {
+        RepeatOff = 0,
+        RepeatAll = 1,
+        RepeatOne = 2
+    };
+    Q_ENUM(RepeatMode)
 
 signals:
     void currentTrackChanged();
@@ -58,6 +73,8 @@ signals:
     void mutedChanged();
     void replayGainEnabledChanged();
     void replayGainModeChanged();
+    void shuffleEnabledChanged();
+    void repeatModeChanged();
 
 private slots:
     void onEndOfFile();
@@ -67,6 +84,7 @@ private:
     void rebuildPlaylist();
     void updateVolume();
     void updateDiscordPresence();
+    void applyShuffleOrder();
 
     SubsonicClient *m_api;
     MpvPlayer *m_mpv;
@@ -81,4 +99,7 @@ private:
     bool m_replayGainEnabled = true;
     int m_replayGainMode = 1;
     int m_lastPlaylistPos = -1;
+    bool m_shuffleEnabled = false;
+    int m_repeatMode = RepeatOff;
+    QVariantList m_originalQueue;
 };

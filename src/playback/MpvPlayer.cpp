@@ -85,7 +85,7 @@ void MpvPlayer::setProperty(const QString &name, const QVariant &value) {
         mpv_set_property_async(m_mpv, 0, nameUtf8.constData(), MPV_FORMAT_FLAG, &val);
     } else {
         QByteArray valUtf8 = value.toString().toUtf8();
-        mpv_set_property_async(m_mpv, 0, nameUtf8.constData(), MPV_FORMAT_STRING, valUtf8.data());
+        mpv_set_property_string(m_mpv, nameUtf8.constData(), valUtf8.constData());
     }
 }
 

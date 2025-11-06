@@ -415,6 +415,35 @@ Rectangle {
         Row {
             Layout.alignment: Qt.AlignVCenter
             spacing: 4
+
+            RoundButton {
+                width: 36
+                height: 36
+                anchors.verticalCenter: parent.verticalCenter
+                enabled: player && bar.hasQueue
+                opacity: enabled ? 1.0 : 0.4
+                readonly property bool active: player && player.shuffleEnabled
+
+                background: Rectangle {
+                    radius: 18
+                    color: parent.active
+                           ? theme.surfaceInteractive
+                           : (parent.hovered ? theme.surfaceInteractive : "transparent")
+                    border.color: parent.active || parent.hovered ? theme.surfaceInteractiveBorder : "transparent"
+                }
+
+                display: AbstractButton.IconOnly
+                icon.source: "../icons/shuffle.svg"
+                icon.width: 18
+                icon.height: 18
+                icon.color: active ? theme.accent : theme.textPrimary
+
+                onClicked: if (player) player.toggleShuffle()
+
+                ToolTip.visible: hovered
+                ToolTip.text: active ? qsTr("Desativar aleatório") : qsTr("Ativar aleatório")
+                ToolTip.delay: 500
+            }
             
             // Botão anterior
             RoundButton {
@@ -498,6 +527,37 @@ Rectangle {
                 
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Next (Shift+N)")
+                ToolTip.delay: 500
+            }
+
+            RoundButton {
+                width: 36
+                height: 36
+                anchors.verticalCenter: parent.verticalCenter
+                enabled: player && bar.hasQueue
+                opacity: enabled ? 1.0 : 0.4
+                readonly property int mode: player ? player.repeatMode : 0
+
+                background: Rectangle {
+                    radius: 18
+                    color: (mode !== 0)
+                           ? theme.surfaceInteractive
+                           : (parent.hovered ? theme.surfaceInteractive : "transparent")
+                    border.color: (mode !== 0 || parent.hovered) ? theme.surfaceInteractiveBorder : "transparent"
+                }
+
+                display: AbstractButton.IconOnly
+                icon.source: mode === 2 ? "../icons/repeat_one.svg" : "../icons/repeat.svg"
+                icon.width: 18
+                icon.height: 18
+                icon.color: mode === 0 ? theme.textSecondary : theme.accent
+
+                onClicked: if (player) player.cycleRepeatMode()
+
+                ToolTip.visible: hovered
+                ToolTip.text: mode === 0
+                               ? qsTr("Repetição desativada")
+                               : (mode === 1 ? qsTr("Repetindo tudo") : qsTr("Repetindo faixa atual"))
                 ToolTip.delay: 500
             }
         }
