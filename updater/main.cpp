@@ -37,10 +37,14 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
     wsprintfA(buf, "$zip='%ls'\r\n", zip); WriteFile(f, buf, lstrlenA(buf), &w, 0);
     wsprintfA(buf, "$app='%ls'\r\n", app); WriteFile(f, buf, lstrlenA(buf), &w, 0);
     wsprintfA(buf, "$tmp='%lsupdate'\r\n", temp); WriteFile(f, buf, lstrlenA(buf), &w, 0);
-    lstrcpyA(buf, "Expand-Archive $zip $tmp -Force\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
-    lstrcpyA(buf, "$src=gci $tmp -dir|select -f 1\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
-    lstrcpyA(buf, "if(!$src){$src=gi $tmp}\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
-    lstrcpyA(buf, "cp \"$($src.FullName)\\*\" $app -r -force\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
+    lstrcpyA(buf, "New-Item -ItemType Directory -Path $app -Force | Out-Null\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
+    lstrcpyA(buf, "$ErrorActionPreference='Stop'\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
+    lstrcpyA(buf, "Expand-Archive -Path $zip -DestinationPath $tmp -Force\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
+    lstrcpyA(buf, "$entries=@(Get-ChildItem -LiteralPath $tmp)\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
+    lstrcpyA(buf, "if($entries.Count -eq 1 -and $entries[0].PSIsContainer){$srcPath=$entries[0].FullName}else{$srcPath=$tmp}\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
+    lstrcpyA(buf, "robocopy \"$srcPath\" \"$app\" /MIR /R:2 /W:2 /NFL /NDL /NJH /NJS /NP | Out-Null\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
+    lstrcpyA(buf, "$code=$LASTEXITCODE\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
+    lstrcpyA(buf, "if($code -ge 8){throw $code}\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
     lstrcpyA(buf, "rm $tmp -r -force\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
     lstrcpyA(buf, "rm $zip -force\r\n"); WriteFile(f, buf, lstrlenA(buf), &w, 0);
     wsprintfA(buf, "Start-Process \"$app\\%ls\"\r\n", exe); WriteFile(f, buf, lstrlenA(buf), &w, 0);
